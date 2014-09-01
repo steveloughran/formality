@@ -1,0 +1,54 @@
+The components can be combined to specify exactly how the ALU should behave.
+This could, if desired, be verified against the mathematics of of a subset of integers.
+\begin{verbatim}
+(*              ALU.L
+                =====
+
+The definition of the ALU as a whole.
+
+3/1/89 sal: TTL part only; not the PALS
+*)
+
+(* The carry look-ahead unit *)
+(* built out of three TTL devices *)
+
+val carrylookahead #( g0,g1,g2,g3,g4,g5,g6,g7,
+                        p0,p1,p2,p3,p4,p5,p6,p7,
+                        c,c3,c7,c11,c15,c19,c23,c27,carry_out)=
+
+        SN74F182 #(g0,g1,g2,g3,p0,p1,p2,p3,c,c3,c7,c11,G0,P0)
+        /\
+        SN74F182 #(g4,g5,g6,g7,p4,p5,p6,p7,c15,c19,c23,c27,G1,P1)
+        /\
+        SN74F182 #(G0,G1,true,true,P0,P1,true,true,c,c15,carry_out,
+                        false,true,true);
+
+
+(* the TTL portion of the ALU *)
+(* eight four bit slices connected together via the carry generator *)
+(* a= Input a
+   b= Input b
+   c= carry in
+   s2-s0= control signals
+   c=carry out
+   f=evaluated function
+    *)
+
+
+val ttlALU # (a b c s2 s1 s0 carry_out f)=
+        (a7,a6,a5,a4,a3,a2,a1,a0)==split a /\
+        (b7,b6,b5,b4,b3,b2,b1,b0)==split b /\
+        carrylookahead #( g0,g1,g2,g3,g4,g5,g6,g7,
+                        p0,p1,p2,p3,p4,p5,p6,p7,
+                        c,c3,c7,c11,c15,c19,c23,c27,carry_out) /\
+        SN74F381#(a0,b0,c,p0,g0,s2,s1,s0,f0) /\
+        SN74F381#(a1,b1,c3,p1,g1,s2,s1,s0,f1) /\
+        SN74F381#(a2,b2,c7,p2,g2,s2,s1,s0,f2) /\
+        SN74F381#(a3,b3,c11,p3,g3,s2,s1,s0,f3) /\
+        SN74F381#(a4,b4,c15,p4,g4,s2,s1,s0,f4) /\
+        SN74F381#(a5,b5,c19,p5,g5,s2,s1,s0,f5) /\
+        SN74F381#(a6,b6,c23,p6,g6,s2,s1,s0,f6) /\
+        SN74F381#(a7,b7,c27,p7,g7,s2,s1,s0,f7) /\
+        split f=(f7,f6,f5,f4,f3,f2,f1,f0);
+
+\end{verbatim}

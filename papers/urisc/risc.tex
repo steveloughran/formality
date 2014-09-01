@@ -1,0 +1,68 @@
+%RISCs - setting my machine in its context
+% 28/4/89 sal
+
+\section{The Reduced Instruction Set Computer}
+
+\begin{quotation}
+{\em
+	``A good artist can create fine art with crayons or oil paints (or
+whatever).  Assembly languages are definitely the crayons of the computer
+world.  RISCs are kind of like the little box of Crayolas with 16 colors,
+a CISC, like the VAX, is like the big box with 64.  Ever notice how it was
+that the black, red and blue crayons always ended up the smallest in that
+big box and the mauve crayon looked brand new?''\\\\
+}
+David L. Smith\\
+FPS Computing, San Diego\\
+\end{quotation}
+
+The concept of a Reduced Instruction Set Computer (RISC) was born in the late Nineteen-Seventies. 
+Researchers saw that regardless of the number of instructions which a computer could execute,  a  small core of instructions accounted for the largest proportion of code.
+This was despite the fact that for years computer architects had been designing
+instruction sets especially to support high level languages.
+These long, complex instructions  reduced the size of programs, but as the cost of   memories   fell dramatically this fact became unimportant.
+ 
+Supporting  rarely used instructions extracted a price in both computer performance and complexity. 
+Decoding and executing a large set of instructions used a very complex control unit, requiring   space and a significant  development effort. 
+  Over the years techniques such as microcoding and nanocoding were developed, which effectively stored a small set of routines  within the CPU. 
+  These routines broke the larger instructions down into smaller instructions which were then executed.
+  As the speed and size of external memories increased, the justification for such techniques disappeared.
+  
+Knowing all the complex instructions could be produced out of a  larger number of simpler instructions, researchers proposed that computers should be made to execute the simple instructions alone ---{\em a Reduced Instruction Set Computer}. 
+
+{\samepage
+The basic tenets of RISC were:-
+\begin{itemize}
+\item
+A small number of fixed length instructions 
+\item
+Hard-wired instruction decode ----no microcoding
+\item
+Load and Store  instructions access memory ---all others operate between registers
+\item
+Single cycle instruction execution
+\item An optimising compiler to take full advantage of the instruction set 
+\end{itemize}
+The instructions  chosen were those most used by  compiler  generated code, and a any others needed to support special hardware features.
+}
+
+ Reducing the complexity of the control section, the benefits were:-
+\begin{itemize}
+\item reduced CPU size
+\item reduced design time
+\end{itemize}
+RISC computers could be designed and built quickly, taking advantage of the latest fabrication processes. The CPUs could be built smaller and  cheaper, or the spare die area  filled with simple repetitive structures:-
+
+\begin{itemize}
+\item a large register file
+\item a barrel shifter
+\item on chip RAM or caches
+\item wider and multiple busses
+\item inter-process and inter-processor communication links
+\end{itemize}
+
+These  provided significant increases in performance, and yet were easy to design, making for highly competitive products.
+
+The question which RISC architectures raise is simple -\\
+{\em ``How many instructions are really needed? What is the Ultimate RISC?''}\\
+In fact a computer need only be capable of executing a single instruction.

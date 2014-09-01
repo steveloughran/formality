@@ -1,0 +1,221 @@
+\chapter{The Host Interface}
+
+The Ultimate RISC has to be connected to a host computer to obtain 
+ data, to receive control signals and to return 
+results. This host is able to examine and modify memory 
+locations and the internal registers.
+
+The obvious choice for a host computer was the departmental Advanced Personal Machine (APM) workstation.
+These were widely available for use and designed to permit extra boards to be easily installed.
+The compiler was also being developed upon this system, so the two machines could form a standalone system.
+
+
+The traditional CS4 project method of connecting new boards to the APM
+is to use the standard APM backplane to provide access to shared
+memory. The disadvantage with this is that the APM 
+bus is very difficult to interface to.
+Not all projects manage it 
+successfully, even when using a known CPU or display controller. 
+ To try and interface a computer which could not be guaranteed to work reliably would have been futile.
+The method I  used  allows the host 
+computer to examine and modify both memory and internal 
+registers on the Ultimate RISC computer. 
+By making  internal registers out of Serial Shadow Registers,
+ the host  can easily access them. 
+Control 
+signals are used to copy all registers to their shadows, to 
+shift data and to selectively reload registers.
+The host  also controls the clock signals of the computer, aiding  both
+hardware and software development.
+
+ Memory cannot be read or written directly. Instead the host 
+ initialises the {\bf address} register with the desired address ---along with  the {\bf data} register during a write operation. 
+ The control unit is then  instructed
+to perform the appropriate access. 
+After a read operation the {\bf data} register
+should contain the contents of the memory location selected.
+
+Six bits of  state information are sent in parallel from the Ultimate RISC to the APM.
+Five of these bits give the current state of the control unit. 
+The sixth bit is sent from the memory section to indicate whether the current memory access is valid or not.
+The Ultimate RISC can thus be observed while operating asynchronously with respect to the host.
+
+Three signals are sent to the Ultimate RISC's Control Unit by the APM.
+These  instruct it to start and stop executing instructions, or to perform a memory access for the host.
+
+The complete list of connections is given in  table~\ref{table:hostif}, along 
+with their positions on the Eurocard edge connector.
+
+In all, sixteen control lines are needed ---seven inputs to the host and nine outputs.
+This allows the Ultimate RISC to be connected to any host with a sixteen bit parallel I/O port.
+
+The Real Time Systems M6809 co-processor board does have one of these devices, and
+it is to this that the board is  connected. It can in fact be connected to many simple computers, provided the software support is available.
+
+\begin{table}
+\centering
+\begin{tabular}{||l|lll||}
+\hline
+direction & signal & pin no. & description \\
+\hline 
+Output
+ & State 0 & C2 & these give the current state of the control unit\\
+ & State 1 & C3 & as a five bit number\\
+ & State 2 & C4 & \\
+ & State 3 & C5 & \\
+ & State 4 & C6 & \\
+ & $\overline{halt}$	& C7 & indicates the current read should cause a Halt\\
+ & SDI	& C8 & SSR chain input to the host\\
+\hline
+Input 
+ & SDO & C7 & SSR chain output from the host\\
+ & $\overline{freerun}$ & C12 & instructs the computer to use its own clock\\
+ & clock & C13 & the clock signal when not running freely\\
+ & $\overline{go}$ & C14 & execute an instruction or a memory access\\
+ & $\overline{load}$ & C15 & load {\bf address} and {\bf data} registers\\
+ & l/$\overline{s}$ & C16 & indicates the type of the memory access\\
+ & mode & C17 & SSR mode selection \\
+ & dclk & C18 & SSR shadow register clock\\
+ & $\overline{reset}$ & C19 & reset program counter\\
+ \hline
+ \end{tabular}
+ \caption{Host Interface Specification}
+\label{table:hostif}
+ \end{table}
+ 
+ 
+
+\section{The Monitor}
+
+The simplicity of the host interface is such that a sophisticated monitor 
+program is needed to make any use of the Ultimate RISC.
+The development of this  program went hand in hand with the building 
+of the computer itself.
+When a new feature was built into the hardware, it was first tested with the
+existing monitor features, and, once the protocol was established, supported
+by higher level routines.
+
+{\samepage
+The facilities offered include:-
+\begin{itemize}
+\item downloading and execution of programs on the 6809 board.
+\item manual manipulation of the  interface lines.
+\item reading, modifying and copying back the registers of the Ultimate RISC.
+\item single stepping the computer's clock.
+\item reading and writing memory locations ---including registers
+\item memory testing
+\item downloading code into the Ultimate RISC's memory
+\item instruction execution control
+\item emulated I/O on behalf of the Ultimate RISC.
+\end{itemize}
+}
+
+The monitor is divided into two programs, each executing 
+concurrently on separate processors and communicating  via shared memory.
+
+\subsection{A Virtual PIA}
+The Ultimate RISC's host interface is  connected to the Peripheral Interface
+Adaptor of the APM 6809 Processor Board. While most of the memory is shared 
+with the 68000 processor this is not the case for the I/O devices.
+A short 6809 Assembly Language program is used to provide a virtual PIA for 
+the 68000 microprocessor to use. 
+This copies the input port of 
+the PIA to a shared memory location, and uses data in other
+memory locations to update the PIA registers.
+This PIA contains two  eight bit I/O registers.
+Port~A of the PIA contains all the outputs from the Ultimate RISC, and the SDO signal. 
+Port~B is dedicated to the output of the eight control signals. 
+This port is buffered to increase its drive capability.
+The buffer used on most of the 6809 boards is an LS TTL device, but fanout effects  forced  me to upgrade the buffer on the board I was using to one of higher power. 
+ 
+
+The first few memory locations of the 6809 processor's address space are dedicated to this inter-processor communication (table~\ref{table:shared}).
+
+\begin{table}
+\centering
+\begin{tabular}{||r|l||}
+\hline
+\hline
+Address & Description\\
+\hline
+0 & the PIA register (0--3) to write to\\
+1 & the data to be written\\
+2 & the inputs to PIA port A\\
+\hline
+4 &   loop count to drive Port B; cleared on completion of loop\\
+8 &  port B loop value \#1\\
+9 & port B loop value \#2\\
+\hline
+1E & the number of shared registers\\
+1F & copy control =\$80 to get the registers, \$81 to write back\\
+20 & the start of the shared SSR image\\
+\hline
+\hline
+\end{tabular}
+\caption{6809 Shared Memory Locations}
+\label{table:shared}
+\end{table}
+
+When writing to a port of the PIA,
+the 68000 program  writes the data first, followed by the register number plus 128;
+this high bit  indicates a  valid write request.
+When the contents of address 1 are cleared, the request has been processed and the copy of port A updated. The 68000 can use this to poll for the completion of an operation or test the operation of the 6809 board.
+This method of synchronisation in not particularly fast, so
+when controlling the clock from the host, the maximum clock speed is only 1~KHz.
+
+To increase speed the 6809 program  contains  some extra routines. These perform iterative operations without the need for constant synchronisation between the Virtual PIA and the main processor.
+The host's image of the Ultimate RISC's registers are stored in shared memory.
+The PIA program can be instructed to shift in a new copy, or shift out an updated copy.
+It can also be instructed to send an alternating pattern of signals out through port B a set number of times. 
+This can be used to provide a faster clock signal of 50~KHz.
+
+\subsection{The Main Monitor}
+This is an extension of the CS2 6809 monitor, from which the Command Line Interface and the 6809 control operations are all taken.
+It has been extended to form a 2000 line IMP program with many more commands.
+There is also a status display at the top of the screen.
+This shows the state of all the inputs and outputs on the host interface and 
+the state of the control unit  as a mnemonic name.
+
+To provide flexibility in development  the  data about registers and states are kept in separate files. 
+This allows different configurations of both the control unit and of the registers to  be used with minimal effort.
+
+
+Object code can be downloaded into the Ultimate RISC's memory by the monitor.
+The format was designed to support both  compiled and hand coded programs
+and is described in table~\ref{table:format}.
+It is when downloading code that the speed of the host interface becomes apparent;
+the liberal insertion of comments  provides needed feedback as to the progress of the  operation.
+
+\begin{table}
+\begin{enumerate}
+\item the file is stored as a text file, with normal restrictions on naming
+\item all numbers are given in hexadecimal, one to a line
+\item any line beginning with `{\bf !}' is a comment, to be printed during
+downloading
+\item @(address) states the shared printing address (default=\$3FFF)
+\item code sequences are represented as:-\\
+address\\
+code length\\
+(code)$^{*}$
+\item there is no limit upon the number of code sequences in a single file
+\end{enumerate}
+\caption{Code File Format}
+\label{table:format}
+\end{table}
+
+The monitor program also provides a rudimentary output facility for the Ultimate RISC.
+A downloaded program can specify a shared printing address.
+Whenever this program halts, the instruction which caused the halt is examined.
+If it is the instruction `{\bf MOVE~0000,0001}' then this is interpreted as a request for output.
+The contents of the shared printing address are then printed on the terminal screen as an ASCII string, and the program is restarted.
+%A similar  halt `{\bf MOVE~0000,0002}' causes the monitor to request a character from
+%the user. 
+
+
+The monitor is  somewhat isolated from the Ultimate RISC,
+as the virtual PIA and the sixteen bit I/O port form a bottleneck in communication.
+The monitor's registers  are only copies of the actual registers, and have to be updated explicitly, while
+the status line is of more use to hardware development than  software.
+However, the monitor does provide  adequate access to the Ultimate RISC.
+
+

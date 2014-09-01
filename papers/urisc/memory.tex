@@ -1,0 +1,142 @@
+\chapter{Memory}
+\section{Overview}
+In most computers  memory is used for storage of programs and data.
+In many microcomputers peripheral elements are  also interfaced to the memory busses,
+so that reading or writing certain locations actually controls the peripherals.
+This obviates the need for special I/O instructions and control lines.
+The technique is called {\em memory mapping}. 
+It is useful where the composition  of systems varies widely, as different peripherals can be easily memory mapped. 
+Example peripherals include a display controller, a disc controller, Ethernet communications link, keyboard decoder...etc. 
+
+Since the only instruction available upon the Ultimate RISC is a memory to memory move, {\em all} functional elements of the system must be memory mapped, including the computer's main registers (table~\ref{table:memory}).
+While this makes the control unit simple, part of the burden of complexity is passed to memory, remaining to extract a price on performance.
+
+
+\begin{table}
+\centering
+\begin{tabular}{||lrll||}
+\hline
+\hline
+
+Unit & Address	&	Name & 	 Function\\
+\hline
+Execution Unit  & & &\\
+Write Only &  & &\\
+& 0	 & PC		& program counter \\
+& 1	  & SKIP	& skip register\\
+& 2	 & X		& X index register \\
+& 3	 & Y		& Y index register\\
+& 4--7 & & duplicates of the above\\
+ \hline
+ALU: & &  &\\
+Writing & & &\\
+& 8--F	 & Carry & $Carry \leftarrow data_{0}$\\
+& 10	 & CLR	& $Acc \leftarrow 0$\\
+& 11	 & SUBR	& $Acc \leftarrow data - Acc$\\
+& 12	 & SUB	& $Acc \leftarrow Acc - data$\\
+& 13	 & ADD 	& $Acc \leftarrow Acc + data$\\
+& 14  	 & XOR  & $Acc \leftarrow Acc \oplus data$\\
+& 15	 & OR 	& $Acc \leftarrow Acc \vee data$\\
+& 16	 & AND	& $Acc \leftarrow Acc \wedge data$\\
+& 17	 & SET 	& $Acc \leftarrow$ \$FFFFFFFF\\
+& 18--31 &  	& 10--17 followed by  a  one bit rotate right\\
+\hline
+ALU: & & &\\
+Reading & & &\\
+& 8--F  & Acc & Accumulator\\
+& 10 & Z & Zero Flag\\
+& 11 & N & Negative Flag\\
+& 12 & V & Overflow Flag (not supported)\\
+& 13 & C & Carry Flag\\
+& 14--31 & & 10--13 repeated\\
+\hline
+Memory: & & &\\
+bidirectional & & &\\
+& 2000  & RAM		& Random Access Memory\\
+& 3FFF &   &\\
+\hline
+\hline
+\end{tabular}
+
+\caption{Memory Map}
+\label{table:memory}
+\end{table}
+
+
+\section{Address Decoding}
+
+The memory of the computer needs to be informed when a memory access is required. It must be told the direction of the access, the address to be
+used, and, on a write operation, the data which it must write.
+
+During a read cycle it will return either the data stored at that location, or a signal indicating the address was invalid.
+
+Some write operations  trigger one or more signals to different units of the computer, to update internal registers.
+
+A means is needed  of interpreting the address and control signals to generate the required outputs. This is called  {\em address decoding}.
+
+The first decision to be made when designing the address decoder was
+the access protocol. A {\em synchronous} memory relies upon the access being completed a certain time after it begins, whereas an {\em asynchronous} memory requires the computer to wait for an acknowledgement signal.
+I decided to implement  synchronous  memory, which was simpler but did rely upon the speed of memory being known.  The fifteen 
+address bits and a {\bf r/$\overline{w}$} signal are used to indicate the location and 
+direction of the access. 
+A further signal, {\bf memory select} ({\bf ms}) is used to 
+actually request a memory access. 
+
+To write to an address the computer loads the {\bf address} register with the address 
+and enables the output on the {\bf data} register. When both are known to 
+be valid  {\bf ms} is asserted with {\bf r/$\overline{w}$} low, and decode 
+begins. The signals must remain until it can be guaranteed that the 
+write will be completed.
+ This means  a write operation must include a delay  to allow for ALU operations.
+
+\begin{figure}
+\vspace{20cm}
+\caption{Memory Access Protocols}
+\label{fig:memread}
+\end{figure}
+
+
+To read an address the protocol is similar except the {\bf r/$\overline{w}$} line is set high 
+and the {\bf data} register is not output onto the bus;  at the end of the read 
+either the {\bf data} or {\bf instruction} register is loaded with the value on the 
+data bus.
+\subsection{Address Decode Implementation}
+
+Most addresses are  decoded using EPLDS, rather than PALS. This 
+is slower but provides for  later expansion of memory.
+ One EPLD is  used 
+for decoding the simple signals which can be asserted throughout the 
+cycle ---the loading of   Execution Unit registers, and the reading of the Accumulator and  condition flags.
+
+A further EPLD is  used for the generation of the one-off signals which    
+load the {\bf ACC} and {\bf CC} registers after a function evaluation. 
+It also controls the source of the count signal of the {\bf PC}.
+ This EPLD 
+is clocked to enable it to keep track of time during a write operation, and  contains a finite state machine.
+
+The time to access the Random Access Memory is longer than for  other units, so in order to eliminate unacceptable decoding delays, the $\overline{write}$ and $\overline{Oe}$ signals for this are generated using hard wired logic. This  has a propagation delay of under ten nano-seconds.
+
+To ensure there are no glitches during the decode, I found that the direction of the access must be changed prior to the assertion of {\bf ms}. Problems were caused when the control unit EPLD generated some outputs before others.
+
+\section{Random Access Memory}
+
+The  area of Random Access Memory  needed to be  fast and easy to use. 
+This is why I decided from the outset to use Static RAM rather than Dynamic RAM, which while cheaper and denser was slower and much harder to interface to.
+Deciding how much Static RAM to use, and at what speed  was a major source of problems,  due to cost and 
+availability considerations.  
+I had  originally envisaged that the computer would 
+have a full 128kB memory from four 32k*8 Static RAM ICs. 
+To increase the  projected speed of the computer I decided to  
+ use very fast memories, but  being more expensive I had to have a 
+ smaller amount.
+ The suppliers R\&R advertised 16k*4 SRAMS with 25~nS access time, eight of which would have been ideal, 
+especially with a cost of only \pounds 5.50 each. After much telephoning it 
+became clear they did not have any in stock.  Another supplier did claim to have these memories, but 
+\pounds 15 each was too expensive. 
+
+Rather than rely on promises of availability I based my design on 8k*8 
+memories of 45~nS.  
+Four of these provide 8192 words,
+which  places a tight limit upon the size of code which can be executed.
+
+

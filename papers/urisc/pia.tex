@@ -1,0 +1,165 @@
+\section{M6809 Monitor program}
+
+This is the short assembly language program used  to support communications between the 68000 monitor and the Ultimate RISC.
+Originally a simple repetitive loop to transfer the contents of the PIA to shared memory locations, and to accept update requests from the 68000 via shared
+memory locations, it has been upgraded to 
+
+\begin{verbatim}
+* Virtual PIA program
+* 13/3/89 Steve Loughran
+* optimised 20/4/89
+* loop mode 9/5/89
+* register get/put 11/5/89
+
+* maintains an image of the PIA in addresses COPY to COPY+4
+* to write to an address 68K program writes data into location DATA
+* and address (as offset from PIA) into addr - with bit 7 =1
+* 6809 program will then copy data to the location, 
+* update the image of the PIA and then clear ADDR
+
+* PIA address
+PIA equ $C200
+porta  equ $c200 *PIA port A
+portb  equ $c202 *PIA port B
+addr   equ    0  *host write address (offset from PIA)
+data   equ    1  *byte to write
+copy   equ    2  *copy of port A
+
+times  equ    4  *loop count
+val1   equ    8  *pattern 1 (usually clock high)
+val2   equ    9  *pattern 2 (usually clock bits low)
+c1     equ  $10
+c2     equ  $11
+regs   equ  $1E   *no. of shared registers
+dir    equ  $1F   *direction of get/put
+SSRs   equ  $20   *Shared SSR image array
+
+* system stack
+sstack equ $BEF0
+
+       org $100
+start  lds #sstack
+       lda #$ff
+       sta data
+       clr addr
+       clr times
+       clr a          *always keep a-reg empty
+loop1  ldb PIA        *update the image
+       stb copy
+loop2  
+       ldb addr
+       bne update      * see if address written to
+       ldx times
+       beq cont        *see if loop mode requested
+       bsr lmode
+       bra loop2
+cont   ldb dir         *see if get/put requested
+       beq loop1
+       and#1
+       beq get         *test for `get' request
+       bsr psub
+       bra loop2
+get    bsr gsub
+       bra loop2
+
+* now copy data to address
+update andb #127      *mask hi bit
+       tfr d,x        *copy to X index
+       ldb data
+       stb PIA,x
+       ldb PIA
+       stb copy      *update the image
+       sta addr      *acknowledge
+       bra loop2     *continue
+
+*loop mode, loop 'times' times
+* storing first val1 then val2 into portb
+* with a delay proportional to 'pause' between each write
+* terminates with val1 in portB
+* for use in generating dclk & clk signals
+
+lmode  lda val1
+       ldb val2
+lm1    sta portb
+       nop
+       nop
+       nop
+       stb portb
+       leax -1,x
+       bne lm1
+       sta portb
+       lda porta
+       sta copy
+       clr a
+       clr times
+       clr times+1
+       rts
+
+
+*subroutine to get all the registers into the shared memory.
+*the SSRS must have already been instructed to copy the 
+*registers to their shadows
+*the clocking pattern should be set up in val1 & val2
+
+gsub   ldx#0
+       ldb val1
+       stb portb
+gl1    clr SSrs,x
+       lda#8
+gl2    ldb porta
+       rolb
+       rolb
+       rol SSRs,x
+       ldb val2
+       stb portb
+       nop
+       nop
+       ldb val1
+       stb portb
+       deca
+       bne gl2
+       leax 1,x
+       cmpx regs-1
+       bne gl1
+       lda porta
+       sta copy
+       clr dir
+       clr a
+       rts
+
+*the routine to put all the registers bask to the SSRS
+
+psub   ldx#0
+       ldb val1
+       stb portb
+pl1    ldy#8
+       lda SSRs,x       
+pl2    tfr a,b
+       andb#128
+       stb porta
+       nop
+       nop
+       ldb val2
+       stb portb
+       rola
+       nop
+       nop
+       ldb val1
+       stb portb
+       leay -1,y
+       bne pl2
+       leax 1,x
+       cmpx regs-1
+       bne pl1
+       lda porta
+       sta copy
+       clr dir
+       clr a
+       rts
+
+*reset vector
+       org $fffe
+       fdb start
+
+end
+\end{verbatim}

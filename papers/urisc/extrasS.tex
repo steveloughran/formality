@@ -1,0 +1,91 @@
+These implement a few lambda functions in ML. 
+Not having an {\bf iota} function, the successor functions are implemented by first defining functions converting from integers to Int15 and Int32.
+The successor function is implemented by converting the boolean tuple to an integer representation, adding one, then converting it back.
+The length of this file compared with the lambda specification indicates the differences in power of the two notations.
+
+\begin{verbatim}
+(* Extras.SIM  v1.9  5/24/89*) 
+(* Extra functions needed for the simulation that Lambda doesn't 
+   6/1/89 sal
+   *)
+           
+          exception not_a_nibble; 
+
+          (*convert a number from  0-16 to a binary equivalent*)
+
+          fun to_nibble n= 
+                if n>16 orelse n<0 then raise not_a_nibble
+                else 
+                        ((n div 8) =1, 
+                         (n div 4 mod 2)=1, 
+                         (n div 2 mod 2)=1, 
+                         (n mod 2)=1); 
+
+          (* convert any number to a list of nibbles *)
+
+          fun NattoNibbles n = 
+                if n<16 then [to_nibble n]  
+                else NattoNibbles (n div 16) @ [to_nibble (n mod 16)] ;
+
+          (* measure the length of a list *) 
+
+          fun length nil = 0 
+           |  length (_::t) = (length t) + 1; 
+
+          (* extend a list to the lenth required *)
+
+          exception list_too_long ;
+           
+          fun extend n L= if (length L) < n 
+                        then ((false,false,false,false)::extend (n-1) L) 
+                        else 
+                        	if (length L) > n 
+                        	then raise list_too_long
+                        	else L; 
+
+           
+          val maxint15=Int15toNat Maxint15; 
+           
+          exception address_too_big ;  
+           
+		
+
+          fun NattoInt15 n= 
+                if n<= maxint15 then 
+                        let val (a::b::c::d::_)= extend 4 ( NattoNibbles n) 
+				in 
+					(mergeInt15 a b c d):Int15
+				end
+                else raise address_too_big; 
+
+	  fun S15 word=
+		if word=Maxint15 then
+			Zero15
+		else
+			NattoInt15 (1 + (Int15toNat word));
+
+           
+          val maxint32=Int32toNat Maxint32; 
+           
+          exception data_too_big ;
+ 
+                fun NattoInt32 n= 
+                if n<=maxint32 then  
+			let val [a,b,c,d,e,f,g,h]=extend 8 (NattoNibbles n )
+				in
+					merge a b c d e f g h
+				end
+                else raise data_too_big; 
+
+          infix 8 &&;
+
+          fun a && b = a andalso b;
+
+          infix 7 |||;
+          fun a ||| b = a orelse b;
+
+          fun ~ a = not a;
+
+	fun plus15 a b=
+		NattoInt15 ((Int15toNat a) + (Int15toNat b));
+\end{verbatim}

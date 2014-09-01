@@ -1,0 +1,54 @@
+The description of the Execution Unit completes the specification  of the Ultimate RISC.
+A function {\bf execute} from {\bf State} to {\bf State} specifies and simulates the execution of a single instruction
+\begin{verbatim}
+(*	execute.SIM	v1.4
+	===========		*)
+
+         (* simulation of the execution unit *) 
+           
+           (* conditional index operation*)
+          fun index a f i=if f then a else plus15 a i; 
+           
+          fun execute (state:State)= 
+          let 
+                val {mem=m, 
+                     exstate={pc=pc,x=x,y=y,halt=halt}, 
+                     alustate=a}=state 
+          in 
+                (* state if source fetch fails*)
+                let val halted=({mem=m, 
+                            exstate={pc=S15 pc, 
+                                     x=x, 
+                                     y=y, 
+                                     halt=true}, 
+                            alustate=a} :State)
+                      (* state after the fetch of the first instruction---
+                         the PC has been incremented *)
+                    and ss={mem=m, 
+                            exstate={pc=S15 pc, 
+                                     x=x,
+				     y=y,
+				     halt=false}, 
+                            alustate=a} 
+                in 
+                      (* do nothing if already halted *)
+                        if halt then state 
+                        (* fetch instruction*)
+                        else if not (valid_address pc) then state 
+                        else let 
+                                val i=read state pc 
+                             in 
+                                (*fetch source operand*)
+                                if not (valid_address (index (Source i)
+          						(IndexX i) x)) 
+                                then halted  
+                                (*write to destination*)
+                                else write ss 
+                                   (index (Destination i) (IndexY i) y) 
+                                   (read ss  
+                                        (index (Source i) (IndexX i) x)) 
+                            end 
+                end 
+          end; 
+
+\end{verbatim}

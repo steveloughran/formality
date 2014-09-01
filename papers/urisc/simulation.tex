@@ -1,0 +1,35 @@
+
+\chapter{The Formal Specification and Simulation}
+
+This appendix lists the second specification of the computer,
+along with the simulation derived from it.
+It is composed of a number of files, some of which the specification alone
+uses, some of which the simulation makes use of.
+The Lambda specification describes the operation of the ALU on a  component by component basis, including timing constraints.
+The simulation is executable in ML, and describes the entire computer.
+As such it forms another specification, with the functions being described without too much implementation detail.
+
+\section{Lambda Specification}
+The lambda specification provides the core of the code for the simulation, but is too powerful to be compiled by ML.
+It can be used to some prove properties of the computer.
+It can also be used to verify the speed of operation of the ALU.
+\input{datatypesL}
+\input{decodeL}
+\input{specL}
+\input{variablesL}
+\input{mathsL}
+\input{componentsL}
+\input{palsL}
+\input{aluL}
+%\newpage
+\section{ML simulation}
+This extends the specification to describe instruction execution,
+and wraps this in a monitor shell.
+Some of the Lambda functions which only took a couple of lines have had to be translated into page-long ML operations.
+\input{extrasS}
+\input{constantsS}
+\input{stateS}
+\input{aluS}
+\input{memoryS}
+\input{executeS}
+\input{monitorS}

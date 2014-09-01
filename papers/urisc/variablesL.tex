@@ -1,0 +1,24 @@
+All variables have to be explicitly stated in Lambda, unlike ML.
+\begin{verbatim}
+(* variables.L
+   ===========
+Variables used in the specification  over  and  above  those  over and above
+those normally provided 
+2/1/89 sal *)
+(* generate signals *)
+vbl G,g0,g1,g2,g3,g4,g5,g6,g7,G0,G1     :bool;
+(* propagate signals *)
+vbl P,p0,p1,p2,p3,p4,p5,p6,p7,P0,P1     :bool;
+(* carry bits *)
+vbl carry_in,carry_out,c3,c7,c11,c15,c19,c23,c27        :bool;
+(* zero flags *)
+vbl z0,z1,z2,z3,z4;
+(* general use (mainly in alu ) variables *)
+vbl a0,a1,a2,a3,a4,a5,a6,a7,addr4;
+vbl b0,b1,b2,b3,b4,b5,b6,b7;
+vbl data0
+vbl f,f0,f1,f2,f3,f4,f5,f6,f7,f28,f29,f30,f31;
+vbl g,h,h0,h1,h2,h3,h4,h5,h6,h7,h28,h29,h30,h31;
+vbl s0,s1,s2;
+vbl shift;
+\end{verbatim}

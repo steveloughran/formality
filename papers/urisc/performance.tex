@@ -1,0 +1,120 @@
+\chapter{Performance}
+
+To actually judge the effectiveness of a particular architecture, one must
+evaluate it in a form  with which it can be compared against other computers.
+A number of measures exist to do this, each with their own particular qualities. For integer performance  a common measure is instruction throughput, measured in  {\em Millions of Instructions per Second}, (MIPS).
+It also has a commercial derivative   {\em dollars per MIP}.
+There are  standard benchmark suites, such as {\em dhrystones}, which
+execute known programs a large number of times. 
+These measure the compiler-computer combination.
+While the figures benchmarks produce are useful in advertising  material, single numbers should not be used as the sole evaluation criteria.
+Of equal importance are such factors as I/O access rates, mean time between failures and the quantity of available software.
+
+My simple prototype provides little other than instruction execution, so only measures of instruction throughput are possible.
+
+The speed of the computer is  limited by the speed of the components within.
+All delay estimations were based upon the data sheet, they have not actually been measured yet.
+Typical case timings were assumed for  devices in series; this was justified by the Central Limit Theorem. 
+Wherever a large number of devices were connected together in parallel, I had to assume that one of the devices would exhibit the worst case of behaviour, delaying the entire bank.
+
+
+\section{Execution Unit Delays}
+The most significant delay  within this unit is caused by the the adding of an index to the source operand, since this can not be overlapped with any other operation. This enforces a delay between the loading of the instruction and the loading of the address register with the source of 45~nS.
+Other operations, such as calculating the address of the next instruction, or the destination, are carried out during memory accesses,  and hence are non-critical.
+
+The propagation delays of the address and data registers require that these must be loaded 20~nS before the {\bf ms} signal is asserted.
+
+\section{ALU timing}
+The time taken by the ALU to evaluate a function depends upon the operation and the inputs.
+The fastest operations are {\bf preset} and {\bf clear}, which do not depend upon the data inputs at all.
+The slowest operations are arithmetic operations, since these must use the carry lookahead system.
+The slowest of these operations are those causing a carry to ripple along all 32 bits. 
+Such operations could require up to 30 nS to be evaluated.
+To pass this result through the shift unit requires another 25~nS, at which
+point the Accumulator can be loaded.
+The evaluation of the condition flags  takes another 25~nS.
+With the set up time of the CC register, the ALU should take 90~nS from the presentation of valid data and functions to  full evaluation of any operation.
+Currently two EPLDs are used in the ALU, one to shift  part of the result, and one to evaluate condition flags. These cause an extra 20~nS delay, but can be easily programmed into PALS, so are not included in this performance estimation.
+
+
+\section{Memory Delays}
+
+\subsection{Memory Read Accesses}
+The speed of the RAM used, combined with the hardware decode of its enable signals  causes it to be as fast as the other memory mapped units.
+This is because the other units' control signals are decoded through a slow EPLD which counteracts their faster responses.
+
+If the address and the read signal are valid at least 10~nS prior to the assertion of {\bf ms} then a read access only takes a further 50 nS.
+
+
+\subsection{Write Access}
+The write time is longer that the read time, due to the necessity of asserting the address and data lines for the  duration of an ALU operation.
+The ALU has a propagation delay of 90~nS; with the setup time of the address and data registers a write cycle must last at least 100~nS.
+This is the delay between the address and data being valid to the loading of the Accumulator and the CC register.
+The duration of the {\bf ms} signal can be shorter than this ---a minimum  of 50~nS, or two clock cycles.
+Buffering the address and data lines into the ALU would shorten this write time to the same as that for a read access.
+
+\begin{table}
+\centering
+\begin{tabular}{||l|c|c||}
+\hline
+\hline
+Parameter & Symbol & delay(nS)\\
+\hline
+RAM read decode & t$_{ms\_ramoe}$ & 8\\
+RAM write decode & t$_{ms\_ramw}$ & 12\\
+RAM output enable & t$_{ramoe\_lz}$ & 20\\
+RAM output tristate & t$_{ramoe\_hz}$ & 20\\
+RAM write  & t$_{ramw\_w}$ & 25\\
+\hline
+EP310 decode & t$_{ms\_ep310}$ & 35\\
+EP600 decode & t$_{ms\_clk\_ep610}$ & 22\\
+PC write  & t$_{ep310\_clk\_ldpc} $ & 2\\
+ACC output & t$_{ep310\_oeacc}$ & 9\\
+CC output & t$_{ep310\_oecc} $ & 7 \\
+\hline
+\hline
+\end{tabular}
+\caption{Memory: AC Characteristics}
+\label{table:memory timing}
+\end{table}
+
+\section{Control Unit}
+Since the Control Unit must generate the signals for the memory accesses and the Execution Unit, it  can only introduce more delays.
+A synchronous circuit, it is dependent upon the system clock.
+The delay between states, and thus signal generation, is always a multiple of this clock speed.
+When clocked at a frequency below  20~MHz, the control unit is the sole limit on performance.
+Above this frequency extra  states have to be inserted into the state machine to wait for memory accesses.
+Above 30 MHz the addition of the source index would require an extra wait state. This could  be eliminated by feeding the index signal in as an input to the Control Unit; a spare pin has been left for this purpose.
+However, the operational speed of the EPLD used rendered this unnecessary.
+
+\section{Maximum Performance}
+
+Ignoring control unit delays, the minimum time to execute an instruction is 
+easily calculated. 
+\begin{eqnarray}
+t_{ex} & = & 2*t_{read}+t_{write}+t_{index}\\
+& = & 100+45+60+60 \nonumber\\
+& = & 265~nS \nonumber\\
+\end{eqnarray}
+
+This would give an instruction throughput of 3.8 MIPS.
+This can never be achieved due to the control unit delays.
+A 40 MHz EP610 EPLD could execute an instruction in twelve steps, 300~nS. This would give a throughput of 3.33 MIPS. 
+Due to the lack of a programmer for such a device I was forced to use a slower EPLD with a maximum clock speed of 50~nS.
+This increases the time to execute an instruction to 400~nS, reducing the throughput to only 2.5 MIPS at most.
+
+\section{MIPS as a measure of performance}
+Comparing MIPS between processors is a rather dubious affair, especially with RISC computers.
+
+Manufacturers of traditional CISC computers justify their apparent low performace by claiming that although a complex instruction set may have a lower throughput, the power of each instruction  means that fewer instructions are needed.
+
+This may make it difficult to compare a computer with only a single instruction against such computers.
+
+However, RISC architectures are designed support the most common instructions of CISC computers, so the number of instructions used  should not be  much greater.
+One can balance out this difference in code size by including the number of instructions in any measures of performance.
+
+Comparisons have been made between the object code produced by the Ultimate RISC's compiler and M68000 object code produced by a compiler with the same front end.
+These indicate that that only twice as many clock cycles are needed to execute a program on the Ultimate RISC as on the more complex microprocessor.
+If this ratio holds for a large sample of programs then one can conclude that an Ultimate RISC computer should show  comparable performance to a 68000 microprocessor operating at half the speed.
+
+

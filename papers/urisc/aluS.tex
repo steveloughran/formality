@@ -1,0 +1,178 @@
+This describes the operation of the ALU.
+Based upon the lambda specification, the components have been redescribed as
+functions, and combined to describe the entire ALU's operation.
+\begin{verbatim}
+(*	alu.SIM		v1.8 *)
+(*	=======		=====*)
+
+         (* Simulation of the ALU *)
+
+(* the ALU bit slice component*)
+
+          fun SN74F182 g0 g1 g2 g3  p0 p1 p2 p3 c= (* c1 c2 c3 G P *)
+          let
+                val G =(g3  && (p3  ||| g2 )
+                                && (p3  ||| p2  ||| g1 )
+                                && (p3  ||| p2 ||| p1  ||| g0))
+                and  P=p0  ||| p1  ||| p2  ||| p3
+                and  c1= not(g0 && (p1 ||| (~ c)))
+                and  c2=not(g1 && (p0 ||| (g0 && p1 ||| (~ c))))
+                and  c3= not(g2 && (p2 ||| (g1 && p0 ||| 
+					(g0 && p1 ||| (~ c)))))
+          in
+                (c1,c2,c3,G,P)
+	  end;
+
+(* the lookahead carry generator *)
+
+          fun carrylookahead g0 g1 g2 g3 g4 g5 g6 g7
+                           p0 p1 p2 p3 p4 p5 p6 p7 c=
+          let 
+                val (c3,c7,c11,G0,P0)=SN74F182 g0 g1 g2 g3 p0 p1 p2 p3 c
+          and    G1=(g7  && (p7  ||| g6 )
+                                && (p7  ||| p6  ||| g5 )
+                                && (p7  ||| p6 ||| p5  ||| g4))
+          and    P1=p4 ||| p5 ||| p6 ||| p7
+          in
+                let
+                        val (c15,carry_out,_,_,_)=SN74F182 G0 G1 true true
+                                                           P0 P1  true true
+          							c
+                in
+                        let val (c19,c23,c27,_,_) = SN74F182 g4 g5 g6 g7
+                                                             p4  p5  p6  p7
+          							c15
+                        in
+                                (c3,c7,c11,c15,c19,c23,c27,carry_out)
+                        end
+                end
+          end;
+
+
+(* the TTL part of the ALU)
+          fun ttlALU a b c s2 s1 s0=
+          let
+                val (a7,a6,a5,a4,a3,a2,a1,a0)=split a
+          and    (b7,b6,b5,b4,b3,b2,b1,b0)=split b
+          in 
+                let
+                        val (c3,c7,c11,c15,c19,c23,c27,carry_out)=
+                                carrylookahead
+                                (generate a0 b0)
+                                (generate a1 b1)
+                                (generate a2 b2)
+                                (generate a3 b3)
+                                (generate a4 b4)
+                                (generate a5 b5)
+                                (generate a6 b6)
+                                (generate a7 b7)
+                                (propagate a0 a0)
+                                (propagate a1 a1)
+                                (propagate a2 a2)
+                                (propagate a3 a3)
+                                (propagate a4 a4)
+                                (propagate a5 a5)
+                                (propagate a6 a6)
+                                (propagate a7 a7)
+                                c
+                in (carry_out, merge 
+                        (applyALU a7 b7 c27 s2 s1 s0)
+                        (applyALU a6 b6 c23 s2 s1 s0)
+                        (applyALU a5 b5 c19 s2 s1 s0)
+                        (applyALU a4 b4 c15 s2 s1 s0)
+                        (applyALU a3 b3 c11 s2 s1 s0)
+                        (applyALU a2 b2 c7 s2 s1 s0)
+                        (applyALU a1 b1 c3 s2 s1 s0)
+                        (applyALU a0 b0 c s2 s1 s0))
+                end
+          end;
+
+(* the shift pal program for the four least significant PALS *)
+
+          fun ALU_SHIFT_PAL_fn shift f7 (f6,f5,f4,f3,f2,f1,f0)=
+          let val z= (~shift && ~f0 && ~f1 && ~f2 && ~f3 && ~f4
+                                  	&& ~f5 && ~f6 ) |||
+                                (shift && ~f1 && ~f2 && ~f3 && ~f4 && ~f5
+                                  && ~f6 && ~f7 )
+          and   h0= ~shift && f0 ||| shift && f1
+          and   h1= ~shift && f1 ||| shift && f2
+          and   h2= ~shift && f2 ||| shift && f3
+          and   h3= ~shift && f3 ||| shift && f4
+          and   h4= ~shift && f4 ||| shift && f5
+          and   h5= ~shift && f5 ||| shift && f6
+          and   h6= ~shift && f6 ||| shift && f7
+
+          in
+                (z,(h6,h5,h4,h3,h2,h1,h0))
+          end;
+
+(* the shift PAL program for the most significant PAL *)
+
+	  fun ALU_SHIFT_PAL_fn_2  shift d0 c f31 f30 f29 f28
+	   =
+		let val h28= ( ~shift && f28 ||| shift && f29) 
+		and h29 = ~shift && f29 ||| shift && f30
+		and h30 = ~shift && f30 ||| shift && f31
+		and h31 = ~shift && f31 ||| shift && c
+		and carry_out = ~shift && c ||| shift && d0
+		and z = ~shift && ~f28 && ~f29 && ~f30 && ~f31
+			|||
+		       shift && ~f29 && ~f30 && ~f31 && c
+		in
+			(z,carry_out,(h31,h30,h29,h28))
+		end;
+
+
+(* the condition code generation *)
+          fun ALU_CC_PAL_fn shift z0 z1 z2 z3 z4 carry_in data0 addr4=
+          let
+                val z=z0 && z1 && z2 && z3 && z4
+               and c=carry_in && addr4 ||| data0 && ~addr4
+          in
+                (z,c)
+          end;
+
+(* the complete ALU *)
+(* takes the current ALU state, the data on the bus and the 
+value of the address bus to return an updated ALU state*)
+
+          fun alu (alustate:ALUstate) d a=
+          let
+                val (c,f)=ttlALU (get_acc alustate)
+                                 d
+                                 (get_carry alustate)
+                                 (addressBit2 a)
+                                 (addressBit1 a)
+                                 (addressBit0 a)
+          	and shift=addressBit3 a
+          in 
+                let val ((f31,f30,f29,f28),f3,f2,f1,f0)=
+				split7 f in
+                        let val (z0,h0)=ALU_SHIFT_PAL_fn shift (dataBit7 f) f0
+                            and (z1,h1)=ALU_SHIFT_PAL_fn shift (dataBit14 f) f1
+                            and (z2,h2)=ALU_SHIFT_PAL_fn shift (dataBit21 f) f2
+			    and (z3,h3)=ALU_SHIFT_PAL_fn shift (dataBit28 f) f3
+                            and (z4,c2,(h31,h30,h29,h28))=
+				ALU_SHIFT_PAL_fn_2 shift 
+					(dataBit0 f) c f31 f30 f29 f28
+                        in
+                                let val h = merge7 (h31,h30,h29,h28) 
+                                            h3 h2 h1 h0
+                                in
+                                        let val (z,carry)=
+          					ALU_CC_PAL_fn shift
+                                                z0 z1 z2 z3 z4 c
+						(dataBit31 d)
+						(addressBit4 a)
+                                        in
+                                          ({acc=h,
+                                           z=z,
+                                           n=dataBit31 h,
+                                           v=carry,
+                                           carry=carry}:ALUstate)
+                                        end
+                                end
+                        end
+                end
+          end;
+\end{verbatim}

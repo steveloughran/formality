@@ -1,0 +1,39 @@
+%report.tex
+% the glue for everything else
+%\includeonly{simulation}
+%\documentstyle[a4]{report}
+\documentstyle{report}
+\renewcommand{\baselinestretch}{1.5}
+\begin{document}
+\parindent 0pt
+\setlength{\parskip}{3ex}
+\include{title}
+\include{abstract}
+\tableofcontents
+\chapter{Introduction}
+\input{intro}
+\input{risc}
+\input{urisc}
+\newpage
+\input{formal}
+\include{architecture}
+\include{construction}
+\include{host}
+\include{execution}
+\include{control}
+\include{alu}
+\include{memory}
+\include{specification}
+\include{performance}
+\include{conclusions}
+\bibliographystyle{alpha}
+\bibliography{report}
+\appendix
+\include{credits}
+\include{components}
+\include{building}
+\include{mon}
+\include{epld}
+\include{simulation}
+\chapter{Circuit Diagrams}
+\end{document}

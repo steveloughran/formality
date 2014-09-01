@@ -1,0 +1,82 @@
+All the pals were defined with timing constraints included.
+\begin{verbatim}All the pals were defined with timing constraints included.
+\begin{verbatim}
+(* PALS.L
+   ======
+   Definition of PALS,EPLDS..etc.
+   In ALU, address decoders, control...
+3/1/89 sal :ALU function pals*)
+(* delay for combinatorial PAL *)
+val t_pal=25;
+(* The programming for  four of the PALS in the Shift unit of the ALU *)
+val ALU_shift_PAL #(shift,f7,(f6,f5,f4,f3,f2,f1,f0),
+                z,(h6,h5,h4,h3,h2,h1,h0))=
+        forall t:nS.
+                (z (t+t_pal)==
+                        (~(shift t) && ~(f0 t) && ~(f1 t) && ~(f2 t) &&
+                        ~(f3 t) && ~(f4 t)  && ~(f5 t) && ~(f6 t))
+                                 ||
+                        (shift t && ~(f1 t) && ~(f2 t) && ~(f3 t) && ~(f4 t) 
+                        && ~(f5  t) && ~(f6 t) && ~(f7 t)) 
+        /\
+        forall t:nS.
+                (h0 (t+t_pal)== (f0 t) && ~(shift t) ||
+                                (f1 t) && (shift t))
+        /\
+        forall t:nS.
+                (h1 (t+t_pal)== (f1 t) && ~(shift t) ||
+                                (f2 t) && (shift t))
+        /\
+        forall t:nS.
+                (h2 (t+t_pal)== (f2 t) && ~(shift t) ||
+                                (f3 t) && (shift t))
+        /\
+        forall t:nS.
+                (h3 (t+t_pal)== (f3 t) && ~(shift t) ||
+                                (f4 t) && (shift t))
+        /\
+        forall t:nS.
+                (h4 (t+t_pal)== (f4 t) && ~(shift t) ||
+                                (f5 t) && (shift t))
+        /\
+        forall t:nS.
+                (h5 (t+t_pal)== (f5 t) && ~(shift t) ||
+                                (f6 t) && (shift t))
+        /\
+        forall t:nS.
+                (h6 (t+t_pal)== (f6 t) && ~(shift t) ||
+                                (f7 t) && (shift t));
+
+(* the shift PAL program for the most significant PAL *)
+
+          fun ALU_SHIFT_PAL_fn_2  shift d0 c f31 f30 f29 f28
+           =
+                let val h28= ( ~shift && f28 ||| shift && f29) 
+                and h29 = ~shift && f29 ||| shift && f30
+                and h30 = ~shift && f30 ||| shift && f31
+                and h31 = ~shift && f31 ||| shift && c
+                and carry_out = ~shift && c ||| shift && d0
+                and z = ~shift && ~f28 && ~f29 && ~f30 && ~f31
+                        |||
+                       shift && ~f29 && ~f30 && ~f31 && c
+                in
+                        (z,carry_out,(h31,h30,h29,h28))
+                end;
+val ALU_SHIFT_PAL_2 # shift d0 c f31 f30 f29 f28 z carry_out 
+               (h31,h30,h29,h28)=
+        forall t:nS.
+               (z (t+t_pal),carry_out (t+t_pal),
+               (h31 (t+t_pal),h30 (t+t_pal),
+               h29 (t+t_pal),h28 (t+t_pal)))==
+               ALU_SHIFT_PAL_fn_2  shift (d0 t) (c t) (f31 t) 
+                                         (f30 t) (f29 t) (f28 t);
+(* The Programming of the CC PAL in the ALU *)
+val ALU_CC_PAL #(shift,z0,z1,z2,z3,z4,carry_in,data0,addr4
+                 z,c)=
+  forall t:nS.
+        (z (t+t_pal)== (z0 t) && (z1 t) && (z2 t) && (z3 t)&& (z4 t))
+  /\
+   forall t:nS.
+        (c (t+t_pal)== (carry_in t) && (addr4 t) ||
+                        (data0 t) && (~addr4 t));
+\end{verbatim}

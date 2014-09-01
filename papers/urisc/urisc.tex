@@ -1,0 +1,68 @@
+\section{Ultimate RISCs}
+
+ In 1956 W. van der Poel  showed how a single instruction was computationally sufficient for all programming needs. 
+  Describing the instruction set of an existing computer, he
+ demonstrated by a process of elimination that  only   one instruction  was actually needed \cite{poel:urisc}.
+ The instruction was to subtract a value in memory from an accumulator, rewriting the result back to the memory location.
+ If the number subtracted was bigger than the accumulator then the next instruction was skipped. 
+Bearing no resemblance to common instructions, this Reverse Subtract instruction would be inherently inefficient. This is because of the large number of instructions needed to perform any useful operation. 
+ 
+My project was originally intended to be an implementation of a computer to execute this instruction.
+However, I changed my plans on reading an article in the 
+June 1988 edition of Computer Architecture News \cite{jones:urisc}.
+This article described how a computer could be built using an instruction to move
+the contents of one memory location to another address.
+Active elements within the computer's memory provide
+program control and mathematical functions.
+This `MOVE' instruction was  far more intuitive, and more efficient  for a computer to support,  so I decided to design and build such a computer. 
+It offered the following advantages over the older design:-
+\begin{itemize}
+\item the article provided a much clearer description of the computer
+\item machine code programs should be easier to produce
+\item the performance of such a computer should be faster due to the ability to
+support operations other than subtraction.
+ \item it is a  flexible architecture, permitting much further expansion.
+\end{itemize}
+
+{\samepage
+During the year  research  revealed the existence of three previous implementations of a single instruction computer. Two were based on the van der Poel instruction, while the third was MOVE based ---even though it predated the article I used.
+\begin{enumerate}
+
+\item Negev University, 1976 \cite{tabak:risc}\\
+		A MOVE based instruction with four index registers was
+		implemented in an eight bit wide computer.
+
+\item Manchester University, 1987\\
+		A final year CS undergraduate built a computer based upon
+		the reverse subtract instruction. 
+
+\item Philips Research labs, 1987 \cite{slav:oisc}\\
+		A team of people implemented van der Poel's  computer, 
+		with a PL/0 interpreter to execute pascal code.
+		 The performance of this was claimed to be significantly slower 
+		 than a M68000 based system.
+
+\end{enumerate}
+}
+
+A major factor separating my design from these is the fact that 
+the architecture was specified formally. This provides:-
+\begin{itemize}
+\item
+A specification for software developers to use.
+\item
+A  simulation of the computer
+\item
+The ability to verify the hardware against the specification.
+\end{itemize}
+A fellow student has produced a compiler for the 
+Ultimate RISC. 
+This means the final product  consists of a 
+computer interfaced to a host, which can cross-compile Pascal programs 
+ onto my computer.  The design process therefore included 
+ consultations with this other student, to enable 
+the machine and the compiler to work together. 
+While more akin to 
+how an actual computer would be produced than a hardware project 
+alone, it  meant  all design decisions were  the result of 
+heated  discussion. 

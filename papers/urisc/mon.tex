@@ -1,0 +1,239 @@
+\chapter{Using the Monitor Program}
+
+This appendix describes how to to use the monitor program to control the Ultimate RISC.
+
+To make use of the monitor it is best to have read the main body of the project report, paying special attention the the host interface.
+
+One should also consult the CS department report on using the M6809 monitor \cite{cs2:mon}.
+
+\section{Main Points}
+This monitor program is derived from the 6809 monitor, as it uses this processor to communicate with the Ultimate RISC.
+Some of the basic 6809 commands are still available, although  renamed.
+
+The commands it supports range from high level commands to load and run programs on the Ultimate RISC, down to basic signal manipulation.
+
+While the monitor  examination of the Ultimate RISC's registers, these
+are only a copy of the actual registers.
+An explicit command to get an updated copy of these registers must be issued whenever the current state is required.
+
+\section{Files}
+
+The monitor consists of a number of files stored in the directory `{\bf c::sal}'.
+The main 68000 based program is titled {\bf monitor}.
+The 6809 Virtual PIA program is stored in the file {\bf pia5.obj}.
+Access to these two programs, and the two files {\bf registers} and {\bf states},
+is required to use the monitor.
+
+\section{Using the monitor}
+
+An APM with a 6809 board  and Wyse terminal  is a prerequisite to running this program.
+To start using the monitor issue the command
+\begin{verbatim}
+sal:monitor
+\end{verbatim}
+After a short pause the monitor screen display will appear.
+This comprises a status display at the top of the screen with a command region below .
+One status line shows the current state of the Control Unit as a mnemonic name.
+The line beneath this gives the state of all the I/O lines; a signal is 'true' when its name appears in inverse video.
+This display is updated after every command.
+
+The command {\bf help} will list  all  other available commands.
+
+To stop the monitor type either {\bf quit} or control-Y.
+
+\section{States}
+The Control Unit can be in any one of thirty-two states.
+Only about half of these are actually used, and the unit should never enter any of the other states.
+The most important states are listed below.
+\subsubsection{Halted}
+This is the power up state, also entered after a memory read is prevented by the memory unit.
+
+\subsubsection{Waiting}
+The control unit is ready and waiting for use.
+It can be instructed to:-
+\begin{itemize}
+\item  read and write registers
+\item  read and write memory
+\item  execute instructions
+\end{itemize}
+
+\subsubsection{No Board!}
+The monitor can not detect the presence of the Ultimate RISC.
+It may not be installed or powered up.
+
+\subsubsection{Memory Access States}
+Any state with the name {\bf read-X} or {\bf write-X} is part of the host memory read
+or write cycles. 
+These should not be encountered during normal use.
+
+\subsubsection{Unknown States}
+Any state named {\bf unknown-XX} is not part of the programmed state machine.
+If any of these states appear then it is probably due to a metastability problem;
+if a known state can not be reached then a power down reset is obligatory.
+
+\subsubsection{Instruction Execution}
+Other named states are steps in the process of instruction execution.
+
+\section{Basic Commands}
+
+\subsubsection{Register Manipulation}
+The monitor's copy of the registers can be listed with the command {\bf registers}.
+This lists each register name with its value in hexadecimal.
+To update this copy with the Ultimate RISC's current state, use the command
+{\bf get}. 
+This lists the registers after updating them.
+
+\subsubsection{Memory Access}
+A region of memory can be examined by the command:-
+\begin{verbatim}
+     read <from> <to>
+\end{verbatim}  
+This gives a list of the contents of the memory locations between the two addresses.
+Any memory location  with a horizontal line in place of a numeric value for the contents is a write only address.
+
+To change an address in memory use the command
+\begin{verbatim}
+      write <address> <value>
+\end{verbatim}
+
+To download a file into memory, using the format listed in this report, issue the command
+\begin{verbatim}
+      download <filename>
+      \end{verbatim}
+
+\subsubsection{Instruction Execution}
+Instruction execution can be controlled either by the  host or the on board clock.
+To control instructions from the host issue the command
+\begin{verbatim}
+	execute <count>
+\end{verbatim}
+The specified number of instructions will be executed, unless a halt state is reached earlier. 
+If a zero count is given then instructions will be executed until halted.
+A count of the number of instructions executed is provided afterwards.
+
+To let the Ultimate RISC execute instructions at full speed, issue the command
+{\bf spin}. 
+
+To stop instruction execution at any time  press control-C.
+
+\section{Low Level Commands}
+
+\subsubsection{Signal Manipulation}
+The output signals can be directly toggled by entering the signal name followed by a zero or a one.
+This updates the state display, but the changes are not sent to the ultimate RISC until explicitly transmitted with the command {\bf tx}.
+
+\subsubsection{Clock Control}
+A single clock pulse can be transmitted to the Ultimate RISC by the command {\bf step}.
+To place the Ultimate RISC into freerunning mode  clear the {\bf freerun} signal and transmit the change.
+
+\subsubsection{Low Level  Register Manipulation}
+To alter the value of a register, use the command:-
+\begin{verbatim}
+      set <register> <value>
+\end{verbatim}
+Only the address and data registers are currently reloaded, although the control unit can be reprogrammed to load the instruction register as well.
+This copy must be shifted back to the shadow registers by the command {\bf put}.
+The Control Unit must then be instructed to load the address and data registers from
+their shadows; the command {\bf store} attempts to do this.
+
+
+\subsubsection{Memory Testing}
+Two commands are provided to test the correct operation of memory.
+They both write a pattern of bits into a memory region, then read back result to log any differences.
+This is useful in testing for the correct operation of both the control unit and memory.
+
+To test an arbitrary region of memory use the command:-
+\begin{verbatim}
+     memtest <from> <to> <pattern>
+\end{verbatim}
+This writes the pattern into all the memory locations, unless the pattern is equal
+to the start address.
+In this special case the pattern is incremented so it is always equal to the location written to.
+This provides an effective test for folded memory locations.
+
+An extended test of RAM is also available:-
+\begin{verbatim}
+      soak <repetitions>,<failures>
+\end{verbatim}
+This repeatedly tests RAM with patterns of alternate bits and addresses until
+either the specified number of repetitions has been completed or the stated number of failures has been exceeded.
+If either of the the two parameters is zero then that parameter is ignored ---either repeating indefinately or ignoring the number of failures.
+
+\subsubsection{6809 commands}
+Most of the 6809 commands have been removed, with only four still supported.
+They are:-
+\begin{description}
+	\item[obj] download object code file
+	\item[run] execute a program (was {\bf go})
+	\item[dump] dump memory region
+	\item[byte] write a byte to memory
+	\end{description}
+If one is experimenting with 6809 programs the command {\bf initialise} is useful;
+this attempts to reinitialise the PIA port and common variables.
+	
+\section{Maintenance}
+The IMP source code for the monitor is in the file `{\bf sal:monitor}'.
+The 6809 assembly language program is in `{\bf sal:pia5.asm}'.
+There are also two files to describe the states and the registers.
+
+\subsection{States}
+This file contains thirty-two lines, each listing the mnemonic name for a state.
+It should be updated with every reprogramming of the control EPLD.
+
+\subsection{Registers}
+This file records the name of each register and their positions with the SSR chain.
+Each register IC is only eight bits wide, so a thirty two bit register is built out of four SSRS.
+These sub-registers do not have to be adjacent to one another in the SSR chain.
+
+The file starts with a number listing the number of registers in the chain,
+followed by the list of sub-registers, one to a line.
+Each sub-register is listed with the name of the register and the byte within that register which it is, in the range 0 to 3.
+The order of the registers in the file is that of the SSR chain,
+with the register connected to the host's SDI input first in this list.
+
+\section{Error Messages}
+There are four  messages which the monitor issues, indicating something
+is not quite right with the Ultimate RISC.
+They may be followed with some technical detail indicating what the monitor was trying to do, and what the response is.
+
+{\samepage
+\begin{verbatim}
+      `0' not passed through SSR chain
+                    or 
+      `1' not passed through SSR chain
+   \end{verbatim}
+These messages state that control signals have not propagated all the way through the chain of registers.
+The response to either of these should follow the following sequence:-
+\begin{enumerate}
+\item try to {\bf get} or {\bf put} the registers a few more times
+\item check the board is powered up and plugged in
+\item check the number of registers installed matched that stated in the file `Registers'
+\item push all the registers firmly into their sockets 
+\end{enumerate}
+}
+
+\begin{verbatim}
+       Not in the right state!
+\end{verbatim}
+The control unit is not in the correct state for the required operation ---usually involving a memory access.
+Try issuing the {\bf step} command a few times to see if the waiting or halted states can be reached.
+If the step command has no effect then the board must be reset.
+
+\begin{verbatim}
+	Attempted SSR writeback!
+\end{verbatim}
+This error should never occur in normal use, unless manually manipulating the output lines.
+The current control signals, if transmitted, could have caused the SSR registers to try driving their inputs ---a dangerous operation which has been automatically intercepted.
+Consult the AMD databook to see why this should be avoided \cite{amd:logic}.
+
+
+
+
+
+
+
+
+
+
+
+ 

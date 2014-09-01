@@ -1,0 +1,31 @@
+The operating state of the Ultimate RISC is defined as a number of records.
+One gives the state of the execution unit, another that of the ALU.
+The entire machine is then represented as the two combined with a function to describe RAM.
+\begin{verbatim}
+(* 	states.SIM	v1.6
+	============
+
+         (* State description for the simulation *)
+
+          type EXstate={pc:Int15, x:Int15, y:Int15,halt:bool};
+
+          type ALUstate={acc:Int32,z:bool,n:bool,v:bool,carry:bool};
+
+          type State={mem:Int15->Int32,
+		exstate:EXstate,
+		alustate:ALUstate};
+
+          (* functions to extract individual fields}
+          fun get_mem ({mem=m,...}:State)=m;
+          fun get_ex ({exstate=e,...}:State)=e;
+          fun get_alu ({alustate=a,...}:State)=a;
+          fun get_pc ({pc=p,...}:EXstate) =p;
+          fun get_x ({x=x,...}:EXstate) =x;
+          fun get_y ({y=y,...}:EXstate) =y;
+	  fun get_halt ({halt=h,...}:EXstate)=h;
+          fun get_acc ({acc=a,...}:ALUstate) =a;
+          fun get_carry ({carry=c,...}:ALUstate) =c;
+          fun get_zero ({z=z,...}:ALUstate) =z;
+          fun get_negative ({n=n,...}:ALUstate) =n;
+          fun get_overflow ({v=v,...}:ALUstate) =v;
+\end{verbatim} 

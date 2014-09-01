@@ -1,0 +1,112 @@
+
+\section{Formal Specification of Hardware}
+
+There are a number of ways one can describe a computer.
+The English Language is useful for providing a brief and informal description to another person.
+A circuit diagram together with component data sheets tells someone with hardware knowledge exactly how to build one. 
+Such a low level description does not  describe how the system would appear to a programmer.
+Techniques have also been developed to describe the operation of control sections at the register transfer level. This is useful to microcode and control unit  designers. 
+Diagrams are also used at most levels to convey  information.
+
+There is no real correlation between all these views of a design. There is no way of proving that the hardware will do what the architecture states until it has actually been built.
+Of course, people are experienced in converting a design from one level to another, but there is always the possibility of their making a mistake. 
+If an error is only detected when a prototype is built it will have wasted valuable time.
+If an error only surfaces later in a product's  life cycle, when large numbers have been produced, then it could be very expensive to correct. 
+With the trend towards embedding microprocessors within safety critical systems,  any fault can be potentially disastrous. 
+This has raised interest in  applying formal specification techniques to hardware design.
+
+Formal specifications   mathematically describe a system at different levels of abstraction.
+At a very high level one defines entities such as `memory', giving their basic properties but without stating  how they are to be implemented.
+By relating such entities together, the architecture of a computer can be described. 
+Top down design of the system is then  performed by expanding the internal description of each entity.
+As long as the interfaces remain the same this can be done on a module by module basis.
+Each module can be subdivided until specified as a collection of related components. This process can be continued until even the individual gates of a VLSI IC are described.
+
+With a precise mathematical description one can   prove that system will have certain desired properties. For example, a memory which stores different data at different locations, or the equivalence between the mathematics a computer performs
+and the functions required by international standards.
+The consistency between different specifications can also be proven.
+This is  important as if one can show that the architecture and the gate level specifications are equivalent, and also that the architecture has certain properties, then one can infer that  the gate level design  behaves likewise.
+If this low level description can then be built, then it is highly likely that the finished product will also behave as specified.
+
+{\samepage
+{\bf What might formal methods do for hardware design?}
+\begin{itemize}
+\item increase the likelihood of first time correctness
+\item increase confidence in the reliability of a system
+\item provide a baseline description for software developers to design their software around.
+\end{itemize}
+Given the cost and turnaround time of some hardware fabrication processes, time, money and effort  is well spent proving the correctness of a design prior to construction.
+}
+
+{\bf What can't formal methods   do yet?}
+\begin{itemize}
+\item
+Make the design process faster. \\
+It is currently very slow to specify a system, since one must start from scratch describing components and operations. Proving the correctness of any specification consumes large amounts of   time of both people and computers.
+\item Accurately model electronic circuits.\\
+While digital circuits are normally viewed as communicating with binary data, no signal can exist in purely two states. 
+There are problems such as crosstalk and fanout which  cause a circuit to behave unreliably.
+\item
+Guarantee a system will always work.\\
+A specification must include clauses that it will only hold if certain preconditions ---e.g. supply voltages and signal setup and hold times--- are met.
+If these conditions are not satisfied then the system's  behaviour will be nondeterministic.
+\end{itemize}
+When specifying VLSI designs, the process can be continued down to individual gates. 
+These gates  can be   described and modelled; the operation of more complex structures inferred from them.
+It is more difficult describing how systems behave when  building a system from larger components only described in data sheet form. 
+One must respecify the data sheets in the notation  used, and will always have to rely upon the correctness of the data sheet and the respecification.
+Certain equipment manufacturers are said to be looking at formal specification as a way of describing components to be ordered from subcontractors. 
+This will be useful as rigorous product acceptance criteria. 
+It may also mean that in the future component manufacturers will supply formal specifications of their products.
+This will be of use only if standard notations are used.
+
+
+There have been to my knowledge two other microprocessors which have been formally specified \cite{birt:vlsi}. The Viper-1 microprocessor was a government research project to produce a reliable microprocessor for military applications. Another microprocessor was specified in Cambridge, as an exercise in specification, and only later actually built.
+The former of these bears quite a resemblance to my design, even though I had no knowledge of the Viper-1 when designing my computer.
+\subsubsection{The Viper-1 Microprocessor}
+Designed at RSRE in Malvern, 
+the notation used was HOL, which originated in the Cambridge Computing Laboratory. 
+With a goal of high reliability rather than performance and also due to the limitations of current specification methodologies, the processor is not much more complex than my own.
+\begin{itemize}
+\item 
+32  bit data bus
+\item 20 bit address bus (with a separate peripheral address space)
+\item four registers - {\bf A}, {\bf X}, {\bf Y}, {\bf P}
+\item 32 instructions---
+\begin{itemize}
+\item
+16 comparison instructions
+\item 13 ALU operations
+\item 2 data fetch operations
+\item 1 program control
+\end{itemize}
+The destination can be selected for any result, and includes a conditional
+write to the program counter.
+\item Neither interrupt nor stack mechanisms.
+\item Static RAM for extra reliability.
+\end{itemize}
+First specifying the processor at an architectural level, the design was reified down to the microstates of instruction execution.
+A manual proof of equivalence took three weeks.  
+A later automated proof took six person-months and found   mistakes
+undetected manually.
+Finally an ELLA description of the Viper-1 was made and simulated against the predictions of the specification. 
+This description was sent to different subcontractors to actually fabricate on silicon.
+By having multiple versions of the same processor there is less risk of fabrication dependent problems. 
+Safety critical applications can then use multiple independently sourced microprocessors to verify all results.
+Multiple sourcing proved a good decision as one of the original microprocessors so fabricated did not work. 
+There are reported claims that this was due to one of the subcontractors attempting to manually optimise the ELLA description, which negated all the previous attempts to ensure reliability.
+
+From this actual example one can see that:-
+\begin{itemize}
+\item there is currently a tradeoff between reliability and high performance
+\item for a fully reliable design there should be no manual intervention, as this seems to encourage  mistakes.
+\item the use of Formal Methods is a slow process.
+\end{itemize}
+
+Of course, one  can not be sure how reliable  automated proof and fabrication processes are, and thus absolute correctness can not be guaranteed. 
+The correctness of computers designed using automated proof systems is still likely to be much better than those designed informally.
+
+
+
+
+

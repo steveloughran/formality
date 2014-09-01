@@ -1,0 +1,113 @@
+
+\chapter{Construction}
+
+This appendix describes the actual construction of the Ultimate RISC.
+The layout of the board is detailed, followed by a list of construction problems.
+
+\section{Layout}
+
+Building a board to operate at high speed, it was of the utmost importance to minimise the lengths of connecting wires.
+This reduced the propagation delay and the likiehood of cross-talk or transmission line effects.
+
+TTL devices can draw a large amount of power, and so each IC had to be decoupled with a small capacitor across the power and ground pins. 
+The entire board also needed decoupling in the form of a larger capacitor across the power supply inputs.
+
+The computer was designed to connect to a M6809 board within an APM cabinet.
+This fixed the construction area to that of a double size Eurocard.
+The  wire wrap board provided subsurface power and ground planes to reduce noise and ease power distribution.
+With seventy ICs to place on this board careful packing was necessary.
+
+Wire wrap sockets  were used to hold all ICs. This enabled easy insertion and removal of devices and permitted wire wrapping.
+
+The connection between the Ultimate RISC and the Real Time Board was via  a Eurocard edge connector. 
+This had to placed at the bottom rear of the board ---as seen from the front of the cabinet--- to enable it to be connected to the PIA ports.
+It was this fact which determined the layout of the rest of the board (figure~\ref{fig:layout}).
+
+\begin{figure}
+\vspace{10cm}
+\caption{Board Layout}
+\label{fig:layout}
+\end{figure}
+
+The host inputs had to be latched and then passed to the Control Unit, which had therefore to be adjacent to the connector and latches.
+The common clock was a highly critical signal, and all devices which received it needed to be as close together as possible.
+This placed the PC,  the address decoder and the clock oscillator all near to the Control Unit.
+
+The Execution Unit consisted mainly of sixteen registers. 
+These were easiest lain out together in a large block, achieving high density and aiding wiring of the SSR chain.
+The unit most tightly coupled to the  Control Unit, it was placed immediately above this EPLD.
+The operand index addition was performed by a row of ICs above these registers.
+
+The two other units needing placement were the ALU and the RAM.
+The RAM was only four, albeit large, chips, and were easily fitted into a spare 
+area at the base of the board, next to the address decoder.
+
+The ALU was allocated the top third of the card, with its interface to the data bus at the base of this region.
+The longest distance which signals travel to reach this unit is approximately 15cm, which should cause an extra delay of under a nanosecond.
+
+Two light emitting diodes were placed above the execution unit, where they are easily visible.
+These provide feedback as to the operation of the board, lighting up when power is supplied and flickering during operation.
+The top LED emits a green light whenever the board is not halted.
+The lower LED is connected to the clock signal. 
+It flashes whenever data is being transferred between this boad and the host, and is bright red during instruction execution.
+
+A second edge connector was inserted into the board. 
+This was purely to hold the board in place while being tested on an extender card.
+
+\section{Power Supply}
+
+The Ultimate RISC   draws four Amps of current, a power consumption of 20~Watts.
+This is mainly due  to the requirements of the AMD registers, which contain ECL logic internally. 
+This power has to be dissipated by these devices, which can become almost too hot to touch.
+The power consumption is too large to be supplied by the single thin wire from the 6809 board.
+Instead the Ultimate RISC has to be connected to an external power supply.
+This also provides a convenient method of resetting the  computer.
+It also created a few unforseen problems.
+
+\section{Construction Problems}
+The following problems all caused delays during construction.
+
+\subsubsection{Faulty EPLD programming}
+Mistakes made in the design of the EPLD programs for the Control Unit and address decoder caused regular problems. 
+Some mistakes caused the computer to behave unreliably, or only partly correctly.
+For example, an early version of the control unit moved the source to source, an operation which is not of much use.
+The EPLD Software also lacked reliability. 
+This is most apparent when using the state machine design program.
+This program ignores the definition of  output transitions for a particular state, and yet will not produce a state machine at all if this state is not included.
+I was forced to retain this state but bypass it during  instruction execution.
+Sometimes, however, the EPLD suffers from metastability problems, and in these situations the state can be reached; a power down reset is then obligatory.
+
+\subsubsection{Faulty Wiring}
+A few wrongly connected wires created difficulties.
+An accidental short of the output enable control of the Data register prevented memory read accesses from working for a whole week. 
+Mis-wired power and ground connections on an IC also melted a buffer IC; a replacement
+was easily obtained.
+
+\subsubsection{Power Supply Difficulties}
+At one stage I was confused for a number of days by the nondeterministic behaviour of the computer. 
+I suspected this was due to EPLD problems, and wasted much time trying to verify their operation.
+In fact, as was pointed out to me, an overloaded  power supply was only producing
+a potential of 3.7~Volts between power and ground.
+
+Upgrading to a higher rated power supply solved this problem, but created a new one.
+One one occasion this power supply had been switched on while repeated attempts were made to boot up an unreliable APM. 
+A current loop must have been created as the power supply attempted to drive the entire APM via the ICs on my computer.
+I noticed the problem by the smell of solder, and then proceeded to burn my hand upon an AMD SSR. 
+Suprisingly, these registers still worked later.
+
+\subsubsection{Avoiding Construction Problems}
+It is worthwhile studying these problems to see if the application of formal methods on a larger scale could have prevented them.
+
+Mistakes in the EPLD programs which I had made myself could have been eliminated if the operation of the computer at this microstate level had been specified and verifed against the higher level specificatio.
+It could not prevent the problems caused by the EPLD programmer itself.
+If there was enough confidence in the state machine specifications, then perhaps these could have been implemented in a PAL instead.
+
+Faulty wiring can be prevented by having  a machine which can reliably wire up a correct design. There do not seem to be one of these available within the department;
+even the BEPI robots's products have to be checked.
+
+Formal Methods would  not have provided any defence against the power supply problems; the devices were operating outside their stated limits. 
+If I had had more confidence in my state machine design I may have come to suspect the power supply much earlier.
+
+Note that there were no problems  with the construction of the those parts of the ALU which were fully specified ---the mathematics seem to be as predicted.
+
+

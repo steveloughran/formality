@@ -1,0 +1,84 @@
+\section{The Monitor}
+
+The simplicity of the host interface is such that a sophisticated monitor 
+program is needed to make any use of the Ultimate RISC.
+The development of this monitor program went hand in hand with the building 
+of the computer itself.
+When a new feature was built into the hardware, it was first tested with the
+existing monitor features, and once the protocol was established, built 
+into higher level routines.
+
+The facilities offered include
+\begin{itemize}
+\item loading and executing programs on the 6809 board.
+\item manual manipulation of the host interface lines.
+\item reading, modifying and copying back the registers of the Ultimate RISC.
+\item single stepping the computer's clock.
+\item reading and writing memory locations ---including registers
+\item memory testing
+\item downloading code into the Ultimate RISC's memory
+\item executing single instructions, or until halted.
+\item printing characters on behalf of the Ultimate RISC -emulated I/O
+\end{itemize}
+
+The monitor is divided into two programs, each executing 
+concurrently on separate processors.
+
+\subsection{A Virtual PIA}
+The Ultimate RISC's host interface is  connected to the Peripheral Interface
+Adaptor of the APM 6809 Processor Board. While most of the memory is shared 
+with the 68000 processor this is not the case for I/O devices.
+A short 6809 Assembly Language program is used to provide a virtual PIA for 
+the 68000 microprocessor to use. 
+This copies the input port of 
+the PIA to a shared memory location, and uses data in other
+ memory locations to update the PIA registers.
+
+The first three memory locations of the 6809 processor's address space are dedicated to this inter-processor communications:-
+\begin{description}
+\item[0] : the data to be written
+\item[1] : the PIA register(0--3) to write to, +128\\
+set to zero after the write has been completed
+\item[2] : the inputs to PIA port A
+\end{description}
+To use the PIA this virtual PIA program must be executing. 
+The 68000 program must write the data first, followed by the register number+128.
+This high bit is used to indicate a valid write.
+When the contents of address 1 are cleared, the request has been processed and the copy of port A updated. The 68000 can use this to poll for the completion of an operation, and test the operation of the 6809 board.
+
+This method of synchronisation in not particularly fast.
+When controlling the clock from the host, the maximum clock speed is only 1\ KHz.
+
+\subsection{The Main Monitor}
+This is an extension of the CS2 6809 monitor, from which the Command Line Interface and the 6809 control operations are all taken.
+It has been extended to form a 2000 line IMP program with many more commands.
+There is also a status display at the top of the screen.
+This shows the state of all the inputs and outputs on the host interface and 
+the state of the control unit   as a mnemonic.
+
+To provide flexibility in development most of the  data about registers and states are kept in separate files. 
+This allows different configurations of both the control unit and of the registers to used with minimal effort.
+
+The only problem with the monitor is that it is somewhat isolated from the Ultimate RISC. 
+One could increase the speed of certain sections by providing increased support from the 6809 portion of the monitor, which is the hardest part to write and debug.
+The registers which can be examined and modified are only copies of the actual registers, and one has to remember to copy these registers backwards and forwards.
+The status line is of more use to hardware development than for software.
+However, the monitor does provide access to the Ultimate RISC, and although inefficient and unwieldy, it is better than no monitor at all. 
+
+
+\subsubsection{Code File Format}
+The format of files which can be downloaded is designed to support both
+object code produced by the compiler and hand coding:-
+\begin{enumerate}
+\item The file is stored as a text file, with no restrictions on naming
+\item all numbers are given in hexadecimal, one to a line
+\item any line beginning with `{\bf !}' is a comment, to be printed during
+downloading
+\item code sequences are represented as:-\\
+address\\
+code length\\
+(code)\\
+\item There is no limit upon the number of code sequences in a single file
+\end{enumerate}
+The downloading process is extremely slow at only four words per second, so the use of comments provides essential feedback as to the state of the transfer.
+

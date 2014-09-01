@@ -1,0 +1,165 @@
+\chapter{Conclusions}
+
+One can draw a number of valuable conclusions from this project, regarding
+the architecture, my implementation of it and of the r\^{o}le of formal methods in  hardware design.
+
+\section{My Implementation}
+My implementation of the Ultimate RISC provides a thirty-two bit wide processor and  memory on a single APM board. 
+The only use made  of VLSI in the design was the memory chips. 
+
+Its method of communicating with the APM, while simple and effective, is extremely slow.
+The host can only perform a small number of memory accesses per second, making data transfer a time consuming task. 
+This interface is independent of any particular host; with the appropriate software it can be connected to many common microcomputers.
+
+It lacks any genuine I/O facilities, although these can be emulated by the monitor program. 
+
+There is no means  of addressing data of any size other than thirty-two bit words. 
+Data has to be stored aligned with the long memory words, or packed and unpacked with difficulty.
+This makes storage of data items such as strings and bit-vectors highly inefficient, which is a pity given the small amount of memory available.
+
+Of major inconvenience   is the inability of instructions to read  the
+{\bf PC}, {\bf X} and {\bf Y} registers, or write directly to the {\bf Accumulator}. This could be rectified by adding another fourteen tristate buffers - two each for the Execution Unit's registers, and eight to multiplex the {\bf Accumulator} inputs. 
+
+These extra demands do not actually increase the functionality of the computer in any way. 
+All the problems can be solved in software alone, using up a bit more memory.
+ Hardware extensions would make the computer larger and more expensive.
+
+Designing a computer is a matter of trading off the requirements for hardware cost and complexity with those for performance and ease of programming.
+Should extra components be added to make programming slightly easier?
+I was persuaded to include indexed instructions because of the immense difficulty of writing reliable self-modifying code. 
+The requests for bi-directional access to registers by programs I declined because the cost outweighed the gains.
+
+The Ultimate RISC is meant to be simple but powerful, and in some respects it meets these objectives.
+
+I could not have  specified, designed and built a more complex machine within the timespan of a single year.
+It would not have been possible for me to build a computer with more features and still have it fit on a single APM board, or cost within the budget.
+It would have probably been possible to build  a more complex computer if I had halved the width of the data bus and all associated parts. 
+This would have reduced the performance drastically for very little benefit.
+This fact is in itself  a justification for the entire {\em less is more} philosophy of RISC architecture, which this project has taken to its very limit.
+
+\section{Further Development}
+
+There is little further development which can be performed on the single board.
+By reprogramming the control unit one could experiment with features such
+as delayed branching and skipping, which could  save a single cycle from each instruction. 
+Other experiments could be made with a bit of judicious rewiring.
+
+\subsection{Extended Indexing}
+Currently the most significant bit of any address is ignored, due to the small amount of memory available. 
+This spare bit of every operand could be diverted to the selection of indices, to allow the X and Y registers to be added to either operand. 
+This may well increase the flexibility of the indexing scheme.
+The reason I have not already done this is to maintain consistency between the computer and its specification.
+
+Since a full function ALU is used to perform the adding, I could also experiment with different functions between the index registers and the operand addresses.
+The boolean operations might be useful to implement some kind of protection mechanism to prevent access to certain  memory areas. 
+Some means of specifying the function to be applied is needed, and rather than use up valuable instruction space, I could add a register which would be loaded up with the function control signals.
+ Of course, any of these operations could equally well be done using the existing ALU so  there is no real justification for 
+this modification other than idle curiosity.
+
+\subsection{A Floating Point Unit}
+
+While most commercial floating point coprocessors are  tightly coupled to the appropriate scalar processor, Wietek are said to manufacture a floating point unit (Wietek WTL 1167) which can be memory mapped into a microprocessor's address space.
+ It should  be possible to interface such a device to the Ultimate RISC. 
+The only drawback is that it would have to be placed onto a second board, which would increase communications delays and require much extra wiring. If the co-processor had an access time of longer than the current ALU then the cycle time of the entire memory would have to be increased by including wait states within the control unit. 
+This may be offset by the ability to process floating point numbers at speed.
+
+\subsection{Extended Addressing}
+
+If  expanding onto a second board,  it would be useful to add extra memory, be it RAM or EPROM. It is in fact possible to increase the address space of the computer to sixteen bits merely by changing eight wires. 
+The execution unit is capable of processing sixteen bit numbers, with the {\bf X}, {\bf Y} and {\bf PC} registers being this length. The only 15 bit quantities are the operand addresses of instructions. 
+These will have to be added to one of the index registers to give a full size address. In this way the index registers provide a virtual address extension of a 32K Word area into a 64K Word real memory. 
+
+\subsection{Software Support}
+There is no point in extending the hardware capabilities of a computer if it can not be well supported in hardware. 
+The main software environment for the Ultimate RISC is not an assembler but a PASCAL compiler. 
+This would have to extended to take full advantage of any rebuilding.
+
+It would be worthwhile developing the monitor program, to provide more powerful I/O
+facilities, such as file handling. If programs on the Ultimate RISC could access data in files, then the small amount of memory available would be less of a limitation.
+ 
+ \section{The MOVE architecture}
+\subsection{The Advantages}
+The Single Instruction Computer is the simplest computer one can describe as having a von Neumann architecture. It has both a memory for programs and data, and a unit which fetches and executes instructions.
+
+Making all instructions memory to memory is of use in applications which, rather than being computation intensive, need to move a large amount of data around quickly. 
+These  include image and text manipulation.
+I have also heard of claims that this architecture is of use in AI applications \cite{mills:prolog}. 
+This is not as far fetched as it seems when one considers the amount of time which functional programming languages such as LISP and ML spend performing garbage collection upon heaps. AI programs do not tend to exhibit the same {\em locality of reference} as traditional programs have, upon which many methods of increasing performance rely on.
+
+It is an utterly flexible architecture. Since all functional units are memory mapped, one should be able to pick-and-mix the units to use for a particular application.
+A floating point unit could be added for mathematically intensive operations. Display, communications and other I/O connections could be added to produce a standalone system. 
+One could even experiment with more unusual units, such as an array processing area of memory.
+
+As more functionality is provided the r\^{o}le of the control and execution units becomes relegated to that of routing the results from one unit to the inputs of another. 
+The rate of transmission becomes limited by the bandwidth of the single bus. 
+One could improve the throughput by storing the program in a separate area ---a Harvard Architecture---, but then it would not be possible to experiment with self-modifying code. This might be useful if one wished to use the computer in a Digital Signal Processing application, where   operations were to be performed on a stream of data at  high speed.
+
+The point is that while communicating with external units normally causes performance degradation, this is not the case with this architecture. Access to any unit should take equal time. 
+This may not be so much a feature as the major drawback of this architecture.
+ The performance of a single instruction computer will tend to be less than processors containing a floating point ALU very tightly coupled with their integer processor.
+This seems to be   a common feature of many  recently announced microprocessors  whether RISC or CISC e.g Intel i860 \& i486, Motorola 68040 \& 88000, MIPS R3000 \& R3010. 
+
+The throughput of the execution unit could be increased by pipelining it. 
+Using multi-port memory would enable two read accesses and a write access to take place concurrently, so three instructions could be overlapped.
+ As well as increasing the hardware cost and complexity, this would produce problems such as delayed branches and skipping, and read after write conflicts. 
+
+\subsection{The Disadvantages}
+
+Being such a simple implementation of the von Neumann architecture, it is completely at the mercy of its infamous drawback, {\em Memory Bandwidth}.
+The limiting factor of this design is the speed of memory accesses.
+Most computers, especially mainstream RISC architectures use register-register operations almost exclusively. 
+Memory accesses are often performed through a cache, which can read or write a number of locations in a single burst.
+This tends to bias these processors to applications where more then one operation is to be performed on a single data item.
+
+With every instruction in an Ultimate RISC requiring three memory operations, almost the entire bandwidth of memory is consumed by a single execution unit.
+This would makes it difficult to share the bus with other devices such as a DMA controller. 
+Impressive performance figures can be achieved by using very high speed memories, but most systems use larger quantities of slower memories.
+While caching can be used to accelerate accesses to traditional inactive memories, any addressing of active memory elements would have to bypass this cache, and so
+reduce the gain.
+
+
+\subsection{VLSI Implementation}
+
+While this is a compact and effective design to build out of MSI logic, the future of high performance computing  lies in VLSI. 
+In these designs off-chip communications are to be avoided wherever possible, propagation  delays being an order of magnitude bigger than for internal connections.
+ In VLSI one benefits by placing as much functionality upon a single chip, rather than distributing it across a number of ICs.
+
+Implementing an Ultimate RISC in VLSI would not be difficult at all, and take up much less area than any other 32-bit microprocessor would. One could then include on the same substrate an area of RAM and a number of functional units.
+Such a computer would still need access to external memory, slowing it down some of the time.
+
+If the area of a single control and execution unit is small enough, one could fit a number of them onto a single chip. 
+Extra functional units could be provided to support interprocessor communications ---a region of shared memory or special channel addresses.
+While this may not offer  more power than available multiprocessor designs, it could be used to make more efficient use of functional units by sharing them among processors.
+Consider: the ALU is only ever active during the write cycle of an instruction alone. It is therefore unused at least 2/3 of the time.
+If three execution units were provided with their own registers  multiplexed into the combinatorial part of the ALU during their individual write cycles, 
+then by operating the three units exactly one instruction phase apart, the ALU could potentially be kept  100\% busy. 
+
+Another possible application of a VLSI version of the Ultimate RISC would be as part of a standard cell library, for then the full flexibility of the architecture becomes apparent. 
+A designer of an Application-Specific Integrated Circuit could decide which functional units were suited the particular application, combine them with 
+on chip ROM and RAM, and end up with a single IC tailored to the particular application.
+
+\section{The Future of Formal Methods in Hardware Design}
+
+Still in its infancy, there is much interest in the promised benefits of applying Formal Methods to hardware design.
+All manufactureers desire the first time correctness which Formal Methods try to supply.
+Designing with formal methods takes time, but the delays and costs of faulty designs are significant enought to justify their use.
+Currently there are still some problems preventing its widespread use as a design aid.
+
+Few people are experienced in the techniques of hardware specification and proof.
+Although  only a small number of computer scientists, computer architects and VLSI designers have the knowledge, one could always include mathematicians in a design team.
+These mathematicians can busy themselves with the proofs, while the the other members of the team  do the implementation.
+
+While it may be possible to specify the very complex designs at a high level, at lower levels the amount of information can easily exceed the capabilities of current techniques.
+To prove even simple designs requires a large amount of human and CPU time.
+Although proof systems and their automated tactics will undoubtedly improve in the future, fabrication technology will also permit even more complex designs than the current million transistors on a single integrated circuit.
+There may always be a perpetual gulf between designs which are proven reliable and  those which are `state of the art'
+
+Even if complex microprocessors are beyond complete specification, parts of them will not be.
+For example, the microcode of the floating point unit of the Inmos T800 transputer was implemented against a {\bf Z} specification of an IEEE floating point standard
+\cite{inmos:transputer}.
+If standard components are fully specified then it will be easier to combine them together reliably. Formal Methods are unlikely to let just anyone design a high performance VLSI design, but may be the only tool possible to help the experienced designers produce ever more complex sytems.
+
+There is a need for reliable systems wherever computers are to be  embedded into  systems where failure could cost lives, from cars and medical equipment  to aeroplanes and power stations. While Formal Methods can not guarantee that these systems will work, they are the first step to making VLSI design as safe and sound as the traditional fields of engineering.
+
+
+

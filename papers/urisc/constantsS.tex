@@ -1,0 +1,49 @@
+All the register addresses are defined as constant 15-tuple addresses.
+\begin{verbatim}
+(*            CONSTANTS.SIM  v1.4	5/24/89
+              =============  =====	======
+
+                Constant  values  for  use  by  the simulation: these
+                consist of mnemonics for memory addresses
+           6/1/88 sal *)
+          (* program counter *)
+          val PC=Zero15;
+
+          (* skip register *)
+          val SKIP=S15  PC;
+
+          (* X index *)
+          val X=S15  SKIP;
+
+          (* Y index *)
+          val Y=S15  X;
+
+          (* The number four in int15 format *)
+          val PLUS4= S15 o S15 o S15 o S15 ;
+
+          (*The accumulator on read *)
+          val ACC=NattoInt15 8;
+
+          (*which is the carry on write*)
+          val CARRYIN=ACC;
+
+          (*The accumulator Functions *)
+
+          val CLR=NattoInt15 16;
+          val SUBA=NattoInt15 17;
+          val SUBB=NattoInt15 18;
+          val ADD=NattoInt15 19;
+          val XOR=NattoInt15 20;
+          val OR=NattoInt15 21;
+          val AND=NattoInt15 22;
+          val SET=NattoInt15 23;
+
+          (* The additional value to cause a shift *)
+          val SHIFT=ACC;
+
+          (* the condition codes *)
+          val Z=CLR;
+          val N=SUBA;
+          val V=SUBB;
+          val CARRY=ADD;
+\end{verbatim}

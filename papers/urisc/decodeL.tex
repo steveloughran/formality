@@ -1,0 +1,29 @@
+These functions extract the source destination and index fields for use in instruction execution.
+\begin{verbatim}
+(* Decode.L
+   ========
+        Functions which  extract portions  of a number for address decoding
+purposes 
+2/1/89 sal *)
+(* The bit indicating whether to index the source or not *)
+val IndexX=dataBit31;
+(* The source address *)
+fun Source i=
+        (dataBit30 i,dataBit29 i,dataBit28 i,dataBit27 i,
+         dataBit26 i,dataBit25 i,dataBit24 i,dataBit23 i,
+         dataBit22 i,dataBit21 i,dataBit20 i,dataBit19 i,
+         dataBit18 i,dataBit17 i,dataBit16 i):Int15;
+val IndexY=dataBit15;
+fun Destination i=
+        (dataBit14 i,dataBit13 i,dataBit12 i,dataBit11 i,
+         dataBit10 i,dataBit9  i,dataBit8  i,dataBit7  i,
+         dataBit6  i,dataBit5  i,dataBit4  i,dataBit3  i,
+         dataBit2  i,dataBit1  i,dataBit0  i):Int15;
+(* extract the l.s. 15 bits from a data word *)
+val Truncate15=Destination;
+(* expand a single bit to the full length of a data word *)
+fun Expand b=(false,false,false,false,false,false,false,false,
+                false,false,false,false,false,false,false,false,
+                false,false,false,false,false,false,false,false,
+                false,false,false,false,false,false,false,b):Int32;
+\end{verbatim}

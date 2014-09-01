@@ -1,0 +1,123 @@
+\chapter{The Execution Unit}
+
+\section{Design}
+
+Within this unit instructions are fetched and executed,
+under the supervision of the control unit. It is 
+depicted in figure~\ref{fig:ex}.
+It  contains a number of registers in order to carry out this
+task.
+A 15 bit {\bf Program Counter} ({\bf PC}) is used 
+to locate the next instruction.
+ This 
+is incremented after each instruction has been fetched. 
+To permit program branching, this register is a writeable  
+memory location.
+
+There are two index registers ---the source index {\bf X} and the 
+destination index {\bf Y}.  Both are 15 bits wide and  
+memory mapped. 
+A fast adder is used to add the contents of the registers to the 
+operand addresses. 
+
+
+Conditional branching is facilitated by  a 
+{\bf Skip} register. This appears as a single bit memory-mapped register.
+When written to with the least significant bit of the data  set, this causes the 
+next instruction  to be skipped. 
+If the bit is clear the following instruction is executed as normal.
+ Without such a register
+conditional branching could still be performed by placing a conditional offset into the source index register, and moving the contents of the resulting address to the PC.
+ This would be more cumbersome for a simple branch, but effective in multiway branches.
+
+
+\begin{figure}
+\vspace{20cm}
+\caption{Execution Unit}
+\label{fig:ex}
+\end{figure}
+
+{\samepage
+Internal registers are used during the execution of an 
+instruction. These are not accessible by programs, but can be 
+read and possibly altered by the host. They are :-
+\begin{itemize}
+\item
+{\bf data} : 32 bits for storage of data while being moved
+\item
+{\bf address} : 15 bits for buffering of the current location being 
+accessed.
+\item
+{\bf instruction }: 32 bits for storage of the current instruction.
+It is subdivided into the {\bf source} and {\bf destination}, each of which
+contains an {\bf index} flag and a 15 bit {\bf operand}
+\end{itemize}
+Their use is shown at the register transfer level in figure~\ref{figure:rtl}.
+}
+
+
+\begin{figure}
+
+
+
+\begin{enumerate}
+\item {\bf address} $\leftarrow$ {\bf PC}
+\item {\bf instruction} $\leftarrow$ ({\bf address});\\
+{\bf PC}$\leftarrow$ {\bf PC}+1
+\item if {\bf instruction.source.index}=1 then \\
+{\bf address}$\leftarrow$ {\bf instruction.source.operand} + {\bf X}\\
+else\\
+{\bf address}$\leftarrow$ {\bf instruction.source.operand}
+\item {\bf data}$\leftarrow$({\bf address});\\
+if {\bf instruction.destination.index}=1 then \\
+{\bf address}$\leftarrow$ {\bf instruction.destination.operand} + {\bf Y}\\
+else\\
+{\bf address}$\leftarrow$ {\bf instruction.destination.operand}
+\item ({\bf address})$\leftarrow$ {\bf data}
+\end{enumerate}
+\caption{Instruction Execution Sequence}
+\label{figure:rtl}
+\end{figure}
+
+\section{Implementation}
+
+\subsection{Registers}
+
+All registers except the PC are  constructed out of Serial Shadow 
+Registers. 
+The {\bf Program Counter} is  recorded in a bank of parallel loading counters, which 
+ can 
+be incremented by a control signal and  
+reloaded by a memory write. 
+To allow the host the ability to read the {\bf PC} it is passed through a 
+Shadow Serial Register during the instruction fetch sequence ---the
+ {\bf Program Counter Register}
+({\bf PCR}). 
+
+No Execution Unit registers can be examined with a memory read operation. This is inconvenient, as a program cannot determine the contents of the {\bf PC}, {\bf X} or {\bf Y} registers.
+This prevents relocatable code being used, and complicates other operations. Supporting the reading of  these registers would have used an extra eight tristate buffers, for which there was neither room nor money.
+
+\subsection{Connections}
+
+The outputs of the {\bf PCR}  and  the instruction operands are 
+all connected to the inputs of the {\bf Address} register. 
+An adder made from four 74381 ALU units 
+and a carry lookahead generator  performs the adding of offsets to 
+indexed instructions. 
+The {\bf Source} and {\bf Destination}
+operands and the {\bf X }
+and {\bf Y} index registers are multiplexed into this adder using the tristate 
+outputs of the registers.
+The outputs of the adder are fed to a tristate buffer.
+Another buffer exists to bypass the adder completely, for non-indexed operands.
+The selection of whether to index the offset or not is controlled by the index flag of each operand, without   the control unit's intervention.
+
+
+\subsection{Skipping} 
+
+Instruction skipping is performed independently of the control unit.
+The input to the count signal of the {\bf PC} is multiplexed between a count signal from the control section and bit zero of the data bus.
+Signal selection is controlled by the address decoder. 
+On recognising a write to the {\bf Skip} register this decoder connects
+the databus to the count input for one clock period only.
+The program counter  is then incremented only if the least significant bit if the data word is set.

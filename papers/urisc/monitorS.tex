@@ -1,0 +1,225 @@
+To actually use the simulation some extra monitor functions were written.
+These provide memory reading and writing, code assembly, register access and all the functions one should expect from a monitor.
+The actual simulated computer is stored in a reference record,
+which the monitor functions address.
+\begin{verbatim}
+(* monitor.SIM v1.6 	5/24/89 
+   ================	======*)
+ 
+          (* functions to control the simulation as the monitor should *) 
+           
+          
+           
+          (* give starting state *)
+ 
+          val reset_state=({mem=RAM0, 
+                          exstate={pc=Zero15,x=Zero15,
+                                   y=Zero15,halt=false},                  
+                          alustate={acc=Zero32,
+                                    z=true,n=false,
+                                    v=false,carry=false}}:State);
+ 
+          (* describe machine state with a reference *) 
+ 
+	  val URISC=ref reset_state;
+           
+          (* functions to display a state in an understandable form *) 
+           
+          val print15=makestring o Int15toNat; 
+          val print32=makestring o Int32toNat; 
+           
+          val CR="\n"; 
+           
+          fun dissassemble n= 
+                " MOVE"^ 
+                (if IndexX n 
+                        then "X" 
+                        else "")^ 
+                (if IndexY n then "Y " else " ")
+                ^"("^
+                (print15 (Source n))^ "," ^
+                (print15 (Destination n))^
+                 ")" ^ CR; 
+           
+           
+          fun show (state:State)= 
+          let val {mem=m, 
+                exstate={pc=pc,x=x,y=y,halt=halt}, 
+                alustate={acc=acc,z=z,n=n,v=v,carry=c}}=state 
+          in 
+		output(std_out,
+                CR^"PC   ="^(print15 pc)^ 
+                CR^"X    ="^(print15 x)^
+                CR^"Y    ="^(print15 y)^ 
+                CR^"halt ="^(makestring halt)^ 
+                CR^"ACC  ="^(print32 acc)^ 
+                CR^"(z,n,v,c)="^(makestring (z,n,v,c))^ 
+                 (if not ( valid_address pc) then 
+                        (CR^"PC at write-only address"^CR) 
+                 else 
+                        (CR ^ "Current Instruction="^ 
+                         (dissassemble (read state pc)))))
+		  
+                 
+          end; 
+           
+	(* examine current registers *)
+          fun ex ()=show (!URISC); 
+           
+	(* read an address *)
+          fun r a =Int32toNat (read (!URISC)  (NattoInt15 a)); 
+          
+	(* dump address count  - dumps memory locations *)
+ 
+         fun dump _ 0 =() 
+           |  dump a n = 
+                (output(std_out,(CR^ 
+                 (makestring a)^ 
+                 "\t:\t"^
+                 (makestring (r a))^ 
+                 "\t=\t"^ 
+                 (dissassemble (read (!URISC) ( NattoInt15 a)))));
+		dump (a+1) (n-1)); 
+           
+          fun step ()= 
+                URISC:=execute (!URISC); 
+           
+          (* step & show *) 
+          fun ss ()=(step();ex()); 
+           
+          fun run()=  (* step until halted *) 
+                if get_halt (get_ex  (!URISC)) then () 
+                else (step();run()); 
+           
+          fun set_pc pc= 
+                URISC:={mem=get_mem (!URISC), 
+                        exstate={pc=( NattoInt15 pc), 
+                                 x=get_x (get_ex (!URISC)), 
+                                 y=get_y (get_ex (!URISC)), 
+                                 halt=get_halt ( get_ex (!URISC))}, 
+                        alustate=get_alu (!URISC)};
+
+          fun set_x x= 
+                URISC:={mem=get_mem (!URISC), 
+                        exstate={pc=get_pc ( get_ex (!URISC)), 
+                                 x=( NattoInt15 x),
+                                 y=get_y ( get_ex (!URISC)), 
+                                 halt=get_halt ( get_ex (!URISC))}, 
+                        alustate=get_alu (!URISC)}; 
+
+          fun set_y y= 
+                URISC:={mem=get_mem (!URISC), 
+                        exstate={pc=get_pc (get_ex (!URISC)), 
+                                 x=get_x ( get_ex (!URISC)), 
+                                 y=( NattoInt15 y),
+                                 halt=get_halt ( get_ex (!URISC))}, 
+                        alustate=get_alu (!URISC)};
+
+          fun set_halt  halt= 
+                URISC:={mem=get_mem (!URISC), 
+                        exstate={pc=get_pc ( get_ex (!URISC)), 
+                                 x=get_x (get_ex (!URISC)), 
+                                 y=get_y (get_ex (!URISC)), 
+                                 halt=halt},
+                        alustate=get_alu (!URISC)};
+          fun set_acc a= 
+                URISC:={mem=get_mem (!URISC), 
+                        exstate=get_ex (!URISC), 
+                        alustate={acc=( NattoInt32 a),
+                                  z=get_zero ( get_alu (!URISC)),
+                                  n=get_negative ( get_alu (!URISC)),
+                                  v=get_overflow ( get_alu (!URISC)),
+                                  carry=get_carry ( get_alu (!URISC))}};
+         fun set_carry a= 
+                URISC:={mem=get_mem (!URISC), 
+                        exstate=get_ex (!URISC), 
+                        alustate={acc=get_acc (get_alu (!URISC)),
+                                  z=get_zero ( get_alu (!URISC)),
+                                  n=get_negative ( get_alu (!URISC)),
+                                  v=get_overflow ( get_alu (!URISC)),
+                                  carry=a}};
+
+
+          (* go until halted *) 
+          fun go a= 
+                (set_pc  a; 
+                 set_halt false; 
+                 run(); 
+                 ex());  
+           
+          (* write number to an address *) 
+          fun w address data= 
+                URISC:=write (!URISC) (NattoInt15 address) (NattoInt32 data); 
+          (* infix version of above *)
+
+          infix 6 ##;
+          fun a ## d=w a d;
+	
+	  val offset=65536;
+
+          (* assemble a move instruction into memory *)
+          infix 6 MOVE ; 
+          fun a MOVE (s ,d)=w a (offset*s +d); 
+
+          val INDEX=32768;
+
+          infix 6 MOVEX ;
+          fun a MOVEX (s, d)=a ## (offset*(INDEX+s)+d);
+
+          infix 6 MOVEY ;
+          fun a MOVEY (s ,d)=a ## (offset*s+d+INDEX);
+
+          infix 6 MOVEXY ;
+          fun a MOVEXY (s, d)=a ## (offset*(INDEX+s)+d+INDEX);
+
+	(* Now the Register Addresses in Integer Format *)
+	val PC=0;
+	val SKIP=1;
+	val X=2;
+	val Y=3;
+	val A=8;
+	val CIN=8;
+
+	(*The accumulator Functions *)
+
+          val CLR= 16;
+          val SUBA= 17;
+          val SUBB= 18;
+          val ADD= 19;
+          val XOR= 20;
+          val OR= 21;
+          val AND= 22;
+          val SET= 23;
+
+	(* extra offset to cause post-rotate *)
+	val SHIFT=8;
+
+	(* the condition codes *)
+          val Z=CLR;
+          val N=SUBA;
+          val V=SUBB;
+          val CARRY=ADD;
+
+
+
+
+          (* can assemble  move instuctions e.g *)
+          (* a short loop *)
+
+          8192 MOVE (9000, CLR);
+          8193 MOVE (9004 ,ADD);
+          8194 MOVE (A, X);
+          8195 MOVE (A, Y);
+          8196 MOVEXY (9000, 10000);
+          8197 MOVE (9001,CIN);
+          8198 MOVE (9001, SUBB);
+          8199 MOVE (N ,SKIP);
+          8200 MOVE (9005, PC);
+          8201 MOVE (0,0); (* halt *)           
+          9000  ## 0;
+          9001  ## 1;
+          9002  ## 2;
+          9003  ## 3;
+          9004  ## 4;
+          9005  ## 8194;
+\end{verbatim}

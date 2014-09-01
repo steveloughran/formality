@@ -1,0 +1,80 @@
+\chapter{Implementation Issues}
+
+Throughout the project I had always to bear in mind a number of issues:-
+\begin{itemize}
+\item 
+The computer must be interfaced to an APM, and so  built on a double size Eurocard.
+\item
+The budget for the project could not exceed \pounds 300
+\item
+The computer had to be designed, built and documented by late May.
+\item
+The choice of manual or automatic board construction.
+\end{itemize}
+These  resulted in a computer which lacks some of the features which are  normally expected.
+
+\section{Components}
+
+
+It was impossible to build my computer out of a few standard off-the-shelf VLSI components; it bore too little resemblance to existing systems. Fortunately, a large number of MSI components for building computers have long been available, and I  made use of these.
+Individually quite small, together they  occupy a large amount of area  and have an excessive power consumption. 
+It is worthwhile describing the main types of components here, rather than repeatedly describe them later.
+
+\subsection{Transistor-Transistor Logic (TTL)}
+TTL integrated circuits have been the standard building blocks for digital circuits for over a decade. They have a number of advantages:-
+\begin{itemize}
+\item widely available
+\item individually inexpensive
+\item simple enough to be  flexible in application
+\item well documented
+\item  operate at high speed
+\end{itemize}
+ Many of these  components need to be wired together to produce a useful circuit. Some types of TTL `families' are low-power versions, being slow and suffering from fanout problems. I decided to use 74F (FAST) series logic, which were high power and high speed. 
+
+
+\subsection{Programmable Array Logic (PALS)}
+
+These are integrated circuits which can be programmed with simple boolean logic equations expressed in the sum of products form \cite{mmi:pals}. 
+They were used in situations where a standard component was not available. 
+The fact that they were explicitly programmed  made them correspond well to the formal specification, the equations actually being edited
+from the specification to the PAL programming format. 
+This was important as these devices could not be reprogrammed ---first time correctness had to be guaranteed.
+
+\subsection{Erasable Programmable Logic Devices (EPLDS)}
+
+These are a development of PALS, being erasable in ultra-violet light.
+ This made them useful in the parts of the computer which needed reprogramming during development. 
+They were much more expensive, and did not operate as fast as PALS do. 
+The extra capital cost can be recuperated  by re-use in later applications.
+
+
+\subsection{Serial Shadow Registers (SSRS)}
+These eight bit registers, manufactured by AMD, formed a central part of my design \cite{amd:logic,amd:uprogramming}. 
+Designed for use in pipelined computers, they  behaved as   eight bit tristate registers. 
+They also had extra  circuitry designed to aid debugging. Each register had a shadow register which was invisible to normal operation. 
+Each device could be instructed to copy the state of the outputs into this shadow, or overwrite the main register with the contents of the shadow. 
+This shadow register could be shifted out one bit at a time, while  new bits were shifted in. 
+ A number of these registers were connected together  via these serial links to form a chain.
+ By connecting the register chain to the host computer, this computer was able to read and write  the shadow registers.
+ This permitted the host to  discover the state of the Ultimate RISC, and to indirectly access its memory.
+In some respects the use of these SSRS produced a design which was a bit less efficient than would otherwise be possible, but this is made up for by the observability of the system.
+For example,  the ALU could have been implemented in a third of the number of ICs, but would then have been observable only indirectly. 
+
+\section{Wiring Methods}
+
+I had originally planned to have the   computer automatically  wired using the Department's BEPI solderwrap machine. 
+This  takes a circuit board with capacitors, IC sockets, and a list of the wiring between the pins,  then wires up all the interconnections. 
+The choice of a 32 bit data bus was made on the assumption that I would be using this system and so the extra wiring would not cause any construction delays.
+
+
+As time passed I became aware of the disadvantages to prototyping on the BEPI machine.
+The main problem with  solderwrapping  was that it was impossible to modify a board once built, and extremely difficult to debug if faulty. 
+It may have been  faster to build than wrapping by hand, but there was the effort to be  spent actually generating the files needed by the BEPI 
+machine.
+What is more, there were even some doubts as to the correctness of the wiring which the solderwrap machine produced.
+
+Taking these factors into account I eventually decided to wire up my computer
+manually. This allowed incremental development of the computer, which 
+meant I was always  able to demonstrate some part of the computer 
+working, rather than just a finely wired but useless board.
+

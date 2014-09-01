@@ -1,0 +1,2232 @@
+\chapter{Monitor Programs}
+These are the two programs used to provide the monitor service on the
+APM.
+\section{IMP Main Monitor}
+This main monitor is written in IMP.
+It is derived from the CS2 M6809 Monitor, which forms about a third of the code.
+The remaining 1400 lines are specific to the Ultimate RISC.
+
+\begin{verbatim}
+
+! Urisc Monitor Program
+! 14/3/89 
+! Steve Loughran
+! based upon M6809 monitor (talks to board through PIA)
+! for 6809 control + user interface
+
+{------------------------------------------------------------------------------}
+{                                                                              }
+{   M6809 Monitor                                                              }
+{                                                                              }
+{   Version 2.0 DJR 1-Oct-1987                                                 }
+{   Version 1.0 DWB 30-Jan-1987                                                }
+{                                                                              }
+{------------------------------------------------------------------------------}
+
+%option "-low -nons"
+
+%include "inc:util.imp"
+
+%begin
+
+%conststring(31) downloadmonitor = "cs2:m6809mon.obj"
+%conststring(31) downloadpia="sal:pia5.obj"
+%conststring(31) version="v 5.0"
+%constbyte stringsize=80
+%constinteger timelimit=90000
+
+%routine %spec printmon(%string(255) s)
+%routine %spec checkm6809
+%routine %spec haltm6809
+%routine %spec nominate infile(%string(80) file)
+%routine %spec nominate outfile(%string(80) file)
+%integer %fn %spec get file char
+%routine %spec close files
+%string(80)%fn %spec strip(%string(80) s)
+%predicate %spec intparam(%string(80) p, %integername ip)
+%predicate %spec getfromtofile(%integername from, to, %string(*)%name file)
+%predicate %spec getadval(%integername ad, val)
+%predicate %spec getfromtoval(%integername from, to, val)
+%predicate %spec getfilead(%string(*)%name file, %integername ad)
+%routine %spec print help
+%routine %spec memory test(%INTEGER from,to,value,%integername count)
+%routine %spec soak test(%INTEGER reps,failures)
+%routine %spec dump area(%integer from, to, %string(80) file)
+%routine %spec load object file(%string(80) file)
+%routine %spec load file(%string(80) file, %integer from)
+%routine %spec transfer to file(%integer from, to, %string(80) file)
+%routine %spec store byte(%integer ad, val)
+%routine %spec store area(%integer from, to, val)
+%string(2)%fn %spec hexbyte(%integer i)
+%string(4)%fn %spec hexword(%integer i)
+%routine %spec zerostore
+%routinespec run 6809 program
+
+!and urisc forward specifications
+
+%routinespec transmit
+%routinespec clock cpu
+%ROUTINESPEC clock shadow
+%ROUTINESPEC get state
+%PREDICATESPEC get registers
+%PREDICATESPEC put registers
+%ROUTINESPEC print registers
+%ROUTINESPEC initialise URISC
+%ROUTINESPEC update state
+%ROUTINESPEC update
+%ROUTINESPEC wyse scroll region(%byte t,b)
+%PREDICATESPEC get bool(%string(40) p,%bytename bool)
+%PREDICATESPEC get reg n val(%STRING(*)%NAME reg,%INTEGERNAME ad)
+%ROUTINESPEC set register(%STRING(*)%NAME r,%INTEGER val)
+%PREDICATESPEC store registers
+%PREDICATESPEC urisc write(%INTEGER addr,data)
+%PREDICATESPEC urisc read(%INTEGER addr,%INTEGERNAME data)
+%ROUTINESPEC urisc download(%string(80) file)
+%ROUTINESPEC urisc execute(%integer n)
+%routinespec full speed
+
+%constinteger memtop = 16_10000
+%constinteger periphbot = 16_C000
+%constinteger periphtop = 16_E000
+%constinteger goadh = 16_E0
+%constinteger goadl = 16_00
+
+@16_F00000 %byteintegerarray memory(0:memtop-1)   {M6809 memory}
+@16_F0C000 %byteinteger control latch             {M6809 control bits}
+
+@16_F0BFE0 %byteinteger fstxs         {frame store transmit status byte}
+@16_F0BFE1 %byteinteger fstx          {frame store mask byte transmit buffer}
+@16_F0BFE2 %byteinteger fscol         {frame store colour register}
+@16_F0BFE3 %byteinteger fsenb         {frame store enable register}
+{6809 board only allows byte accesses!}
+@16_F0BFE4 %byteinteger fsxh          {frame store X address high byte}
+@16_F0BFE5 %byteinteger fsxl          {frame store X address low byte}
+@16_F0BFE6 %byteinteger fsyh          {frame store Y address high byte}
+@16_F0BFE7 %byteinteger fsyl          {frame store Y address low byte}
+%short %integer fsx, fsy
+
+@16_F0BFE8 %byteinteger cmtxs         {colour map transmit status byte}
+@16_F0BFE9 %byteinteger cmtx          {colour map colour number transmit buffer}
+@16_F0BFEA %byteinteger cmrgbh        {colour map colour high byte}
+@16_F0BFEB %byteinteger cmrgbl        {colour map colour low byte}
+
+@16_F0BFF0 %byteinteger vdutxs        {vdu transmit status byte}
+@16_F0BFF1 %byteinteger vdutx         {vdu transmit buffer}
+@16_F0BFF2 %byteinteger keyrxs        {keyboard receive status byte}
+@16_F0BFF3 %byteinteger keyrx         {keyboard receive buffer}
+%constinteger keybufl = 511
+%byteintegerarray keybuf(0:keybufl)
+%integer keybufn, keybufinp, keybufoutp
+
+@16_F0BFF4 %byteinteger filtxs        {file transmit status byte}
+@16_F0BFF5 %byteinteger filtx         {file transmit buffer}
+@16_F0BFF6 %byteinteger filrxs        {file receive status byte}
+@16_F0BFF7 %byteinteger filrx         {file receive buffer}
+
+@16_F0BFFC %byteinteger regtxs        {m6809 register transmit status byte}
+@16_F0BFFD %byteinteger regtx         {m6809 register transmit buffer}
+@16_F0BFFE %byteinteger mrun          {used to halt m6809}
+@16_F0BFFF %byteinteger iflg          {used to flag cause of halt}
+
+
+%constinteger bel = 7, ctrl c = 3, ctrl z = 26
+
+%constinteger area = 1, byte = 2, continue = 3, init = 4, dump = 5, go6809 = 6,
+  help = 7, infile = 8, load6809 = 9, memtest = 10, object = 11,
+  outfile = 12, quit = 13, c registers = 14, reset6809 = 15, step = 16,
+  transfer = 17, zero = 18,
+  c freerun=19,
+    c clock=20,c go=21,c loadstore=22,c mode=23, c dclk=24,
+    c sdo=25, c reset=26,c transmit=27,c get=28,c put=29,
+    c set=30,c load=31,c store=32,c write=33,c read=34,
+    c soak=35, c download=36,c execute=37,c full speed=38
+
+%constinteger maxcom = 38
+
+%conststring(10)%array coms(1:maxcom) = "area", "byte", "continue", "init",
+  "dump", "run6809", "help", "infile", "ld6809", "memtest", "object",
+  "outfile", "quit", "registers", "reset6809", "step", "transfer", "zero",
+  "freerun","clock","go","l/s","mode","dclk","sdo","reset","tx",
+  "get","put","set","load","store","write","read","soak","download",
+  "execute","spin"
+
+%string(80) comline, command, params, head, tail, file, filein, fileout
+%integer intcom,value, i, c, n, from, to, ad, val, framestore, progstarth, progstartl
+%switch com(1:maxcom)
+
+{***********************************************************************}
+! URISC definitions
+
+! The registers
+
+
+@16_F00020 %bytearray register values(1:21)
+%conststring(15) register file="sal:registers"
+%string(stringsize)%array register names(1:21);
+%bytearray register subscripts(1:21);
+%byte registers
+@16_F0001E %byte pia regs
+@16_F0001F %byte pia dir
+
+! plus the names of address & data registers
+
+%conststring(stringsize) MAR="mar",MDR="data",PC="pc"
+
+! state constants
+
+%CONSTBYTE  halted state=0
+%CONSTBYTE  waiting state=1
+%constbyte loaded state=2
+
+
+!and the register banks
+
+%BYTE register banks
+%STRING(stringsize)%ARRAY bank names(1:21)
+%BYTEARRAY bank sizes(1:21)
+
+%string(stringsize) reg
+
+! The states
+
+%string(stringsize)%array state names(0:31)
+%conststring(10) state file="sal:states"
+
+!PIA connection
+
+! addresses shared with 6809 virtual PIA
+
+@16_F00000 %byteinteger addr
+@16_F00001 %byteinteger data
+@16_F00002 %bytearray pia copy(0:3)
+@16_F00005 %byte  times reg
+@16_F00007 %byte  pause reg
+@16_F00008 %byte val1
+@16_F00009 %byte val2
+
+!record of old PIA state
+
+%BYTE opa=0
+
+! set to true once the PIA has failed
+
+%INTEGER PIAFAIL=0
+
+! a few variables for the monitor
+
+! the shared printing address (default value)
+%integer print addr=16_3FFF
+
+%byte state,halt,sdi,sdo,freerun,clock,
+   go,load,loadstore,mode,dclk,reset,flag,changed
+
+
+%constbyte dataA=0,ctrlA=1,dataB=2,ctrlB=3
+
+! and the escape character for the screen display
+%string(1) escape=tostring(27)
+
+! and now the monitor program
+
+  %on %event 0, 9,11 %start
+    %if event_event = 9 %then %start    {ctrl-z}
+      printsymbol(bel)
+      printmon("input ended")
+      closefiles
+      %stop
+    %finish
+    %if event_event=0 %start
+    {event 0}
+    %if event_sub = 0 %then %start    {ctrl-c}
+      haltm6809
+      printsymbol(bel)
+      printmon("break")
+      ->nextcommand
+    %finish %else %c
+    %if event_sub = 1 %then %start    {ctrl-y}
+      closefiles
+      printsymbol(bel)
+      printmon("terminated")
+      %stop
+    %finish %else %c
+    closefiles %and %signal %event 0, event_sub, event_extra
+    %finish %elsec
+        %if event_sub=0 %thenc
+            printmon(" '0' not passed through SSR chain") %c
+        %elsec
+        %if event_sub=1 %thenc
+            printmon(" '1' not passed through SSR chain") %c
+        %elsec
+        %if event_sub=3 %thenc
+            printmon("Virtual PIA Inactive") %and PIAFAIL=1 %c
+        %elsec
+        %if event_sub=4 %thenc
+            printmon("Attempted SSR blowback!")
+%FINISH
+
+
+  select input(0)
+  select output(0)
+
+  {check M6809 board exists}
+  checkm6809
+
+  haltm6809
+
+  zerostore
+  load object file(downloadpia)
+  run 6809 program
+  initialise urisc
+  printmon("Ultimate RISC and M6809 Monitors")
+  printmon(version)
+
+  
+
+  filein = ""
+  fileout = ""
+
+
+nextcommand:
+ update
+
+  prompt( "mon: " )
+
+  readline(comline) %until comline # ""
+  to lower(comline)
+
+  comline = strip(comline)    {clean up spaces}
+  %unless comline -> command.(" ").params %then command=comline %and params = ""
+
+  %if command = "" %then ->nextcommand
+
+  intcom = 0    {no command recognised yet}
+  {consider all command names}
+  %for i = 1, 1, maxcom %cycle
+    %if coms(i) -> head.(command).tail %then %start
+      %if head = "" %then %start    {i.e. command name not amongst parameters}
+        %if intcom # 0 %then printmon("ambiguous command : `". %c
+          command."'") %and ->nextcommand
+        intcom = i
+      %finish
+   %finish
+  %repeat
+  %if intcom = 0 %then printmon("unknown command : `".command."'") %c
+    %and ->nextcommand
+
+  ->com(intcom)
+
+com(area):
+  %if getfromtoval(from, to, val) %then store area(from, to, val)
+  ->nextcommand
+
+com(byte):
+  %if getadval(ad, val) %then store byte(ad, val)
+  ->nextcommand
+
+com(continue):
+  %if params # "" %then printmon("parameters : `".params."' ?") %c
+    %and ->next command
+  mrun = 1                {allow to continue after break}
+  control latch =16_01    {remove reset condition}
+  control latch =16_01    {start processor execution}
+  ->monitor
+
+com(init):
+   initialise urisc
+  ->nextcommand
+
+com(dump):
+  %if getfromtofile(from, to, file) %then dump area(from, to, file)
+  ->nextcommand
+
+com(go6809):
+  %if params # "" %then printmon("parameters : `".params."' ?") %c
+    %and ->next command
+  
+   run 6809 program
+   ->nextcommand
+
+com(help):
+  print help
+  ->nextcommand
+
+com(infile):{nominate input file}
+  %if params = "" %then %start
+    prompt("file: ")
+    readline(file)
+  %finish %else file = params
+  nominate infile(file)
+  ->nextcommand
+
+com(load6809):
+  %if getfilead(file, ad) %then load file(file, ad)
+  ->nextcommand
+
+com(memtest):
+  %IF getfromtoval(from,to,val) %START
+    memory test(from,to,val,i)
+  %FINISH
+  ->nextcommand
+
+com(object): {down-load motorola format object file}
+  %if params = "" %then %start
+    prompt("file: ")
+    readline(file)
+  %finish %else file = params
+  load object file(file)
+  load object file(downloadmonitor)    {always load monitor program}
+  ->nextcommand
+
+com(outfile):{nominate output file}
+  nominate outfile(params)
+  ->nextcommand
+
+com(quit):
+  %if params # "" %then printmon("parameters : `".params."' ?") %c
+    %and ->next command
+  %signal %event 0,1    {ctrl-y to terminate}
+     
+com(c registers):
+  print registers
+  ->nextcommand
+
+com(reset6809):
+  %if params # "" %then printmon("parameters : `".params."' ?") %c
+    %and ->next command
+  control latch =16_04   {reset bit}
+  ->nextcommand
+
+com(step):
+    clock=0
+    transmit
+    clock=1
+    transmit
+    clock=0
+    transmit
+  ->nextcommand
+
+com(transfer):
+  %if getfromtofile(from, to, file) %then transfer to file(from, to, file)
+  ->nextcommand
+
+com(zero):
+  %if params # "" %then printmon("parameters : `".params."' ?") %c
+    %and ->next command
+  zerostore
+  ->nextcommand
+
+com(c freerun):
+ %if get bool("freerun =",flag) %then freerun=flag
+ ->nextcommand
+
+com(c clock):
+ clock=flag %if get bool("clock =",flag)
+ ->nextcommand
+
+com(c go):
+    go=flag %if get bool("go =",flag)
+ ->nextcommand
+
+com(c loadstore):
+    loadstore=flag %if get bool("l/s =",flag)
+  ->nextcommand
+
+com(c mode):
+    mode=flag %if get bool("mode =",flag)
+  ->nextcommand
+
+com(c dclk):
+    dclk=flag %if get bool("dclk =",flag)
+  ->nextcommand
+
+com(c sdo):
+    sdo=flag %if get bool("sdo =",flag)
+  ->nextcommand
+
+com(c reset):
+    reset=flag %if get bool("reset =",flag)
+  ->nextcommand
+
+com(c load):
+    load=flag %if get bool("load =",flag)
+    ->next command
+
+com(c transmit):
+    transmit
+    ->next command
+
+com(c get):
+%if   get registers %start
+   print registers
+%else
+   printmon("failed")
+%finish
+  ->next command
+
+com(c put):
+printmon("failed") %unless    put registers
+  ->next command
+
+com(c set):
+   %if get reg n val(reg,val) %then %start
+       set register(reg,val)
+     %finish
+    ->next command   
+
+com(c store):
+printmon("failed") %unless   store registers
+   ->next command
+
+com(c write):
+    %IF getadval(ad,val) %START
+        %IF %NOT urisc write(ad,val) %THENC
+            printmon("Write Unsuccessful")
+    %FINISH
+    ->next command
+
+com(c read):
+    val=0
+    c=0
+    %IF get adval(ad,n) %START
+    %FOR i=ad,1,n %CYCLE
+            phex(i)
+            print string(" : ")
+        %IF urisc read(i,val) %START
+            phex(val)
+            newline
+        %ELSE
+            printline("--------")
+            c=c+1
+            %exit %if c>10
+        %FINISH
+    %REPEAT
+    %FINISH
+    ->nextcommand
+
+com(c soak):
+    %If getadval(ad,val) %THEN soak test(ad,val)
+    ->nextcommand
+
+com(c download):
+    %if params="" %then %start
+        prompt("file: ")
+        readline(file)
+    %finish %else file=params
+    urisc download(file)
+   ->nextcommand
+
+com(c execute):
+    %if params="" %start
+        val=1
+    %else
+      ->nextcommand %unless intparam(params,val)
+    %finish
+    urisc execute(val)
+    ->nextcommand
+
+com(c fullspeed):
+  %if params#"" %start
+        printmon("params?")
+  %else
+    full speed
+  %finish
+  ->nextcommand
+
+{------------------------------------------------------------------------------}
+
+\end{verbatim}
+\begin{verbatim}
+
+monitor:
+
+
+  {check if character entered at APM keyboard}
+  c = test symbol
+  %if c >= 0 %then %start    {char typed at keyboard}
+    %if c = ctrl c %then %signal %event 0,0
+    %if keybufn > keybufl %then %start    {keybuf full}
+      printsymbol(bel)
+      printmon("input buffer full")
+    %finish %else %start
+      keybuf(keybufinp) = c
+      keybufinp = (keybufinp+1) & keybufl
+      keybufn = keybufn+1
+    %finish
+  %finish
+
+
+  %if mrun = 0 %then haltm6809 %and ->nextcommand    {halt m6809}
+
+
+
+  ->monitor
+
+{------------------------------------------------------------------------------}
+
+%routine printmon(%string(255) s)
+  print string("** ".s." **
+")
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine checkm6809
+%integer i
+
+  %on %event 0 %start
+    %if event_sub = 2 %then %start
+      printsymbol(bel)
+      printmon("No M6809 board")
+      %stop
+    %finish %else %signal %event 0, event_sub, event_extra
+  %finish
+
+  i = memory(0)    {attempt to read from the M6809 board}
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine haltm6809
+
+  mrun = 0
+  control latch = 16_00
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine run 6809 program
+! start running the most recently loaded 6809 object code program
+
+  {save program's start address from reset vector}
+  progstarth = memory(memtop-2)
+  progstartl = memory(memtop-1)
+  
+  {put address of `go' sequence in reset vector}
+  memory(memtop-2) = goadh
+  memory(memtop-1) = goadl
+  control latch =16_04            {reset}
+  mrun = 1                        {set m6809 run flag}
+  control latch =16_01            {remove reset condition}
+  control latch =16_01            {start processor execution}
+  
+  
+   {restore program's start address to reset vector}
+   memory(memtop-2) = progstarth
+   memory(memtop-1) = progstartl
+
+   control latch =16_04            {reset}
+   mrun = 1                        {set m6809 run flag}
+   iflg = 0                        {initialise interrupt-type flag}
+   control latch =16_01            {remove reset condition}
+   control latch =16_01            {start processor execution}
+%end
+
+{---------------------------------------------------------------------}
+
+
+{---------------------------------------------------------------------}
+
+%routine initcomms
+
+  vdutxs = 1                      {m6809 transmit register empty}
+  keyrx = 10                      {dummy nl to start off with}
+  keyrxs = 1                      {m6809 receive register full}
+  keybufinp = 0                   {next empty hole in keybuf}
+  keybufoutp = 0                  {next char to be sent to m6809}
+  keybufn = 0                     {number of chars in keybuf}
+  filtxs = 1                      {m6809 file transmit register empty}
+  %if fileout # "" %then %start
+    select output(2)
+    reset output
+    select output(0)
+  %finish
+  filrx = 10                      {dummy nl to start off with}
+  filrxs = 1                      {m6809 file receive register full}
+  %if filein # "" %then %start
+    select input(2)
+    reset input
+    select input(0)
+  %finish
+  regtxs = 1                      {m6809 register transmit reg empty}
+  fstxs = 1                       {frame store transmit register empty}
+  cmtxs = 1                       {colour map transmit register empty}
+
+%end
+
+{----------------------------------------------------------------------}
+
+%routine nominate infile(%string(80) file)
+
+  %on %event 3 %start
+    printmon("file `".filein."' does not exist")
+    filein = ""
+    select input(0)
+    %return
+  %finish
+
+  %if filein # "" %then %start
+    select input(2)
+    close input
+    select input(0)
+    printmon("input file `".filein."' closed")
+  %finish
+  filein = file
+  open input(2, filein)
+  select input(0)
+
+%end
+
+{----------------------------------------------------------------------}
+
+%routine nominate outfile(%string(80) file)
+
+  %on %event 3 %start
+    select output(0)
+    printmon("cannot open file `".fileout."'")
+    fileout = ""
+    %return
+  %finish
+
+  %if fileout # "" %then %start
+    select output(2)
+    close output
+    select output(0)
+    printmon("output file '".fileout."' closed")
+  %finish
+  fileout = file
+  %if fileout # "" %then open output(2, fileout)
+  select output(0)
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%integer %fn get file char
+%integer c
+
+  %on %event 9 %start
+    printmon("input file `".filein."' ended")
+    select input(2)
+    close input
+    select input(0)
+    filein = ""
+    %result = ctrl z
+  %finish
+
+  select input(2)
+  read symbol(c)
+  select input(0)
+  %result = c
+
+%end
+
+{----------------------------------------------------------------------}
+
+%routine closefiles
+
+  %if filein # "" %then %start
+    select input(2)
+    close input
+    select input(0)
+    printmon("input file `".filein."' closed")
+    filein = ""
+  %finish
+
+  %if fileout # "" %then %start
+    select output(2)
+    close output
+    select output(0)
+    printmon("output file '".fileout."' closed")
+    fileout = ""
+  %finish
+
+%end
+
+{---------------------------------------------------------------------}
+
+%string(80)%fn strip(%string(80) s)
+%string(80) head, tail
+
+  {strip leading spaces}
+  s = tail %while s -> head.(" ").tail %and head = ""
+
+  {remove multiple and trailing spaces}
+  %cycle
+    %exit %unless s -> head.(" ").tail
+    %if tail = "" %then s = head %and %continue
+    s = head." ".strip(tail)
+    %exit
+  %repeat
+
+  s = head.",".tail %while s -> head.(" ,").tail %or s -> head.(", ").tail
+
+  %result = s
+
+%end
+
+{----------------------------------------------------------------------}
+
+%predicate intparam(%string(80) p, %integername ip)
+{convert hex string `p' to integer value `ip'}
+%string(80) q, r
+%integer i, l, c
+
+  l = length(p)
+  %if l = 0 %then printmon("missing hex parameter") %and %false
+  ip = 0
+  %for i = 1, 1, l %cycle
+    c = charno(p, i)    
+    %if '0' <= c <= '9' %then ip = ip<<4+c-'0' %else %c
+    %if 'a' <= c <= 'f' %then ip = ip<<4+c-'a'+10 %else %c
+    %if 'A' <= c <= 'F' %then ip = ip<<4+c-'A'+10 %else %c
+      printmon("invalid hex parameter: `".p."'") %and %false
+  %repeat
+
+  %true
+
+%end
+
+{----------------------------------------------------------------------}
+
+%predicate getfromtofile(%integername from, to, %string(*)%name file)
+%string(80) p, q, r, s
+
+  %if params = "" %then %start
+    prompt("from address: ")
+    readline(p)
+    prompt("to address: ")
+    readline(r)
+    prompt("to file: ")
+    readline(file)
+  %finish %else %start
+    %if params -> p.(",").q %then %start
+      %if p -> s.(" ").r %then p = s %and file = q %and ->check
+    %finish %else %start
+      %unless params -> p.(" ").q %then %c
+        printmon("invalid parameters: `".params."'") %and %false
+    %finish
+    {optional file name}
+    %unless q -> r.(",").file %then %start
+      %unless q -> r.(" ").file %then r = q %and file = ""
+    %finish
+  %finish
+
+check:
+  %false %unless intparam(p, from)
+  %false %unless intparam(r, to)
+
+  %true
+
+%end
+
+{--------------------------------------------------------------------}
+
+%predicate getadval(%integername ad, val)
+%string(80) p, q
+
+  %if params = "" %then %start
+    prompt("address: ")
+    readline(p)
+    prompt("value: ")
+    readline(q)
+  %finish %else %start
+    %unless params -> p.(",").q %then %start
+      %unless params -> p.(" ").q %then %c
+        printmon("invalid parameters: `".params."'") %and %false
+    %finish
+  %finish
+  %false %unless intparam(p, ad)
+  %false %unless intparam(q, val)
+
+  %true
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%predicate getfromtoval(%integername from, to, val)
+%string(80) p, q, r, s, t
+
+  %if params = "" %then %start
+    prompt("from address: ")
+    readline(p)
+    prompt("to address: ")
+    readline(r)
+    prompt("value: ")
+    readline(s)
+  %finish %else %start
+    %if params -> p.(",").q %then %start
+      %if p -> t.(" ").r %then p = t %and s = q %and ->check
+    %finish %else %start
+      %unless params -> p.(" ").q %then %c
+        printmon("invalid parameters: `".params."'") %and %false
+    %finish
+    %unless q -> r.(",").s %then %start
+      %unless q -> r.(" ").s %then %c
+        printmon("invalid parameters: `".params."'") %and %false
+    %finish
+  %finish
+
+check:
+  %false %unless intparam(p, from)
+  %false %unless intparam(r, to)
+  %false %unless intparam(s, val)
+
+  %true
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%predicate getfilead(%string(*)%name file, %integername ad)
+%string(80) p
+
+  %if params = "" %then %start
+    prompt("file: ")
+    readline(file)
+    prompt("address: ")
+    readline(p)
+  %finish %else %start
+    %unless params -> file.(",").p %then %start
+      %unless params -> file.(" ").p %then %c
+        printmon("invalid parameters: `".params."'") %and %false
+    %finish
+  %finish
+  %false %unless intparam(p, ad)
+  %true
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine print help
+
+  printline("area  from,to,value       -  set memory(from..to) all to `value'" )
+  printline("byte  addr,value          -  set memory(addr) to byte `value'" )
+  printline("continue                  -  allow program to continue")
+  printline("dclk                      -  set dclk value")
+  printline("dump  from,to [,file]     -  dump memory(from..to) to VDU or file")
+  printline("run                       -  reset and start program")
+  printline("help                      -  display this help information")
+  printline("infile  file              -  nominate `file' as input file")
+  printline("ld  file,from             -  load file to memory starting at `from'")
+  printline("memtest                   -  perform read/write memory test")
+  printline("object  file              -  download Motorola object format file" )
+  printline("outfile  file             -  nominate `file' as output file")
+  printline("quit                      -  quit from monitor" )
+  printline("registers                 -  print register values on VDU")
+  printline("rst                       -  halt and reset M6809" )
+  printline("step                      -  step the URISC clock" )
+  printline("transfer  from,to [,file] -  transfer memory(from..to) to VDU or file" )
+  printline("zero                      -  clear whole 6809 memory to zero" )
+  printline("freerun                   -  set freerun value")
+  printline("clock                     -  set clock value")
+  printline("go                        -  set go value")
+  printline("l/s                       -  modify l/s signal")
+  printline("sdo                       -  modify serial data out")
+  printline("load                      -  modify load signal")
+  printline("mode                      -  modify mode value")
+  printline("reset                     -  modify reset signal")
+  printline("tx                        -  transmit signals to URISC")
+  printline("get                       -  get URISC registers")
+  printline("put                       -  put back URISC registers")
+  printline("set reg,value             -  set register to value")
+  printline("init                      -  initialise URISC")
+  printline("execute    <n>            -  execute instructions")
+  printline("spin                      -  free run instr. execution")
+  newline
+  printline("command names may be abbreviated; parameters are hexadecimal")
+  printline("ctrl-c breaks; ctrl-y terminates; ctrl-z ends input")
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine dump area(%integer from, to, %string(80) file)
+%integer ad, m, i, same, ditto
+
+  %if file # "" %then open output(2, file) %and select output(2)
+
+  newline
+
+  from = from&16_fffffff0
+  %if from < 0 %then from = 0
+  to = (to+16)&16_fffffff0
+  %if to > memtop %then to = memtop
+  to = to-16
+  %if to < from %then to = from
+
+  %for ad = from, 16, to %cycle
+
+    {test for same as previous line and next line}
+    %if ad > from %and ad < to %then %start
+      same = 1
+      %for i = 0, 1, 15 %cycle
+        %if memory(ad+i) # memory(ad+i-16) %or %c
+            memory(ad+i) # memory(ad+i+16) %then same = 0 %and %exit
+      %repeat
+    %finish %else same = 0
+
+    %if same = 0 %then %start
+      print string(hexword(ad)." : ")
+      %for i = 0, 1, 15 %cycle
+        print string(hexbyte(memory(ad+i))." ")
+      %repeat
+      spaces(5)
+      %for i = 0, 1, 15 %cycle
+        m = memory(ad+i)
+        %if m < 32 %or m >= 127 %then m = '.'
+        print symbol(m)
+      %repeat
+      newline
+      ditto = 0
+    %finish %else %start
+      %if ditto = 0 %then printline("       -- ditto --") %and ditto = 1
+    %finish
+
+  %repeat
+
+  %if file # "" %then close output
+  select output(0)
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine load object file(%string(80) file)
+{download a motorola format object file}
+%string(80) head, tail
+%integer ad, i, b, c, l, t, checksum
+%integerfnspec getbyte   
+%constant %string(31) %array err(1:6) = %c
+  "invalid hex digit",
+  "invalid start code",
+  "unknown record type",
+  "invalid record length",
+  "invalid address",
+  "checksum error"
+
+  %on %event 9, 15 %start
+    %if event_event = 9 %then printmon("incomplete object file") %c
+      %else printmon("corrupt object file (".err(event_sub).")")
+    ->endin
+  %finish
+
+  %unless file -> head.(".").tail %then file = file.".obj"
+  %unless exists(file) %then printmon( %c
+    "file `".file."' does not exist") %and %return
+
+  open input(2, file)
+  select input(2)
+
+  %cycle    {loop for all records in object file or until an error occurs}
+
+    read symbol(c) %until c > ' '    {skip until significant char}
+    %if c # 'S' %then %signal %event 15,2
+
+    read symbol(t)    {record type}
+
+    checksum = 0    {start checksum after type byte}
+    l = getbyte
+
+    %if t = '0' %or t = '1' %or t = '9' %then ad = getbyte<<8!getbyte %c
+      %and l = l-3 %else %c
+    %if t = '2' %or t = '8' %then ad = getbyte<<16!getbyte<<8!getbyte %c
+      %and l = l-4 %else %c
+    %if t = '3' %or t = '7' %then ad = getbyte<<24!getbyte<<16!getbyte<<8 %c
+      !getbyte %and l = l-5 %else %signal %event 15,3    {unknown record type}
+
+    %if l < 0 %then %signal %event 15,4    {funny length byte}
+    %if ad < 0 %then %signal %event 15,5    {funny load address}
+
+    %for i = ad, 1, ad+l-1 %cycle
+      b = getbyte
+      memory(i) = b %unless i >= memtop %or t = '0'    {Fred's dummy header}
+    %repeat
+
+    c = getbyte    {checksum byte}
+    %if checksum&255 # 16_ff %then %signal %event 15,6    {checksum error}
+
+  %repeat %until t >= '7'    {end record}
+
+endin:
+  close input
+  select input(0)    
+  %return
+
+{------------------------------------------------------------------------------}
+
+%integerfn getbyte
+%integer b, c
+
+  read symbol(c)
+  %if '0' <= c <= '9' %then b = c-'0' %else %c
+  %if 'A' <= c <= 'F' %then b = c-'A'+10 %else %signal %event 15,1
+  read symbol(c)
+  %if '0' <= c <= '9' %then b = b<<4+c-'0' %else %c
+  %if 'A' <= c <= 'F' %then b = b<<4+c-'A'+10 %else %signal %event 15,1
+  checksum = checksum + b
+  %result = b
+
+%end
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine load file(%string(80) file, %integer from)
+%integer ad, c
+
+  %on %event 9 %start; ->endin; %finish
+
+  %unless exists(file) %then printmon( %c
+    "file `".file."' does not exist") %and %return
+
+  open input(2, file)
+  select input(2)
+
+  ad = from
+  %cycle
+    read symbol(c)
+    memory(ad) = c
+    ad = ad+1
+  %repeat    {loop until `end of input'}
+      
+endin:
+  close input
+  select input(0)
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine transfer to file(%integer from, to, %string(80) file)
+%constinteger nl = 10
+%integer ad, c
+
+  %if from > to %then printmon("memory area inside out") %and %return
+  %if from > memtop %then printmon("memory area out of range") %c
+    %and %return
+  %if to >= memtop %then to = memtop-1
+  
+  %if file # "" %then open output(2, file) %and select output(2)
+  
+  ad = from
+  %cycle
+    c = memory(ad)
+    {avoid printing non-printing chars to VDU}
+    %if file = "" %and c < ' ' %and c # nl %then c = '.'
+    print symbol(c)
+    ad = ad+1
+  %repeat %until ad > to
+
+  %if file # "" %then close output %else newline
+  select output(0)
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine store byte(%integer ad, val)
+
+  %unless 0 <= ad < memtop %then printmon("address out of range") %c
+    %and %return
+  %if periphbot <= ad < periphtop %then printmon( %c
+    "address in peripherals area") %and %return
+  %if val > 255 %then printmon("value too large") %and %return
+  memory(ad) = val
+
+%end
+
+{------------------------------------------------------------------------------}
+
+%routine store area(%integer from, to, val)
+%integer i
+
+  %if from > to %then printmon("area inside out") %and %return
+
+  %unless 0 <= from < memtop %and 0 <= to < memtop %then %c
+    printmon("address out of range") %and %return
+  %if periphbot <= from < periphtop %or periphbot <= to < periphtop %or %c
+    (from < periphbot %and to >= periphtop) %then %c
+    printmon("address in peripherals area") %and %return
+
+  %if val > 255 %then printmon("value too large: ".itos(val,0)) %c
+    %and %return
+
+  %for i = from, 1, to %cycle
+    memory(i) = val
+  %repeat
+
+%end
+
+{------------------------------------------------------------------------------}
+
+
+%string(2)%fn hexbyte(%integer i)
+%conststring(1)%array hex(0:15) = "0","1","2","3","4","5","6","7",
+  "8","9","A","B","C","D","E","F"
+  %result = hex((i>>4)&15).hex(i&15)
+%end
+
+{------------------------------------------------------------------------------}
+
+%string(4)%fn hexword(%integer i)
+  %result = hexbyte(i>>8).hexbyte(i&255)
+%end
+
+{------------------------------------------------------------------------------}
+
+
+{------------------------------------------------------------------------------}
+
+%routine zerostore
+%integer i
+
+  %for i = 0, 1, memtop-1 %cycle
+    memory(i) = 0
+  %repeat
+
+%end
+\end{verbatim}
+\begin{verbatim}
+
+{*****************************************************************************}
+
+
+!                 Ultimate RISC code Starts Here
+
+
+{*****************************************************************************}
+
+! First comes PIA control
+
+%routine extract info(%byte PortA)
+   state=PortA & 31
+   halt=(PortA & 32) >> 5
+   sdi=(PortA & 64) >> 6
+%END
+
+%ROUTINE form data(%bytename pa,pb)
+! converts all the lines into2 bytes of data
+
+   %signalevent 11,4 %if dclk=1 %and sdo=1 %and mode=1
+
+   pa=sdo<<7
+   pb=(reset<<7)+(dclk<<6)+(mode<<5)+(loadstore<<4)+   %c
+      (load<<3)+(go<<2)+(clock<<1)+freerun
+%END
+
+%routine pause
+%integer i
+ %for i=1,1,500 %cycle
+ %repeat
+%end
+
+%ROUTINE wait for PIA
+
+! waits for the PIA
+! but times out eventually
+! and then raises event 11,3
+%INTEGER i
+
+   i=20000
+   %while addr#0 %cycle
+        i=i-1
+        %signalevent 11,3 %if i=0
+    %repeat
+%END
+
+
+%ROUTINE write to PIA (%BYTE a,d)
+!waits till last write has been completed
+! then writes data d to pia register a
+
+   wait for PIA
+   data=d
+   addr=a!128
+%END
+
+%ROUTINE transmit
+! forms the data bytes and transmits to the host
+! precondition: data registers have been selected
+
+%BYTE pa,pb
+
+   form data(pa,pb)
+       write to PIA(dataA,pa)
+   write to PIA(dataB,pb)
+%END
+
+%ROUTINE set up PIA
+! initialisation routine to set up the PIA
+! correctly for the host i/f
+
+   write to pia(ctrla,2_00000000)
+   write to pia(dataA,2_10000000)
+   write to pia(ctrlA,2_00000100)
+   write to pia(ctrlB,2_00000000)
+   write to pia(dataB,2_11111111)
+   write to pia(ctrlB,2_00000100)
+   val1=0
+   val2=0
+   pause reg=0
+   times reg=0
+%END
+
+%ROUTINE clock cpu
+! clocks the EPLDs of the URISC
+
+   clock=0
+   freerun=1
+   transmit
+   clock=1
+   transmit
+   clock=0
+   transmit
+%END
+
+%ROUTINE clock shadow
+! clocks the dclk inputs of all the SSR registers
+! assumes the user has
+! suspended clocking of the control unit
+
+   dclk=0
+   transmit
+   dclk=1
+   transmit
+   dclk=0
+   transmit
+%END
+
+%PREDICATE shadow clock loop(%byte n)
+! will only work for extended 6809 PIA control s/w
+! -instructs 6809 to clock the shadow register the given number of times
+%integer timeout
+%byte pa
+
+    pause reg=0
+    dclk=0
+    form data(pa,val1)
+    write to pia(dataA,pa)
+    dclk=1
+    form data(pa,val2)
+    dclk=0
+    wait for pia
+    timeout=16_2000
+!   printline("repeating ".itos(n,0)." times")
+    %if n#0 %start
+           times reg=n
+           %while times reg#0 %and timeout#0 %cycle
+               timeout=timeout-1
+           %repeat
+           %if timeout=0 %start
+               printmon("Couldn't get 6809 to clock shadow in a loop")
+               printmon("Is the correct PIA program installed?")
+               times reg=0
+        %false
+    %finish
+    %finish
+        %true
+%END
+
+%PREDICATE clock loop(%byte n)
+%integer timeout
+%byte pa
+    pause reg=0
+    clock=0
+    form data(pa,val1)
+    write to pia(dataA,pa)
+    clock=1
+    form data(pa,val2)
+    clock=0
+    wait for PIA
+    %if n#0 %start
+        timeout=2000
+        times reg=n
+        %while times reg#0 %and timeout#0 %cycle
+            timeout=timeout-1
+        %repeat
+        %if timeout=0 %start
+            printmon("timeout on 6809 PIA- is the program active?")
+            %false
+        %finish
+    %finish
+    %true
+%end
+{********************************************************************}
+
+{ The Control unit states
+
+%ROUTINE read state names
+!reads in all the state names from the named file
+! assumes the ordering of names is correct
+! and there are 31 to read in
+
+%integer i
+   open input(2,state file)
+   select input(2)
+   %for i=0,1,31 %cycle
+      read line(state names(i))
+   %repeat
+   close input
+   select input(0)
+%END
+
+%ROUTINE get state
+! waits until last operation is over
+! before reading and decoding the information from the URISC
+%BYTE temp
+
+   wait for PIA
+   temp=pia copy(dataA)
+   extract info(temp)
+%END
+
+{**********************************************************************}
+{                       The Registers                                  }
+{**********************************************************************}
+
+%ROUTINE update banks(%STRING(stringsize) reg,%BYTE s)
+%INTEGER i,found
+
+    found=0
+    %for i=1,1,register banks %cycle
+        %if bank names(i)=reg %start
+            bank sizes(i)=s %if s>bank sizes(i)
+            found=1
+            %finish
+        %repeat
+    %if found=0 %start
+        register banks=register banks+1
+        bank sizes(register banks)=s
+        bank names(register banks)=reg
+    %finish
+%END
+
+%INTEGERFN register size(%STRING(*)%NAME r)
+! returns the no of byte size registers making up a named bank
+%INTEGER i
+    %for i=1,1,register banks %cycle
+        %result=bank sizes(i)  %if bank names(i)=r
+    %repeat
+    %result=-1
+%end
+        
+
+%ROUTINE read register names
+! reads in the register file
+! format
+!  # regs
+!  register1       subscript1
+!            ...
+!  registerj       subscriptj
+!
+!  register is the name of the register e.g Instruction
+!  subscript gives the position of that byte within the named register
+!  e.g 0 = lsbyte , 3 =ms byte of 32 bit register
+
+%INTEGER i
+
+   register banks=0
+   open input(2,register file)
+   select input(2)
+   read(registers)
+   %for i=1,1,registers %cycle
+      read(register names(i))
+      read(register subscripts(i))
+      update banks(register names(i),register subscripts(i))
+   %repeat
+   close input
+   select input(0)
+
+%END
+
+%INTEGERFN find register(%string(stringsize) r, %integer s);
+! finds the register with given name and subscript
+%INTEGER i
+
+   %FOR i=1,1,registers %CYCLE
+      %IF register names(i)=r %AND register subscripts(i)=s %THENC
+            %RESULT=i
+   %REPEAT
+   %RESULT=-1
+%END
+
+%INTEGERFN register value(%string(stringsize) r)
+%INTEGER i,reg,v,b
+   v=0
+   b=register size(r)
+   %if b>=0 %start
+      %for i=0,1,b   %CYCLE
+          reg=find register(r,i)
+          v=v+register values(reg)<<(8*i)
+       %REPEAT
+      %finish
+   %RESULT=v
+%END
+
+%ROUTINE print registers
+%BYTE i
+%BYTE size
+%INTEGER value=0
+
+    newline
+    write(register banks,0)
+    print string(" registers built from ")
+    write(registers,0)
+    print line(" SSRs")
+    newline
+    %if registers>0 %start
+      %for i = 1,1,register banks %cycle
+        size=bank sizes(i)+1
+        value=register value(bank names(i))
+        print string(bank names(i)." : ")
+        %if size=1 %then phex2(value) %elsec
+        %if size=2 %then phex4(value) %elsec
+                phex(value)
+        newline
+    %repeat
+    %finish
+%END
+
+
+%ROUTINE write back to registers(%STRING(stringsize)r,%integer v,l)
+! r=reg name
+! v=value
+! l = length in bytes
+%INTEGER i,reg
+
+    i=0
+    %CYCLE
+        reg=find register(r,i)
+        %IF reg=0 %THEN printmon("Cant find the register!") %ELSEC
+            register values(reg)=v&255
+        v=v>>8
+        i=i+1
+    %REPEAT %UNTIL i>l
+    %IF v>0 %THEN printmon(" Value Too Large- extra ignored")
+%END
+
+%ROUTINE set register(%STRING(*)%NAME  r,%INTEGER v)
+
+%INTEGER b,i
+    b=register size(r)
+    %IF b=-1 %THEN printmon("No such register") %ELSEC
+            write back to registers(r,v,b)
+%END
+
+
+%PREDICATE clear shadow
+! clears all the shadow registers by shifting a large number
+! of zeros in.
+%integer i
+
+    SDO=0
+    MODE=0
+!    %for i=1,1,registers*8 %cycle
+!        clock shadow
+!    %repeat
+    %false %unless shadow clock loop(8*registers)
+
+    get state
+    %if sdi#0 %start 
+        printmon("`0' not passed through SSR chain while clearing shadows")
+        %false
+    %finish
+    %true
+%end
+
+
+%PREDICATE copy registers to shadow
+! instructs the ssr chain to copy its Y reg. to its shadow
+! and propagates the command along all the registers.
+! raises event 11,0 
+
+%INTEGER i
+
+   %false %unless clear shadow
+   sdo=0
+   mode=1
+   clock shadow
+   get state
+   mode=0
+!   %SIGNALEVENT 11,0 %IF sdi#0
+   %IF sdi#0 %start
+        printmon("'0' not passed through SSR chain while copying registers")
+        %false
+    %finish
+
+    transmit
+        %true
+%END
+
+%PREDICATE get registers
+%INTEGER i,j,temp,timeout
+! copies all the registers to the array
+
+! signals event 11,1 if a 1 was not propagated through the chain
+! -the definitive test for the presence of the computer-
+
+%false %unless   copy registers to shadow 
+!   temp=1
+!  %for i=1,1,registers %cycle
+!     register values(i)=0
+!     %for j=0,1,7 %cycle
+!        sdo=temp
+!        temp=sdi
+!        get state
+!        register values(i)=register values(i)<<1 + sdi
+!        sdo=sdi
+!        clock shadow
+!     %repeat
+!  %repeat
+!  sdo=temp
+!  temp=sdi
+! clock shadow
+   %if shadow clock loop(0) %start
+     %finish
+   timeout=timelimit
+   pia regs=registers
+   pia dir=129
+   %while pia dir#0 %and timeout#0 %cycle
+    timeout=timeout-1
+    %repeat
+   %if pia dir#0 %start
+        printmon("PIA timeout on get")
+        %false
+    %finish
+
+   get state
+!  %signalevent 11,1 %if temp#1
+!   %if temp#1 %start
+!        printmon("`1' not passed through SSR chain during register put")
+!        %false
+!        %finish
+  %true
+%END
+
+%PREDICATE put registers
+! puts the stored registers back into the SSR chain
+! checks to see if sdi is equal to the highest bit
+! in the last register & raises 11,0 or 11,1 if not
+%INTEGER i,j,timeout
+
+   %FOR i=1,1,registers %CYCLE
+      %FOR j=7,-1,0 %CYCLE
+         sdo=(register values(i)>>j)&1
+         clock shadow
+      %REPEAT
+    %REPEAT
+   i=(register values(1)>>7) & 1
+   get state
+!   %signalevent 11,i %IF sdi#i
+   %if sdi#i %start
+        printmon("`".itos(i,0).%c
+ "' not passed through SSR chain while putting registers")
+         %false
+    %else
+     %true
+    %finish
+!  %if shadow clock loop(0) %start
+!           %finish
+!  timeout=timelimit
+!  pia regs=registers
+!  pia dir=128
+!  %while pia dir#0 %and timeout#0 %cycle
+!     timeout=timeout-1
+!  %repeat
+!  %if timeout=0 %start
+!       printmon("PIA timeout on put")
+!       %false
+!   %else
+!       %true
+!   %finish
+%END
+
+%PREDICATE store registers
+! puts back the registers & then stores them using the control
+! EPLD - will only work if in the halted or waiting states
+    get state
+    %if state=halted state %START
+        load=1
+        go=1
+        clock cpu
+        get state
+    %FINISH
+    %IF state#waiting state %START
+        printmon("Not in the right state")
+        %false
+    %ELSE
+        load=1
+        go=1
+        %false %unless put registers
+        mode=1
+        load=0
+        clock cpu
+        load=1
+        mode=0
+        transmit
+        %true
+    %FINISH
+%END
+
+%PREDICATE  urisc write(%INTEGER addr,data)
+! tries to write to the urisc memory
+! returns false if it couldn't (control unit problems)
+
+    set register(MAR,addr)
+    set register(MDR,data)
+    %false %unless store registers
+    get state
+    %IF state=loaded state %START
+        loadstore=0
+!       %WHILE {state#halted state %AND} state#waiting state %C
+!                 %CYCLE
+           
+!           clock cpu
+    %false %unless clock loop(5)
+            get state
+!        %REPEAT
+        %if state=waiting state %then %true %else %false
+    %ELSE
+        %FALSE
+    %FINISH
+%END
+
+%PREDICATE urisc read(%INTEGER addr,%INTEGERNAME data)
+! tries to read location addr and put the word therein into
+! the argument 'data'
+! returns false if ic could not do this- control unit problems
+! or because that address is write only...
+
+    set register(MAR,addr)
+    %false %unless store registers
+    data=0
+    get state
+    %if state=loaded state %START
+        loadstore=1
+!     load=0
+!       %false %unless clock loop(4)
+        %WHILE state#halted state %AND state#waiting state %c
+            %CYCLE
+           clock cpu
+            get state
+         %REPEAT
+        %IF state=waiting state %START
+            %false %unless get registers
+            data=register value(MDR)
+            %TRUE
+        %ELSE
+            data=0
+            %FALSE
+        %FINISH
+    %ELSE
+            data=0
+            %FALSE
+    %FINISH
+%END
+
+%PREDICATE step to start
+! tries to step the urisc to the start state,
+! returning true if it does so
+%integer count=0
+
+    get state
+    %while state#waiting state %and state#halted  state %andc
+        count<32 %cycle
+            clock cpu
+            get state
+    %repeat
+    %true %if state=waiting state %or state=halted state
+    %false
+%END
+        
+ 
+%ROUTINE memory test(%INTEGER from,to,value, %INTEGERNAME fail)
+! tests the region of memory specified
+! if value=from then increments the value to the address every time
+! - a check for folding of memory
+%integer i,v,data
+
+    fail=0
+    v=value
+    print string("Memory test from ")
+    phex(from)
+    print string(" to ")
+    phex(to)
+    print string(" with ")
+    %if value=from %thenc
+        print string(" address ") %elsec
+        phex(value)
+    newline
+    %FOR i=from,1,to %CYCLE
+        v=i %IF from=value
+        %IF %NOT urisc write(i,v) %START
+            phex(i)
+            print line(" : couldn't write")
+            fail=fail+1
+            %Unless step to start %start
+                print line("Couldnt get to a starting state-terminating test")
+                %return
+            %finish
+        %FINISH
+    %REPEAT
+
+    ! now read back & verify
+
+    %FOR i=from,1,to %CYCLE
+        %IF urisc read(i,data) %START
+            v=i %IF from=value
+            %IF v#data %START
+                phex(i)
+                print string(" : failed - ")
+                phex(data)
+                newline
+                fail=fail+1
+            %FINISH
+        %ELSE
+            phex(i)
+            print line(" : write only")
+            fail=fail+1
+        %FINISH
+    %REPEAT
+
+    %IF fail=0 %START
+            newline
+            print line("Memory test successful")
+    %ELSE
+            newline
+            print string("Failed during memory test ")
+            write(fail,0)
+            print string(" time")
+            print symbol('s') %IF fail#1
+            newline
+    %FINISH
+%end
+
+%ROUTINE soak test(%integer reps,failures)
+! tests memory for either the specified number of repetitions
+!  (0=dont stop)
+! or until the given number of failures is exceeded-
+!  0 = don't stop
+! testing process is:
+!  1. checkerboard of bits 5555555
+!  2. (1) inverted -aaaaaaaa
+!  3. (addr)<-addr   (folding test)
+
+! checks for failures are only made between each sub test
+
+%INTEGER soaks,failure count,subtest,subfails,pattern=0
+
+    soaks=0
+    failure count=0
+    
+    %WHILE (soaks<reps %OR reps=0) %ANDC
+           (failure count<failures %OR failures=0) %CYCLE
+
+        soaks=soaks+1
+        subtest=1
+        subfails=0
+        %WHILE (subtest<=3) %AND (failure count<failures %ORC
+                                 failures=0) %CYCLE
+            pattern=16_55555555 %IF subtest=1
+            pattern=16_AAAAAAAA %IF subtest=2
+            pattern=16_20000000 %IF subtest=3
+            memory test(16_2000,16_3fff,pattern,subfails)
+            failure count=failure count+subfails
+            subtest=subtest+1
+            printline("Repetition :".itos(soaks,0)."  total no. of failures:".%c
+                       itos(failure count,0))
+        %REPEAT
+    %REPEAT
+%END
+
+
+%ROUTINE urisc download(%STRING(80) file)
+! downloads the given file into memory
+! the format is that agreed with RBE
+! 1. all numbers in Hex
+! 2. any number of code sequences
+! 3. each sequence consists of a start address, a length
+!    and then the code words
+! 4. comments, preceeded by an exclamation mark will be displayed.
+!    they can appear anywhere in the file
+! 5. each number should be on a separate line
+
+%integer ad,length=0,count=0
+%string(80) line,comment,addr
+
+%on %event 9 %start
+    ->endin
+    %finish
+
+    %unless exists(file) %thenc
+        printmon("File does not exist") %and %return
+    open input(2,file)
+    select input(2)
+
+! repeat till the end of the file
+    %CYCLE
+        {get the start address}
+        ad=-1
+        length=-1
+        count=0
+        %while ad=-1 %cycle
+            read line(line)
+            line=strip(line)
+            %if line#"" %start
+                %if line->("!").comment %start
+                    print line(comment)
+                %else
+                %if line->("@").addr %start
+                    addr=strip(addr)
+                    %unless intparam(addr,print addr) %start
+                        printmon("Don't understand @ address")
+                        ->endin
+                    %finish
+                %else
+                   ->endin %unless intparam(line,ad)
+                %finish
+                %finish
+            %finish
+        %repeat
+        %if ad>32767 %thenc
+            printmon("address out of range") %and ->endin
+
+        {now get the length}
+        %while length=-1 %cycle
+            read line(line)
+            line=strip(line)
+            %if line#"" %start
+                %if line->("!").comment %start
+                    print line(comment)
+                %else
+                    ->endin %unless intparam(line,length)
+                %finish
+            %finish
+        %repeat
+    
+        {now read in the code}
+        %if length=0 %thenc
+            printmon("Code seqence of length zero!") %and ->endin
+
+        print string("Loading code sequence from ")
+        phex(ad)
+        print string(" to ")
+        phex(ad+length-1)
+        newline
+
+        %while count<length %cycle
+            read line(line)
+            line=strip(line)
+            %if line#"" %start
+                %if line->("!").comment %start
+                    print line(comment)
+                %else
+                    %if intparam(line,value) %start
+                        ->endin %unless urisc write(ad+count,value)
+                        count=count+1
+                    %else
+                        ->endin
+                    %finish
+                %finish
+            %finish
+        %repeat
+    %REPEAT
+
+endin:
+    %if ad#-1 %and count<length %thenc
+        printmon("premature end of download")
+    close input
+    select input(0)
+
+%END
+
+%PREDICATE print halt
+! checks if halted with pc pointing at a RAM address with an 
+! instruction of 16_00000001
+! and if so prints all the contents of print addrr, then
+! continues
+
+%integer instr,char,i,chars
+
+    %false %unless get registers
+    %false %unless urisc read(register value(PC),instr)
+    %false %unless instr=1
+    %false %unless urisc read(print addr,chars)
+    %for i=24,-8,0 %cycle
+        char=(chars>>i)&255
+        print symbol(char) %if char#0
+    %repeat
+    %true
+%end
+
+%ROUTINE urisc execute(%integer n)
+! executes n instructions
+! or till the halt state is reached
+! if n=0 then run till halted
+%integer count=0,key=-1
+
+    get state
+    %if state=halted state %start
+        load=1
+        go=1
+        clock cpu
+        get state
+    %finish
+    %if state#waiting state %start
+        printmon("Not in the right state yet")
+        %return
+    %finish
+    load=1
+    %while (count<n %or n=0) %and state=waiting state %c
+        %cycle
+        count=count+1
+        go=0
+!       clock cpu
+!       %cycle
+!           clock cpu
+            %if clock loop(9)  %start
+                              %finish
+            get state
+        %if state#halted state %start
+            go=1
+            clock cpu
+            get state
+        %finish
+!       %repeat %until state=halted state %or state=waiting state
+        %if state=halted state %start
+            %exit %unless print halt
+        %finish
+             key=test symbol
+        %if key>=0 %start
+            %if key=ctrl c %then %signalevent 0,0
+        %finish
+    %repeat
+    newline
+    print line("Instructions executed:".itos(count,0))
+%END
+
+%routine full speed
+! a version of execute which instructs the URISC to execute at full speed;
+! until halted or ^C is pressed.
+! still supports Output
+
+%integer stopit=0,key
+
+printmon("Commencing Instruction Execution")
+
+    %cycle
+        go=0
+        transmit
+        freerun=0
+        transmit
+        %cycle
+            get state
+            update state
+            key=test symbol
+            %if key=3 %start
+                go=1
+                transmit
+                stopit=1
+                %cycle
+                    get state
+                %repeat %until state=halted state %or state=waiting state
+            %finish
+        %repeat %until state=halted state %or state=waiting state
+    freerun=1
+    transmit
+    %repeat %until stopit=1  %or %not print halt
+%end
+        
+
+{***********************************************************************}
+
+!   User Interface stuff (HCI - what's that?)
+
+{***********************************************************************}
+
+%PREDICATE get bool(%STRING(40) p,%BYTENAME bool)
+! if the parameters were empty then puts up the prompt & reads in the reply
+! succeeds iff the reply = [0..1]
+
+%STRING(80) s
+%INTEGER ok
+
+    %if params="" %start
+        prompt(p)
+        readline(s)
+    %finish  %else s=params
+    %if intparam(s,ok) %and((ok=0)%or(ok=1)) %thenc
+          bool=ok %and  %true  %elsec
+          printmon("0 or 1 only") %and %false
+%END
+
+%PREDICATE get reg n val(%STRING(*)%NAME reg,%INTEGERNAME ad)
+! gets the register 'n' the value from the 'user'
+
+%STRING(80) p
+
+    %IF params="" %START
+        prompt("register :")
+        readline(reg)
+        prompt("value :")
+        readline(p)
+    %ELSE
+        %UNLESS params -> reg.(",").p %START
+            %UNLESS params -> reg.(" ").p %THENC
+                printmon("Invalid Parameters: `".params."'") %ANDFALSE
+        %FINISH
+    %FINISH
+    %FALSE %UNLESS intparam(p,ad)
+    %TRUE
+%END
+
+
+
+!A few routines to manage the wyse screen on the simulator
+
+
+%ROUTINE reverse text
+  print string(escape."[1m")
+%END
+
+%ROUTINE normal
+   print string(escape."[m")
+%END
+
+%ROUTINE move to(%BYTE y,x)
+  print string(escape."[")
+  write(y,0)
+  print symbol(';')
+  write(x,0)
+  print symbol('H')
+%END
+
+%ROUTINE wyse scroll region(%BYTE t,b)
+  print string(escape."[")
+  write(t,0)
+  print symbol(';')
+  write(b,0)
+  print symbol('r')
+%END
+
+
+%ROUTINE set(%short m,%byte value)
+  print string(escape."[")
+  %IF m>0 %START
+
+     write(m,0)
+   %ELSE
+     print symbol('?')
+     write(-m,0)
+   %FINISH
+     %IF value#0 %THEN print symbol('h') %ELSE print symbol('l')
+ %END
+
+
+%ROUTINE print bit(%string(255)bit,%byte flag,x,y)
+! prints the string at the given xy location, setting reverse
+! if the flag is true
+
+    move to(y,x)
+    %if flag#0 %then reverse text %else normal
+    print string(bit)
+%END
+
+%ROUTINE say(%byte x,y,%string(255) text)
+! prints the text at the given place
+
+    move to(y,x)
+    print string(text)
+%END
+
+%routine frame
+!draws the frame of the status box that doesn't need regular updating 
+print string(escape."7")
+    say(30,1,"---The Ultimate RISC---")
+    say(1,2,"State #")
+    say(40,2,"State Name :")
+    move to(5,1)
+    reverse text
+    print symbol(32) %FOR i=1,1,80
+    normal
+    wyse scroll region(6,24)
+    print string(escape."8")
+%END
+
+%routine update state
+! update the state display of the screen
+
+    print string(escape."7")
+    say(8,2,itos(state,3))
+    say(52,2,state names(state)."             ")
+    print string(escape."8")
+%end
+
+
+%ROUTINE update
+! update screen status display
+%INTEGER i
+    get state
+    update state
+
+    ! record postion/modes etc
+    print string(escape."7")
+    print bit("SDI",sdi,1,3)
+    print bit("HALT",halt,15,3)
+    print bit("SDO",sdo,30,3)
+    print bit("Dclk",dclk,45,3)
+    print bit("Mode",mode,60,3)
+    print bit("Freerun",freerun,1,4)
+    print bit("Clock",clock,15,4)
+    print bit("Go",go,30,4)
+    print bit("l/s",loadstore,45,4)
+    print bit("Reset",reset,60,4)
+    print bit("Load",load,75,4)
+    normal 
+    wyse scroll region(6,24)
+    ! return to where i was before
+    print string(escape."8")
+%END
+
+%ROUTINE initialise URISC
+! the routine to set up the pia & then pass a reset to the urisc
+!  (pc<-0)
+! will then read in the register and state stuff off file
+! and do the screen
+
+    set up PIA
+    sdo=0
+    clock=0
+    freerun=1
+    go=1
+    load=1
+    loadstore=1
+    mode=0
+    dclk=0
+    reset=0
+    transmit
+    reset=1
+    transmit
+    
+    read register names
+    read state names
+
+    print string(escape."[2J")
+    frame
+    update
+    move to(6,1)
+    %if state=31 %start
+        printmon("Is the Ultimate RISC installed?")
+    %else
+        print registers %if get registers
+    %finish
+    
+%END
+
+%endofprogram
+\end{verbatim}

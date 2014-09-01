@@ -1,0 +1,20 @@
+A few functions had to be added so that the following files could be parsed by either Lambda or ML.
+A different copy of this file is used in the simulation which can not use Church' s iota function.
+\begin{verbatim}
+(* Spec.L	1.4
+   ======
+Special stuff put in to the Lambda specification alone  to make it more ML like
+10/1/89 sal *)
+fun not a=~a;
+(* definition of successor-15 function avoiding binary maths *)
+fun S15 i =
+        if i == Maxint15 then Zero15 else
+                iota j. Int15toNat j == S(Int15toNat i);
+
+(* definition of successor-32 function avoiding binary maths *)
+fun S32 i =
+        if i == Maxint32 then Zero32 else
+                iota j. Int32toNat j == S(Int32toNat i);
+(* define time as measured in nanoSeconds*)
+val nS=Natural;
+\end{verbatim}

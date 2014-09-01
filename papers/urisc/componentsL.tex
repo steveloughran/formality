@@ -1,0 +1,88 @@
+The components are individually specified as rewrite rules.
+The delays between inputs and outputs are specifed as constants, to simplify
+changing to different logic families.
+\begin{verbatim}
+     (* Components.L 
+     -the formal specification of individual components
+      -with timing in nS
+     2/1/89 sal: SN74F182 Look ahead carry unit
+     3/1/89 sal: SN74F381 ALU
+        *)
+     (* SN74F182 Look-ahead carry generators 
+        ====================================
+        These TTL  components take  as inputs  the P' and G' signals from
+        either ALU's or other '182 units, to return a carry for each ALU/
+        lookahead  unit,  and  Propagate  and  Generate  signals  for the
+	combined units *)
+     (* delay between p,g signals and G *)
+     val t_pg_G=8;
+     (* delay between p,g signals and P *)
+     val t_pg_P=6;
+     (* delay between carry in and carries out *)
+     val t_c_c=5;
+     val t_pg_c=5;
+     (* difference in delays between t_c_c and t_pg_c *)
+     val t_c_pg_c=t_c_c-t_pg_c;
+     val SN74F182 #(g0,g1,g2,g3,p0,p1,p2,p3,c,c1,c2,c3,G,P)=
+     (* g0-g3,p0-p3: generate and propagate inputs
+        c: carry in
+        c1,c2,c3: carry outputs
+        G,P: Generate and Propagate outputs *)
+        forall t:nS.
+                (G (t+t_pg_G) == ~(g3 t || (p3 t && g2 t)
+                        || (p3 t && p2 t && g1 t)
+                        || (p3 t && p2 t && p1 t && g0)))
+        /\
+        forall t:nS.
+                (P (t+t_pg_P) == ~(p0 t && p1 t && p2 t && p3 t))
+        /\
+        forall t:nS.
+                (c1 (t+t_c_c) == g0 (t+t_c_pg_c) ||
+                        (p0 (t+t_c_pg_c) && c t))
+        /\
+        forall t:nS.
+                (c2 (t+t_c_c)== g1 (t+t_c_pg_c)||
+                        (p1 (t+t_c_pg_c) && ((p0 (t+t_c_pg_c) && c t)
+                                || g0 (t+t_c_pg_c))))
+        /\
+        forall t:nS.
+                (c3 (t+t_c_pg_c)== g2 (t+t_c_pg_c)||
+                        (p2 (t+t_c_pg_c) && (g1 (t+t_c_pg_c)||
+                        (p1 (t+t_c_pg_c) && ((p0 (t+t_c_pg_c) && c t)
+                                || g0 (t+t_c_pg_c)))));
+
+     (* SN74F381 : ALU/function generator
+        =================================
+                These are the TTL i.c's which form the  core of  the ALU;
+        each takes  two 4-bit  words ,  carry in  and 3  bits to select a
+        function. Seven possible functions  can  be  performed: addition,
+        subtraction, preset,clear,  and, or, exclusive or. One can select
+        which word is be subtracted from the other.
+        The units produce propagate and generate signals for  use by '182
+        look-ahead carry units. *)
+     (* typical propagation delays -from data sheet *)
+     val t_c_f=8;
+     val t_ab_g=7;
+     val t_ab_p=7;
+     val t_ab_f=11;
+     val t_s_any=10;
+     val t_ab_c_f=t_ab_f-t_c_f;
+     val SN74F381 #(a,b,c,p,g,s2,s1,s0,f)=
+     (* a,b:4-bit operands (input)
+        c: carry in
+        p,g:propagate and generate signals (output)
+        s2,s1,s0: function select signals
+        f: 4 bit result *)
+        (a3,a2,a1,a0)=a /\
+        forall t:nS.
+                (p (t+t_ab_p)==propagate (a t) (b t))
+        /\
+        forall t:nS.
+                (g (t+t_ab_g)==generate (a t) (b t))
+        /\
+        forall t:nS.
+                (f (t+t_ab_f)==
+                        applyALU (a t) (b t) (c (t+t_ab_c_f)
+                                 (s2 t) (s1 t) (s0 t));
+
+\end{verbatim}

@@ -1,0 +1,562 @@
+\chapter{EPLD and PAL Programs}
+
+These are the programs used in the different EPLDs and PALS in the computer.
+
+\section{Control EPLD Program}
+
+This is the  Moore Machine to control instruction execution and memory accesses.
+It can fit upon an  EP610 or EP600.
+The state machine is illustrated in figure~\ref{fig:statemc}.
+
+\begin{verbatim}
+
+Steve Loughran
+Edinburgh University
+29/3/89
+1
+B
+EP600
+The Control EPLD -v3.0
+OPTIONS:TURBO = ON
+PART:EP600
+INPUTS:
+        %clock%
+        CLK@1
+%go run- active low%
+        GO@11
+%load registers%
+        LOAD@23
+%l/s - select read or write operation%
+        LS@14
+
+%halt - sent from the address decoders%
+        HALT@2
+OUTPUTS:
+
+%read/write line%
+        RW@10
+        
+%memory select - active high%
+        MS@21
+
+
+%load Memory Address Register%
+        LOADM@6
+
+%load Data register%
+        LOADD@4
+
+%load Instruction register%
+        LOADI@20
+
+%plus of course all the state outputs%
+        STATE0@19
+        STATE1@18
+        STATE2@17
+        STATE3@16
+        STATE4@15
+
+%source/destination select%
+        SOURCE@9
+
+%Increment the PC%
+        INCPC@7
+
+%load the SSR Pc register%
+        LOADPCR@5
+
+%operand output enable%
+        OEOP@22
+ 
+
+NETWORK:
+        %Define the outputs%
+        RW=CONF(RWc,)
+        MS=CONF(MSc,)
+        LOADM=CONF(LOADMc,)
+        LOADI=CONF(LOADIc,)
+        LOADD=CONF(LOADDc,)
+        SOURCE=CONF(SOURCEc,)
+        INCPC=CONF(INCPCc,)
+        LOADPCR=CONF(LOADPCRc,)
+        OEOP=CONF(OEOPc,)
+
+
+MACHINE:        control
+CLOCK:        CLK
+
+STATES: [STATE4 STATE3 STATE2 STATE1 STATE0]
+PU	[0 	0	0	0	0  ]
+S1	[0	0	0	0	1  ]
+S2	[0	0	0	1	0  ]
+S3	[0	0	0	1	1  ]
+S4	[0	0	1	0	0  ]
+S5	[0	0	1	0	1  ]
+S6	[0	0	1	1	0  ]
+S7	[0	0	1	1	1  ]
+S8	[0	1	0	0	0  ]
+S9	[0	1	0	0	1  ]
+S10	[0	1	0	1	0  ]
+I0	[1	0	0	0	0  ]
+I1	[1	0	0	0	1  ]
+I2	[1	0	0	1	0  ]
+I3	[1	0	0	1	1  ]
+I4	[1	0	1	0	0  ]
+I5	[1	0	1	0	1  ]
+I6	[1	1	1	0	0  ]
+I7	[1	1	1	0	1  ]
+
+PU:
+        IF GO * LOAD THEN S1
+
+S1:
+        IF /LOAD THEN S2
+        IF /GO THEN I0
+
+S2:
+        IF /LOAD THEN S2
+        IF /GO THEN S1
+        IF LS THEN S3
+        S7
+
+S3:        IF /HALT THEN PU
+        S4
+
+S4:        IF /HALT THEN PU
+        S5
+
+S5:     IF /HALT THEN PU
+        S6
+
+S6:     IF /HALT THEN PU
+                S1
+
+S7:     %start write%
+        S9
+
+%the next state should never be reached; the state machine programmer does not 
+recognise the exit transition, but will not compile without it...%
+
+S8:      %dead state%
+        S0
+                
+S9:     %keep writing; assert MS%
+        S10
+
+S10:        %stop writing%
+        S1
+
+% Instruction Execution %
+
+I0:        %Get PC, continue write%
+        IF GO THEN S1
+        I1
+
+I1:        %PC out%
+        I2
+
+I2:        %I-fetch & increment PC%
+        IF /HALT THEN PU
+        I3
+
+I3:        %I strobe%
+        I4
+
+I4:        %source fetch%
+        I5
+
+I5:        %source strobe%
+        IF /HALT THEN PU
+        I6
+
+I6:        %destination out%
+        I7
+
+I7:        %write to destination%
+        I0
+
+
+%now give the  signal outputs as a truth table%
+
+T_TAB: STATE4 STATE3 STATE2 STATE1 STATE0:
+        RWc MSc LOADMc LOADDc LOADIc LOADPCRc INCPCc OEOPc SOURCEc;
+     %halted%
+%PU%  0 0 0 0 0: 1 1 0 0 0 0 0 1 0;
+     %waiting%
+%S1%  0 0 0 0 1: 0 0 0 0 0 0 0 1 0;
+     %loaded%
+%S2%  0 0 0 1 0: 1 0 1 1 0 0 0 1 0;
+     %read-1%
+%S3%  0 0 0 1 1: 1 1 0 0 0 0 0 1 0;
+     %read-2%
+%S4%  0 0 1 0 0: 1 1 0 0 0 0 0 1 0;
+     %read-3%
+%S5%  0 0 1 0 1: 1 1 0 0 0 0 0 1 0;
+     %read-end%
+%S6%  0 0 1 1 0: 1 0 0 1 0 0 0 1 0;
+
+     %write-1%
+%S7%  0 0 1 1 1: 0 0 0 0 0 0 0 1 0;
+
+% no S8 outputs given%
+
+     %write-2%
+%S9%  0 1 0 0 1: 0 1 0 0 0 0 0 1 0;
+     %write-end%
+%S10% 0 1 0 1 0: 0 0 0 0 0 0 0 1 0;
+
+
+%Instruction execution signals%
+
+     %get pc%
+     %pc-addr%
+%I0%  1 0 0 0 0: 0 0 0 0 0 1 0 1 0;
+     %i-fetch (output PC)%
+%I1%  1 0 0 0 1: 1 0 1 0 0 0 0 1 0;
+     %i-strobe%
+%I2%  1 0 0 1 0: 1 1 0 0 0 0 0 0 0;
+     %s-addr (calculate source address)
+%I3%  1 0 0 1 1: 1 1 0 0 1 0 1 0 0;
+     %s-fetch%
+%I4%  1 0 1 0 0: 1 1 1 0 0 0 0 0 1;
+     %s-strobe%
+%I5%  1 0 1 0 1: 1 1 0 0 0 0 0 0 1;
+     %d-addr%
+%I6%  1 1 1 0 0: 0 0 1 1 0 0 0 1 0;
+     %d-write%
+%I7%  1 1 1 0 1: 0 1 0 0 0 0 0 0 0;
+END$        
+\end{verbatim}
+\begin{figure}
+\vspace{20cm}
+\caption{Control Unit State Transition Diagram}
+\label{fig:statemc}
+\end{figure}
+\clearpage
+\section{Address Decoders}
+The address decoder is implemented in two EPLDS.
+At the slow speeds of my prototype, both could in fact be combined into the
+single EP310 EPLD.
+If the control EPLD was ever upgraded to an EP610, then the complex address decoder would also have to be upgraded to one which could operate at the same clock speed, which an EP310 or EP320 can not do.
+
+\subsection{Complex Address Decoder}
+This  EP600 program decodes the following signals:-
+\begin{itemize}
+\item the control of the source of the PC increment signal.
+The increment signal should only be connected to the data bus for one clock cycle,
+when the skip register is written to.
+This increment must be done before the PC is loaded into the PCR or the skip is delayed.
+\item the loading of the CC register after a write to the Carry.
+\item loading the CC and the ACC registers after an ALU operation.
+This must be done at least 100~nS after the start of the  write cycle.
+\end{itemize}
+To control the timing of signal issue, a Mealy Machine is used.
+
+\begin{verbatim}
+Steve Loughran
+Edinburgh University
+30/3/89
+1
+A
+EP600
+Complex Address Decoder
+OPTION:TURBO=ON
+PART:EP600
+INPUTS:
+        %clock%
+        CLK@1
+        %control signals%
+        MS@2
+        RW@23
+        %address lines%
+        A14@6
+        A4@7
+        A3@5
+        A1@10
+        A0@11
+
+OUTPUTS:
+%state outputs%
+        C0@9,C1@8,C2@4
+%load register signals%
+        LOADA@15
+        LOADCC@16
+%select source of PC count instruction%
+        SKIP@17
+
+NETWORK:
+        SKIP=CONF(SKIPc,)
+
+MACHINE: complex
+CLOCK: CLK
+STATES: [C2     C1	C0	LOADA	LOADCC]
+PU	[0	0	0	0	0]
+S0	[1	1	1	0	0]
+S2	[0	1	0	0	0]
+S3	[0	1	1	0	0]
+S5	[1	0	1	1	1]
+S6	[1	1	0	0	1]
+
+PU:
+        S0
+S0:
+        %skip%
+        IF MS*/A14*/A4*/A3*/A1*A0*/RW THEN S2
+        %alu operation%
+        IF MS*/A14*/RW*A4 THEN S3
+        %load Carry%
+        IF MS*/RW*/A14*/A4*A3 THEN S6
+
+        %enable count from data bus0 for one cycle only%
+        OUTPUTS:
+                IF MS*/A14*/A4*/A3*/A1*A0*/RW THEN SKIPc
+S1:
+        S2
+S2:         %wait till end of write cycle%
+        IF /MS + RW THEN S0
+
+        %perform an ALU operation%
+S3:
+        S5
+S5:           %wait till end of cycle%
+        IF /MS +RW THEN S0
+
+                %load condition code register%
+S6:           %wait till end of write cycle%
+        IF /MS +RW THEN S0
+END$
+\end{verbatim}
+
+\subsection{Simple Address Decoder}
+The remaining EPLD addresses are all implemented in a purely combinatorial manner.
+\begin{verbatim}
+Steve Loughran
+Edinburgh University
+30/3/89
+1
+A
+EP310
+Simple Address Decoder
+OPTION: TURBO=ON
+PART: EP310
+INPUTS:
+        CLK@1
+        % control signals%
+        RW@3
+        MS@2
+        %address lines%
+        A0@9
+        A1@8
+        A3@6
+        A4@5
+        A14@4
+OUTPUTS:
+        HALT@19
+        LOADX@18
+        LOADY@17
+        LOADPC@16
+        OEACC@15
+        OECC@14
+NETWORK:
+        CLK=INP(CLK)
+        RW=INP(RW)
+        MS=INP(MS)
+        A0=INP(A0)
+        A1=INP(A1)
+        A3=INP(A3)
+        A4=INP(A4)
+        A14=INP(A14)
+        HALT=CONF(HALTc,)
+        LOADX=CONF(LOADXc,)
+        LOADY=CONF(LOADYc,)
+        LOADPC=CONF(LOADPCc,)
+        OEACC=CONF(OEACCc,)
+        OECC=CONF(OECCc,)
+EQUATIONS:
+%the halt signal%
+        HALTc=/(MS*/RW * /A14 * /A4 * /A3);
+%output enables%
+        OEACCc=/(MS * RW * /A14 * /A4 * /A3);
+        OECCc=/(MS * /RW * /A14 * A4);
+%register loading%
+        LOADPCc=MS * /RW * /A14 * /A4 */A3 */A1 */A0;
+        LOADXc=MS * /RW * /A14 * /A4 * /A3 */A1 */A0;
+        LOADYc=MS */RW * /A14 * /A4 */A3 *A1 * A0;
+END$
+\end{verbatim}
+\section{ALU shift and condition code programs}
+
+The ALU shift unit is implemented with four PALS identically programmed to shift seven bits 
+a single bit to the right, and a special fifth device to shift the most significant bits.
+Currently this most significant shift is performed in an EPLD, rather than a PAL.
+The Condition Code evaluation is also done by an EPLD.
+This was because some spare EPLDs were available for use.
+By using these instead of PALS I avoided having to irreparably program two PALS. 
+This has increased the propagation delay of the ALU by 20 nS; 
+the PALs  need to be programmed to achieve full speed.
+
+\subsection{Shift PALS}
+The first four PALS were all programmed with the PAL software on the APMS.
+This uses two files, a pin specification file and an equation specification file.
+
+\subsubsection{Pinout}
+\begin{verbatim}
+{shift1.pin}
+{the pinouts for the first four shift & zero detect PALS}
+
+1 F0
+2 F1
+3 F2
+4 F3
+5 F4
+6 F5
+7 F6
+8 F7
+9 SHIFT
+0
+12 Z
+19 H0
+18 H1
+17 H2
+16 H3
+15 H4
+14 H5
+13 H6
+0
+\end{verbatim}
+
+\subsubsection{equations}
+\begin{verbatim}
+{Stephen Loughran}
+{Edinburgh University CS4}
+{15/5/89}
+{PAL 10H8}
+{ALU Shift Pal -1}
+{Pal Implementation}
+MODE EQUIN
+IN F0,F1,F2,F3,F4,F5,F6,F7,SHIFT
+
+	{each output is the input if shift is false}
+	{or the input to the left if the shift signal is true}
+	
+        H0=F0.\SHIFT+F1.SHIFT
+        H1=F1.\SHIFT+F2.SHIFT
+        H2=F2.\SHIFT+F3.SHIFT
+        H3=F3.\SHIFT+F4.SHIFT
+        H4=F4.\SHIFT+F5.SHIFT
+        H5=F5.\SHIFT+F6.SHIFT
+        H6=F6.\SHIFT+F7.SHIFT
+        
+        {The zero flag normally tests inputs 0-6 for being zero}
+        {returning true if so}
+        {but on a shift tests bits 1-7 instead}
+Z=\SHIFT.\F0.\F1.\F2.\F3.\F4.\F5.\F6+SHIFT.\F1.\F2.\F3.\F4.\F5.\F6.\F7
+OUT Z,H6,H5,H4,H3,H2,H1,H0
+\end{verbatim}
+
+\subsection{The Shift EPLD}
+This EPLD program shifts the most significant four bits of the result
+and the carry flag.
+It differs from the previous shift PALS in that the number of bits being tested
+for zero is less ---the carry flag is not included in any test.
+\begin{verbatim}
+Stephen Loughran
+Edinburgh University CS4
+15/5/89
+1
+A
+EP310
+ALU Shift Pal -2   Most Significant Bits
+OPTION: TURBO=ON
+PART: EP310
+INPUTS:
+        F28@1
+        F29@2
+        F30@3
+        F31@4
+        Cin@5
+        F0@6
+        SHIFT@9
+OUTPUTS:
+        Z@12
+        CARRY@15
+        H31@16
+        H30@17
+        H29@18
+        H28@19
+NETWORK:
+        F28=INP(F28)
+        F29=INP(F29)
+        F30=INP(F30)
+        F31=INP(F31)
+        Cin=INP(Cin)
+        F0=INP(F0)
+        SHIFT=INP(SHIFT)
+
+        H28=CONF(H28c,)
+        H29=CONF(H29c,)
+        H30=CONF(H30c,)
+        H31=CONF(H31c,)
+        CARRY=CONF(CARRYc,)
+        Z=CONF(Zc,)
+
+EQUATIONS:
+        H28c=F28*/SHIFT+F29*SHIFT;
+        H29c=F29*/SHIFT+F30*SHIFT;
+        H30c=F30*/SHIFT+F31*SHIFT;
+        H31c=F31*/SHIFT+Cin*SHIFT;
+        CARRYc=Cin*/SHIFT+F0*SHIFT;
+        Zc=/SHIFT*/F28*/F29*/F30*/F31+
+            SHIFT*/F29*/F30*/F31*/Cin;
+END$
+\end{verbatim}
+\subsection{Condition Code EPLD}
+
+This EPLD generates the zero and carry flags for the condition code register.
+The Zero flag is true when all five zero flags from the Shift Unit are true.
+The carry flag is selected from the result of the shift unit or bit zero of the data bus, depending upon the state of address bus line 4.
+In this way the carry flag can be set by an explicit write operation.
+\begin{verbatim}
+Steve Loughran
+Edinburgh University CS4
+13/5/89
+2
+A
+EP310
+Condition Code PAL/EPLD
+OPTION:TURBO=ON
+PART:EP310
+INPUTS:
+        ADDR4@3
+        Z0@4
+        Z1@5
+        DATA0@6
+        Z2@7
+        Z3@8
+        Z4@9
+        CIN@11
+OUTPUTS:
+        ZERO@19
+        CARRY@17
+NETWORK:
+        ADDR4=INP(ADDR4)
+        Z0=INP(Z0)
+        Z1=INP(Z1)
+        Z2=INP(Z2)
+        Z3=INP(Z3)
+        Z4=INP(Z4)
+        DATA0=INP(DATA0)
+        CIN=INP(CIN)
+        ZERO=CONF(ZEROc,)
+        CARRY=CONF(CARRYc,)
+EQUATIONS:
+        %Select carry from ALU or Databus%
+        CARRYc=ADDR4*CIN+/ADDR4*DATA0;
+
+        %calculate the Zero flag%
+        ZEROc=Z0*Z1*Z2*Z3*Z4;
+END$
+\end{verbatim}
+
+
+

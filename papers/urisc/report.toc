@@ -1,0 +1,120 @@
+\contentsline {chapter}{\numberline {1}Introduction}{8}
+\contentsline {section}{\numberline {1.1}The Reduced Instruction Set Computer}{9}
+\contentsline {section}{\numberline {1.2}Ultimate RISCs}{11}
+\contentsline {section}{\numberline {1.3}Formal Specification of Hardware}{15}
+\contentsline {subsubsection}{The Viper-1 Microprocessor}{18}
+\contentsline {chapter}{\numberline {2}Architecture}{20}
+\contentsline {section}{\numberline {2.1}Instruction Set}{20}
+\contentsline {section}{\numberline {2.2}Block Structure}{21}
+\contentsline {section}{\numberline {2.3}Bus Widths}{24}
+\contentsline {section}{\numberline {2.4}Interrupts}{24}
+\contentsline {chapter}{\numberline {3}Implementation Issues}{26}
+\contentsline {section}{\numberline {3.1}Components}{27}
+\contentsline {subsection}{\numberline {3.1.1}Transistor-Transistor Logic (TTL)}{27}
+\contentsline {subsection}{\numberline {3.1.2}Programmable Array Logic (PALS)}{28}
+\contentsline {subsection}{\numberline {3.1.3}Erasable Programmable Logic Devices (EPLDS)}{28}
+\contentsline {subsection}{\numberline {3.1.4}Serial Shadow Registers (SSRS)}{28}
+\contentsline {section}{\numberline {3.2}Wiring Methods}{29}
+\contentsline {chapter}{\numberline {4}The Host Interface}{31}
+\contentsline {section}{\numberline {4.1}The Monitor}{33}
+\contentsline {subsection}{\numberline {4.1.1}A Virtual PIA}{34}
+\contentsline {subsection}{\numberline {4.1.2}The Main Monitor}{36}
+\contentsline {chapter}{\numberline {5}The Execution Unit}{38}
+\contentsline {section}{\numberline {5.1}Design}{38}
+\contentsline {section}{\numberline {5.2}Implementation}{39}
+\contentsline {subsection}{\numberline {5.2.1}Registers}{39}
+\contentsline {subsection}{\numberline {5.2.2}Connections}{42}
+\contentsline {subsection}{\numberline {5.2.3}Skipping}{42}
+\contentsline {chapter}{\numberline {6}The Control Unit}{44}
+\contentsline {section}{\numberline {6.1}Design}{44}
+\contentsline {section}{\numberline {6.2}Implementation}{45}
+\contentsline {subsection}{\numberline {6.2.1}Clock}{45}
+\contentsline {subsection}{\numberline {6.2.2}Difficulties with EPLDS}{47}
+\contentsline {chapter}{\numberline {7}The ALU}{48}
+\contentsline {section}{\numberline {7.1}Design}{48}
+\contentsline {section}{\numberline {7.2}Implementation}{49}
+\contentsline {subsubsection}{Overflow}{50}
+\contentsline {subsubsection}{Memory Interface}{52}
+\contentsline {chapter}{\numberline {8}Memory}{54}
+\contentsline {section}{\numberline {8.1}Overview}{54}
+\contentsline {section}{\numberline {8.2}Address Decoding}{55}
+\contentsline {subsection}{\numberline {8.2.1}Address Decode Implementation}{57}
+\contentsline {section}{\numberline {8.3}Random Access Memory}{59}
+\contentsline {chapter}{\numberline {9}The Formal Specification}{60}
+\contentsline {section}{\numberline {9.1}Methodology}{60}
+\contentsline {section}{\numberline {9.2}First Specification}{62}
+\contentsline {section}{\numberline {9.3}Second Specification}{64}
+\contentsline {section}{\numberline {9.4}Summary}{66}
+\contentsline {chapter}{\numberline {10}Performance}{68}
+\contentsline {section}{\numberline {10.1}Execution Unit Delays}{69}
+\contentsline {section}{\numberline {10.2}ALU timing}{69}
+\contentsline {section}{\numberline {10.3}Memory Delays}{70}
+\contentsline {subsection}{\numberline {10.3.1}Memory Read Accesses}{70}
+\contentsline {subsection}{\numberline {10.3.2}Write Access}{70}
+\contentsline {section}{\numberline {10.4}Control Unit}{71}
+\contentsline {section}{\numberline {10.5}Maximum Performance}{72}
+\contentsline {section}{\numberline {10.6}MIPS as a measure of performance}{72}
+\contentsline {chapter}{\numberline {11}Conclusions}{74}
+\contentsline {section}{\numberline {11.1}My Implementation}{74}
+\contentsline {section}{\numberline {11.2}Further Development}{76}
+\contentsline {subsection}{\numberline {11.2.1}Extended Indexing}{76}
+\contentsline {subsection}{\numberline {11.2.2}A Floating Point Unit}{77}
+\contentsline {subsection}{\numberline {11.2.3}Extended Addressing}{77}
+\contentsline {subsection}{\numberline {11.2.4}Software Support}{78}
+\contentsline {section}{\numberline {11.3}The MOVE architecture}{78}
+\contentsline {subsection}{\numberline {11.3.1}The Advantages}{78}
+\contentsline {subsection}{\numberline {11.3.2}The Disadvantages}{80}
+\contentsline {subsection}{\numberline {11.3.3}VLSI Implementation}{81}
+\contentsline {section}{\numberline {11.4}The Future of Formal Methods in Hardware Design}{82}
+\contentsline {chapter}{\numberline {A}Acknowledgements}{84}
+\contentsline {section}{\numberline {A.1}People}{84}
+\contentsline {section}{\numberline {A.2}Kit}{85}
+\contentsline {chapter}{\numberline {B}Components Used}{87}
+\contentsline {chapter}{\numberline {C}Construction}{90}
+\contentsline {section}{\numberline {C.1}Layout}{90}
+\contentsline {section}{\numberline {C.2}Power Supply}{93}
+\contentsline {section}{\numberline {C.3}Construction Problems}{94}
+\contentsline {subsubsection}{Faulty EPLD programming}{94}
+\contentsline {subsubsection}{Faulty Wiring}{94}
+\contentsline {subsubsection}{Power Supply Difficulties}{95}
+\contentsline {subsubsection}{Avoiding Construction Problems}{95}
+\contentsline {chapter}{\numberline {D}Using the Monitor Program}{97}
+\contentsline {section}{\numberline {D.1}Main Points}{97}
+\contentsline {section}{\numberline {D.2}Files}{98}
+\contentsline {section}{\numberline {D.3}Using the monitor}{98}
+\contentsline {section}{\numberline {D.4}States}{99}
+\contentsline {subsubsection}{Halted}{99}
+\contentsline {subsubsection}{Waiting}{99}
+\contentsline {subsubsection}{No Board!}{100}
+\contentsline {subsubsection}{Memory Access States}{100}
+\contentsline {subsubsection}{Unknown States}{100}
+\contentsline {subsubsection}{Instruction Execution}{100}
+\contentsline {section}{\numberline {D.5}Basic Commands}{100}
+\contentsline {subsubsection}{Register Manipulation}{100}
+\contentsline {subsubsection}{Memory Access}{101}
+\contentsline {subsubsection}{Instruction Execution}{101}
+\contentsline {section}{\numberline {D.6}Low Level Commands}{102}
+\contentsline {subsubsection}{Signal Manipulation}{102}
+\contentsline {subsubsection}{Clock Control}{102}
+\contentsline {subsubsection}{Low Level Register Manipulation}{102}
+\contentsline {subsubsection}{Memory Testing}{103}
+\contentsline {subsubsection}{6809 commands}{104}
+\contentsline {section}{\numberline {D.7}Maintenance}{104}
+\contentsline {subsection}{\numberline {D.7.1}States}{105}
+\contentsline {subsection}{\numberline {D.7.2}Registers}{105}
+\contentsline {section}{\numberline {D.8}Error Messages}{105}
+\contentsline {chapter}{\numberline {E}EPLD and PAL Programs}{108}
+\contentsline {section}{\numberline {E.1}Control EPLD Program}{108}
+\contentsline {section}{\numberline {E.2}Address Decoders}{118}
+\contentsline {subsection}{\numberline {E.2.1}Complex Address Decoder}{118}
+\contentsline {subsection}{\numberline {E.2.2}Simple Address Decoder}{121}
+\contentsline {section}{\numberline {E.3}ALU shift and condition code programs}{123}
+\contentsline {subsection}{\numberline {E.3.1}Shift PALS}{123}
+\contentsline {subsubsection}{Pinout}{124}
+\contentsline {subsubsection}{equations}{124}
+\contentsline {subsection}{\numberline {E.3.2}The Shift EPLD}{125}
+\contentsline {subsection}{\numberline {E.3.3}Condition Code EPLD}{127}
+\contentsline {chapter}{\numberline {F}The Formal Specification and Simulation}{130}
+\contentsline {section}{\numberline {F.1}Lambda Specification}{130}
+\contentsline {section}{\numberline {F.2}ML simulation}{152}
+\contentsline {chapter}{\numberline {G}Circuit Diagrams}{179}

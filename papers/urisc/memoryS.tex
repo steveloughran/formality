@@ -1,0 +1,149 @@
+The memory of the computer can be specified with some difficulty.
+RAM is described by a curried function.
+A number of boolean functions decode addresses and generate the halt signal.
+The read function returns either a RAM location's contents, the accumulator or
+a condition flag.
+The write function is more complex, being able to update the entire machine state.
+\begin{verbatim}
+(*	memory.SIM	v1.7 	5/24/89 *)
+(*	==========	====	======= *)
+(* Simulated memory functions *)         
+(* functional memory specification: very memory inefficient *)
+
+	     fun RAM (d:Int32) mem (a:Int15) aa= 
+	          (* taken from Lambda's examples *)
+                if a=aa then d else mem aa; 
+                
+           (*reset state -not quite true*)
+          fun RAM0 (_:Int15)=Zero32; 
+           
+          (* A function to test if an address is that of ram or not 
+                i.e. returns True iff  bit 14 is True *)
+
+          fun ram_address a=
+                addressBit14  a;
+
+          (* A function to test if an address references the alu-
+                i.e is in the range of addresses 16-31
+                -or equivalently bit 4 =True and it is not a ram address *)
+
+          fun alu_address a=
+                ~(ram_address  a) && (addressBit4  a);
+
+
+          (*  a function to check if an address is valid for a read.
+          a boolean value will be returned, true if an address is valid,
+          false otherwise.  This is  used to  intercept reads on write only
+          registers.
+          Can be implemented as a PAL equation *)
+
+          (* A function to read memory.  Will either  return the  data at a
+          RAM 
+          location or the contents of a memory mapped register*)
+
+          (* invalid === the address is <=7 *)
+
+
+          fun valid_address a=
+                (ram_address  a) |||
+                (alu_address  a) |||
+                (addressBit3  a);
+
+          exception can't_read; 
+
+          fun read state a= 
+                if ram_address a then get_mem state a 
+                else if addressBit4 a then 
+                  Expand ( if addressBit1 a then 
+                   if addressBit0 a then get_carry (get_alu state) 
+                                     else get_overflow (get_alu state) 
+                    else if addressBit0 a then get_negative (get_alu state)
+
+                         else get_zero ( get_alu state)) 
+                else  
+		 if addressBit3 a then get_acc (get_alu state)
+		 else raise can't_read; 
+
+          (* Write 
+                This function takes a  state, an  address and  a data
+                item. It  will then  use this item to update the RISC
+                state. The program counter will always be  adjusted -
+                normally being  incremented, but after a write to the
+                PC then it will be  changed  to  the  supplied value.
+                Other internal registers - X,Y,skip,Acc and Carry can
+                also  be  written  to.  Writing  to   the  other  ALU
+                addresses causes  the ALU  to be activated to perform
+                an operation upon the Accumulator,  the carry and the
+                data supplied.
+                Writes to  a ram  address cause the data to be stored
+                at the specifed location. *)
+
+          fun write state a data=
+           if a=PC orelse (a=PLUS4 PC) then     (* program counter*)
+                ({       mem=get_mem state,
+                        exstate={
+                                pc=Truncate15 data,
+                                x=get_x (get_ex state),
+                                y=get_y (get_ex state),
+                                halt=get_halt (get_ex state)},
+                        alustate=get_alu state}:State)
+           else
+           if a=SKIP orelse (a=PLUS4 SKIP) then
+                {       mem=get_mem state,
+                        exstate= {pc=
+				(if dataBit0 data then
+					S15 (get_pc (get_ex state))
+				else get_pc (get_ex state)),
+                                x=get_x (get_ex state),
+                                y=get_y (get_ex state),
+                                halt=get_halt (get_ex state)},
+                        alustate=get_alu state} 
+           else
+           if a=X orelse a=PLUS4 X then
+                {       mem=get_mem state,
+                        exstate= {
+                                pc=get_pc (get_ex state),
+                                x=Truncate15 data,
+                                y=get_y (get_ex state),
+                                halt=get_halt (get_ex state)},
+                        alustate=get_alu state}
+           else
+           if a=Y orelse a=PLUS4 Y then
+                {       mem=get_mem state,
+                        exstate= {
+                                pc=get_pc (get_ex state),
+                                x=get_x (get_ex state),
+                                y=Truncate15 data,
+                                halt=get_halt (get_ex state)},
+                        alustate=get_alu state}
+           else
+           if  ram_address a then
+                {       mem=RAM data (get_mem state) a,
+                        exstate=get_ex state,
+                        alustate=get_alu state}
+           else
+           if alu_address a then
+                {       mem = get_mem state,
+                        exstate= get_ex state,
+                        alustate= alu (get_alu state) data a
+                        }
+           else
+                (* else write to carry flag *)
+                (* warning: the state of the N,Z,V flags can't be predicted
+                        after this operation: an ADD 0 operation should be
+                        performed to reevaluate the other flags-
+			an action which'll clear the carry *)
+                {       mem = get_mem state,
+			exstate=get_ex state,
+                        alustate= let
+				val { acc=_,z=z,n=n,v=v,carry=c}=
+					alu (get_alu state) data a
+				in
+				{ acc=get_acc (get_alu state),
+                                        z=z,
+                                        n=n,
+                                        v=v,
+                                        carry=c}
+				end
+                        }; 
+\end{verbatim}

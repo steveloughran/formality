@@ -1,0 +1,231 @@
+\chapter{The Formal Specification}
+
+
+\section{Methodology}
+The computer has been formally specified at the architectural level.
+ The specification methodology used was {\bf Lambda} \cite{ahl:lambda}.
+Designed especially 
+ for hardware specification, it is implemented as an ML 
+based system upon the Sun workstations. 
+A semi-automated theorem prover  forms the 
+core of Lambda, which enables properties of specifications to be 
+examined, and reifications to be verified.
+
+The system is designed to synthesise a working design from a 
+behavioural specification, by reifying the design until it 
+describes individual components ---{\em forward synthesis}.
+ In such a way the correctness of a design 
+can be guaranteed without performing a verification. 
+Written in the language ML it has a similar syntax, but with extensions to the language.
+This enables part of a specification to be executed as  ML functions,
+allowing the hardware's  properties to be simulated in software.
+
+The  Lambda specification language is more powerful than an 
+executable programming language. Rather than describing a function 
+or procedure to convert from the input to the output, one just specifies  preconditions and
+postconditions. 
+
+{\samepage
+For example, the function:-
+{\tt
+\begin{verbatim}
+        fun square_root (x:Natural) = iota y. y*y==x;
+\end{verbatim}
+}
+
+describes the square root function in Lambda but not ML.
+}
+Timing constraints can also be included into {\em rewrite rules}
+{\tt
+\begin{verbatim}
+        val sqrt_unit#(x,y)=
+                forall t.
+                     y (t+100) == square_root (x t);
+\end{verbatim}			
+}
+This describes a combinatorial square root unit which outputs at time
+t+100 the square root of the input at time t.
+
+Functional units can  be joined together by use of common variable bindings
+{\tt
+\begin{verbatim}
+        val double_sqrt_unit#(x,z)=
+              sqrt_unit(x,y) /\ sqrt_unit(y,z);		
+\end{verbatim}
+}
+Such functions, along with the definition of the types of the variables of X,Y and Z, can be parsed by  Lambda to produce an environment of rules.
+These rules can be used to prove hypotheses, such as that the time for a double\_sqrt\_unit to evaluate an expression would take 200 units of time.
+
+
+This system allows someone to specify any component  or module as a collection of related inputs and outputs.
+A number of components can  be linked together to form a larger module,
+or a complete design.
+	
+%\newpage
+Unfortunately, none of  the components I used had  
+been formally specified. While I  produced some specifications based on the informal specifications in the databooks their correctness  can never be guaranteed. 
+
+
+Specification from scratch is an extremely slow process, and I was not able to describe the whole computer in this depth in the time available.
+ I  described the operation of the computer at a very high level, and then  expanded the description of the ALU to a greater depth.
+
+\section {First Specification} 
+
+My first specification was based upon an example specification of a simple computer in the Lambda Manual.
+It was written in a early version of Lambda, which had a syntax more complex than that of ML.
+First it was necessary to specify the types of data which the computer dealt with. 
+Abstract datatypes of 15 and 32 bit integers were defined without giving their internal structure.
+Allowable 
+operations ---comparison and addition for 15 bit numbers, all ALU 
+operations for 32 bit numbers--- were stated as existing and being 
+total. Their exact functions were not given.
+ Random Access Memory 
+was then defined as a function of 15 bit addresses to  32 bit data words. 
+
+The computer can at any moment in time  be described by  the contents of every  register
+and  memory location.
+ As an instruction is executed this state   changes,
+unless it is halted or in an infinite loop.
+
+The state of the 
+computer was described as a tuple of
+\begin{verbatim}
+        <memory, execution unit state, alu state> 
+\end{verbatim}
+where the execution unit state was 
+\begin{verbatim}
+        <PC,X,Y,skip,halt>
+\end{verbatim}
+    and the
+ALU state was
+\begin{verbatim}
+        <ACC,z,n,v,c>
+\end{verbatim}
+ 
+
+ The operation of the whole machine was  given as a transition from 
+state to state. 
+Each transition was caused by the  execution of
+ a single instruction.
+The most complex part of this specification was the description of the read and write operations.
+This was because of the memory mapping of registers.
+The read function was supplied with the computer state and a 15 bit address to return a 32 bit integer. 
+A separate function was used to validate the address prior to the read access.
+The write function took as parameters a  state, an address and a new value, returning a new state. This allowed both registers and RAM to be updated.
+
+The transition from one state to another during instruction execution was described by a function which  fetched the next instruction, and incremented the PC.
+It then calculated the source  address and moved its contents to the  destination address.  
+If the halt flag was set this function did nothing. 
+Before each read the address was validated ---any illegal access terminated the function and set the halt flag.
+If the skip flag was set the program counter was merely incremented and the flag cleared; no instruction was executed.
+
+This does actually resemble the actual process of instruction fetch
+and execute, except that the halt and skip flags do not actually
+exist. 
+Skipping is performed by hard-wired logic, and the halt state is merely another state within the control unit's Moore Machine.
+These differences are invisible to the user. 
+At this level the operation of the computer is being described, even if it differs slightly from the actual implementation.
+
+
+\section{Second Specification}
+
+By Christmas a new version of Lambda was available, with a syntax more  similar to ML. The design of the Ultimate RISC had become clearer, partly through the initial specification, but also as I  designed the ALU.
+
+I therefore upgraded the specification to support both the new notation and to be consistent with the revised design.
+
+This was done by first expanding the 15-bit and 32-bit integer abstract data types to  boolean tuples, with functions for conversion between these representations and that of natural numbers.
+
+I then wrote all the operations performed by a 74381 ALU IC as 
+functions acting upon boolean four-tuples. A general function was 
+written to apply the operation selected by the control lines.
+ The production of carry signals from the 74182 carry lookahead generators were 
+also specified. 
+In both cases the specifications were based upon  
+data sheets from TI and AMD. 
+It was then possible to describe the ALU components by relating outputs as 
+the result of the functions applied upon the inputs of a previous time 
+---the temporal difference being the propagation delay of the device.
+
+The logic equations of the PALS were all specified likewise, enabling the 
+entire combinatorial portion of the ALU to be accurately described.
+
+The remainder of the specification was derived from the first  specification of the Ultimate RISC. 
+ 
+I did not go about proving the two specifications were identical.  
+Nor did I 
+ try to prove properties of the new specification, such as
+the non-folding of 
+RAM addresses and the persistence of data within. 
+ Given estimates of 
+the time to verify the correctness of specifications of other computers, 
+there would have been no possibility of both verifying the specifications and 
+attempting to build anything.
+The verification would probably  form a complete project, 
+requiring someone far more experienced in machine assisted proofs than myself.
+Instead I  produced a simulation, by modifying the specification  to  execute in ML.
+
+ To enable my 
+specification to be executed I had to remove all instances of 
+postconditions and timing constraints. 
+The other problem was `feedback'.
+The 74381 units produce signals which are 
+passed to the carry generators. These then  return a carry signals to be evaluated with the earlier inputs. 
+These were simulated by iterations of the functions.
+
+I also wrote a `monitor' for the simplified specification which provided a 
+front end for the simulation with facilities such as memory read/write, 
+instruction assembly and dissassembly, register manipulation and 
+program execution. 
+
+There were  subtle differences between ML and Lambda. Notably ML's integers were more restricted than Lambda's type Natural.
+ Both the Edinburgh SML and the faster New Jersey ML had only 32 bit signed integers, rendering conversion between these numbers and 32 bit boolean tuples difficult.
+The specification only executed satisfactorily in PolyML,
+which was   prone to unannounced field upgrades, so that functions   available in February did not work in April.
+
+
+
+\section{Summary}
+
+Overall the specification and simulation comprise 
+ 1400 lines, and are somewhat more difficult to understand at a 
+glance than P-CAD circuit diagrams. Much of the code is devoted to 
+mathematical and component definitions. For the success of hardware 
+specification languages I believe it will be necessary to produce 
+libraries of verified maths functions, components  and standard cells.
+
+ It is not a complete specification of the hardware of the 
+ Ultimate RISC.
+ For this the computer must be described as a collection 
+of units, communicating via control signals and synchronised by a 
+clock. 
+The time delays of all operations must be specified, along 
+with the ability of the host to control the clock and write to 
+registers. 
+
+The simulation has been used to test the operation of the ALU, 
+especially the programming of the PALS,  uncovering a couple 
+of mistakes which could have proved  costly.
+It also demonstrated that the carry flag had to be set prior to a subtraction,  a fact the compiler writer needed. 
+
+While I have not performed any proofs, specifying the computer was a valuable exercise. 
+ Describing the machine at a high level, I was forced to consider many details which any other method of description would ignore;
+ this clarified the hardware implementation. 
+
+The specification of an existing design did seem easier than the forward synthesis method for which Lambda aims to provide. 
+Forward synthesis should reduce the number of proofs required, and thus increase the speed of designing with formal methods.
+
+Even without the verification between levels, a specification which describes the computer is of use  describing the system to a software developer. 
+For this to be the case the software designers  need to be able to understand the notation. 
+This is an argument in favour of using a more widely known notation such as {\bf Z}, which seems to be primarily for software development. 
+If programs were specified in the same notation as the hardware  the two would be able to be integrated in order to prove facts about the combined system.
+
+Ideally the specification should have been continued till every component was specified along with the interconnections.
+A netlist could have been extracted and sent to the BEPI machine for automated wiring, and the PAL and EPLD programs also generated.
+If these processes could be at least partially automated, then the Lambda system could form the core of an an automated design and manufacture system.
+Without such a system,   manual intervention ---whether P-Cad design or wire-wrapping--- introduces elements of risk. For the full benefit of formal methods the implementation must match the specification.
+
+
+
+
+
+

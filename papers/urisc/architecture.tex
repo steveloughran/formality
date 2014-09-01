@@ -1,0 +1,106 @@
+\chapter{Architecture}
+
+\section{Instruction Set}
+
+The single instruction supported is
+{\bf
+\begin{verbatim}
+ 	          MOVE source,destination
+\end{verbatim}
+}
+The contents of the source address are moved to the destination.
+As it stands, any indirect addressing ---such as pointers or array indexing--- would have be performed by self-modifying code, 
+which makes programs difficult to write and debug.
+ By providing index registers for the operands these problems disappear. The 
+price is  increased hardware complexity and some delays caused 
+by the addition of offsets.
+
+There are two index registers, one for the source operand and another for the destination. This should be more flexible than a single index register.
+Using one bit per operand to indicate whether it is to be 
+indexed or not, two bits are needed per instruction to indicate the 
+addressing modes. 
+
+It can  be argued that these bits constitute 
+an instruction opcode field  and thus there are actually four 
+instructions. An alternative viewpoint is that the computer has a 
+`virtual memory' for operands of double the real memory size. 
+Virtual addresses with the most significant bit set are merely translated into the real address segment starting at the index register's value.
+
+\section{Block Structure}
+
+The block diagram of the computer is given in figure \ref{figure:block}. Note the 
+absence of any instruction decode unit. The {\bf Control Unit} generates 
+ the control and timing signals. It  is controlled by 
+a host computer via the {\bf Host Interface}. 
+The {\bf Execution Unit} fetches and 
+executes instructions; it contains a number of internal registers 
+to enable this task to be carried out. 
+The {\bf Arithmetic and Logic Unit} ---the {\bf ALU}--- is used to perform  mathematical and bitwise operations upon data words, and produce condition flags 
+describing the result.
+
+Manipulation of the ALU and registers within the execution 
+unit can not, of course, be performed by  explicit instructions.  
+Instead they are made to appear as locations within the computer's memory,
+allowing data and control information to be moved to, from and between them.
+
+Memory not occupied by these units contains 
+words of random access memory, for  program and 
+data storage.
+
+Some locations in memory are declared as write only. Any attempt to read from these addresses constitutes an error, and the computer  enters a halted state.
+This  detects some erroneous instructions, and
+ is also used to explicitly halt the execution of a program.
+
+There have  been claims that the provision of active elements within the memory is `cheating', and that there is really more than one instruction.
+The obvious counter to this is the fact that  most computers have external devices attached to their memory busses, but no-one includes the capabilities of disc or display controllers when measuring the complexity of the CPU instruction set.
+
+
+There are separate address and data busses. Multiplexing the two busses would have reduced wiring, but prevented the address and data being transmitted
+simultaneously. 
+Each memory mapped unit would then have needed latches to buffer either the address or the data. This would have negated any  construction gains made by multiplexing the two busses, and reduced the speed significantly. 
+The only real advantage of multiplexing the two is that it reduces the number of pins leading out from a single chip CPU, which is not a problem in my implementation.
+
+\newpage
+\begin{figure}
+\vspace{20cm}
+\caption{Block Diagram of The Ultimate RISC}
+\label{figure:block}
+\end{figure}
+\clearpage
+\section{Bus Widths}
+
+A number of factors  were influential in the choice 
+of widths for the two busses. 
+All the current high performance microprocessors have thirty-two bit wide data busses,
+which seems to be current limit for production and packaging technology.
+It was known that the Pascal compiler would need  registers which were 32 bits wide, and
+for efficient instruction execution the data bus had to be of a similar width.
+Such a  wide bus needed more area and components than a sixteen bit bus, but was practicable due to the simplicity of the computer.
+The address bus size was derived from the data bus. 
+For simplicity, the size of an instruction had to be a multiple of the data bus width. 
+Two bits were needed to indicate the indexing  modes. 
+Using one 32 bit word  per instruction, thirty bits had to contain two 
+operands, so an address bus width of 15 bits was a natural 
+consequence. 
+It would have been possible to use two words per 
+instruction, and have a 30 bit address bus, but for a simple 
+prototype this was excessive. With each address indicating a 32 bit 
+data word, then in fifteen bits 32768 locations can be addressed ---128~Kilobytes of memory.
+
+\section{Interrupts}
+
+To ensure a fast response to  events, most computers support an interrupt mechanism. 
+This consists of one or more  signals, which when asserted cause the computer to stop executing the current instruction sequence.
+The internal state of the CPU is stored and control is then passed to an interrupt handling routine.
+This program must service the request of the interrupting device before instructing the computer to continue normal execution.
+This feature is vital in any  situation where external events require a rapid reaction.
+It can be also used as a means of job control by allowing a different process  to execute after the interrupt.
+
+The provision of such a facility complicates the control unit significantly, for very little benefit in a prototype system.
+There is no justification for this feature given that the Ultimate RISC has no direct I/O capabilities.
+
+Note that the Viper-1 microprocessor does not include interrupts either.
+This was a deliberate decision so as to guarantee that a program could not be corrupted by external sources.
+Thus my lack of interrupts can be viewed as a feature rather than an absence.
+
+

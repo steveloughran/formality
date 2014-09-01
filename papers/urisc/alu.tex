@@ -1,0 +1,114 @@
+\chapter{The ALU}
+
+\section{Design}
+For a computer to be capable of effective operation, it needs the ability to perform
+ actual processing of data. 
+It has long been known that the ability to compare two items and act upon the result is sufficient for effective computation 
+---Turing Machines are based around this concept.
+It would therefore have been possible to build a basic  comparison unit, and rely
+on software  to derive mathematical and logical operations.
+This would have been unreasonably  inefficient.
+All realistic computers   have hardware dedicated to evaluation of these functions.
+These Arithmetic and Logic Units ({\bf ALU}) normally perform at least integer addition, subtraction and the standard boolean functions of two variables.
+More powerful units are capable of high speed multiplication, or even manipulate
+floating point numbers.
+
+
+At the start of the project I was offered the possibility of using a 
+single chip 64-bit floating point ALU from AMD (AM29C327) \cite{amd:uprogramming,amd:29c300}.
+This would have produced impressive performance figures, but I 
+decided that it would have been unworkable, since it was 
+designed for a triple data bus and needed 31 bits of control 
+information every cycle. A single bus system would have  been unable to use this 
+device effectively. 
+
+Instead I designed a very simple ALU, since this made 
+formal specification  possible. The unit was  
+built from eight bit sliced TTL ICs, each of which  operates on four bits.
+ When connected together via a two level 
+ carry lookahead generator, they  perform   operations on 32-bit words.
+
+This 
+is sufficient for many purposes, except that the ability to shift 
+a word  right was needed in iterative multiplication and division algorithms.
+
+ The result of the ALU had to be stored until  re-used in later instructions.
+The state of this result, 
+whether zero or  negative  needed to obtained in a form
+ which could be passed to the Skip register.
+ Arithmetic overflow and carry flags were also desirable,
+   detecting results too large to be represented in 32 bits.
+ 
+\section{Implementation}
+
+The design of the ALU is shown in figure~\ref{figure:alu}.
+
+An Accumulator stores the output of the ALU between operations.
+This can be read as a memory location.
+The contents of the Accumulator are also used as one of the inputs to the ALU,
+so only one other argument needs to be supplied per operation.
+This accumulator is built out of four SSRS, so can be read directly by the host.
+
+A number of bit sliced ALUs were available with built in accumulator registers. 
+For example,
+the AMD AM2901 (\cite{amd:logic}) or the TTL 74F681 ALU bit slices,
+ would have provided enhanced performance with less components and wiring.
+Using these would have prevented the host examining the Accumulator directly.
+Instead I used 74F381 ALU/function generators in my design.
+These  only perform basic operations ---addition, subtraction, and, or, exclusive or, preset and clear. 
+Three control signals  are used to select a function.
+
+
+Between the outputs of the ALU ICs and the Accumulator is a bank of five PALS.
+Normally these pass the result straight through, each PAL checking if the bits passed though it are all zero or not.
+They can also be instructed to shift the result ---including the carry flag--- one bit to the right; 
+this shifting is controlled by a  one bit signal.
+This post shifting  allows a normal operation to be combined with a shift, to make unusual functions such as `subtract and divide by two'.
+
+The results of the five 
+zero tests along with other signals are fed to another PAL, which 
+produces values for a Condition Code register ({\bf CC}),  constructed from a Shadow Serial Register. 
+The PAL generates a zero flag  when all five slices of the result are zero.
+
+\begin{figure}
+\vspace{20cm}
+\caption{The ALU}
+\label{figure:alu}
+\end{figure}
+
+\subsubsection{Overflow}
+
+An arithmetic overflow is where  a signed number's sign changes due to too large an addition, subtraction or shift.
+
+My design of an ALU does not detect signed overflow, despite the original intent to do so.
+I had originally
+acquired equations  from my CS3 notes to detect  overflows using a PAL.
+While specifying the system  I realised
+these equations  only detected overflow on signed addition. 
+To detect overflow in a multi-function ALU, one must compare the carry between
+bit 30 and bit 31 of the result with the most significant bit, an overflow occuring if the two differ.
+This can not be done with the 74F381 bit-sliced devices, as this carry is internal.
+I have discovered that AMD make a special most-significant-slice version of this bit-sliced ALU which does detect overflows internally. 
+The result of this check would however become confused if shifting was performed after the operation, so would not always be reliable.
+
+ Note that even if the ALU did produce an overflow flag, the software would still have to check it after every operation. A number of
+implementations of languages do not do this because of the overhead this entails; 
+APM Pascal and Standard ML are two such  implementations.
+
+\subsubsection{Memory Interface}
+
+Seventeen addresses are allocated to the ALU, as shown in table~\ref{table:memory}.
+One of these addresses returns the current value of the Accumulator whenever it is read.
+The remaining sixteen addresses all apply a different function between the accumulator and the word moved to the selected address.
+This is accomplished by wiring  address bus lines directly to the ALU  and the PALS.
+
+It is not be possible to directly load the 
+accumulator, but a two instruction sequence  clears it and then adds a 
+number to the now empty accumulator.
+
+Condition code flag manipulation is  supported:
+reading any of the sixteen function addresses returns one of the condition code flags in the least significant bit. 
+These results can be passed directly to the Skip register for conditional branching.
+Before performing a subtraction the carry flag has to be set to true, while
+for other operations the flag has to be cleared.
+An address is provided to enable this; when it is written to, the least significant bit is passed to the carry flag.

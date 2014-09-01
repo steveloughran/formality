@@ -1,0 +1,71 @@
+Each ALU operation is first described as a function operating between
+two four bit tuples and a carry flag.
+These are then combined into a single function to mimic the functionality of the ALU.
+\begin{verbatim}
+(* Math.L	1.5	5/24/89
+   ======
+Definition of Int32 Maths as performed by the ALU.
+The operations are given as functions with no timing constraints.
+3/1/89 sal
+        *)
+(* the exclusive or function *)
+infix 6 xor;
+fun a xor b= (a ||| b) && ~ (a && b);
+(* A full adder using xor *)
+fun full_add a b c=
+        a xor b xor c;
+(* how to add two bool 4 tuples using carry lookahead *)
+fun add4 (a3,a2,a1,a0) (b3,b2,b1,b0) c=
+  let   val g0=a0 && b0 
+        val g1=a1 && b1 
+        val g2=a2 && b2 
+        val p0=a0 ||| b0
+        val p1=a1 ||| b1
+        val p2=a2 ||| b2
+  in
+        (full_add a3 b3 (g2 ||| (p2 && (g1 |||
+                                (p1 && (g0 ||| (p0 && c)))))),
+         full_add a2 b2 (g1 ||| (p1 && (g0 ||| (p0 && c)))),
+         full_add a1 b1 (g0 ||| (p0 && c)),
+	 full_add a0 b0 c)
+           end;
+fun preset4 _ _ _=(true,true,true,true);
+fun clear4  _ _ _=(false,false,false,false);
+fun and4 (a3,a2,a1,a0) (b3,b2,b1,b0) _ =
+        (a3 && b3,a2 && b2, a1 && b1,a0 && b0);
+fun or4 (a3,a2,a1,a0)  (b3,b2,b1,b0)_ =
+        (a3 ||| b3,a2 ||| b2, a1 ||| b1,a0 ||| b0);
+fun xor4 (a3,a2,a1,a0) (b3,b2,b1,b0) _ =
+        (a3 xor b3,a2 xor b2, a1 xor b1,a0 xor b0);
+
+fun not4 (a3,a2,a1,a0) = (~a3,~a2,~a1,~a0);
+
+(* dont know exactly what this does yet *)
+
+fun minus4 a b c=
+        add4 a (not4 b) c;
+(* describe how a different selction of the alu function produces
+   different results *)
+fun applyALU a b c false false false= clear4  a b c
+ |  applyALU a b c false false true = minus4  a b c
+ |  applyALU a b c false true  false= minus4  b a c
+ |  applyALU a b c false true  true = add4   a b c
+ |  applyALU a b c true  false false= xor4    a b c
+ |  applyALU a b c true  false true = or4     a b c
+ |  applyALU a b c true  true  false= and4    a b c
+ |  applyALU a b c true  true  true = preset4 a b c;
+fun propagate (a3,a2,a1,a0) (b3,b2,b1,b0)=
+        ~(a0 && b0 && a1 && b1 && a2 && b2 && a3 && b3);
+fun generate (a3,a2,a1,a0) (b3,b2,b1,b0)=
+  let   val g0=a0 && b0 
+        val g1=a1 && b1 
+        val g2=a2 && b2 
+        val g3=a3 && b3
+        val p1=a1 ||| b1
+        val p2=a2 ||| b2
+        val p3=a3 ||| b3
+  in
+        ~(g3 |||  p3 && g2 ||| p3 && p2 && g1 
+                          ||| p3 && p2 && p1 && g0)
+  end;
+\end{verbatim}

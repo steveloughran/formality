@@ -1,0 +1,82 @@
+\chapter{Host Interface}
+
+The Ultimate RISC has to be connected to a host computer to obtain 
+programs and data, to receive control signals and to return 
+results. The host is able to examine and modify memory 
+locations and the internal registers.
+
+The traditional CS4 project method of building new computer systems 
+is to use the standard APM interface bus to provide access to shared
+memory . The disadvantage with this is that the APM 
+bus is very difficult to interface to, and not all projects manage it 
+successfully, even when using a known CPU or display controller. 
+ To try and interface a CPU which could not be guaranteed to work reliably was infeasible.
+The method I  use  allows the host 
+computer to examine and modify both memory and internal 
+registers on the Ultimate RISC computer. 
+By making  all internal registers out of Serial Shadow Registers,
+ the host can easily read and write to them. A number of control 
+signals are needed, to copy all registers to their shadows, to 
+shift data and to selectively reload registers.
+The host also has ability to control the clock signals of the URISC.
+This clock qualification enables slow stepping of the system, simplifying both
+hardware and software development.
+
+ Memory cannot be read or written directly. Instead one 
+must initialise the {\bf address} register with the desired address --along with  the {\bf data} register during a write operation. The control unit can then be instructed
+to perform the appropriate access. After a read operation the {\bf data} register
+should contain the contents of the memory location selected.
+
+Six bits of  state information are sent in parallel from the Ultimate RISC to the APM.
+Five of these bits give the current state of the control unit. 
+The sixth bit is sent from the memory section to indicate whether the current memory access is valid or not.
+This enables the state of the machine to be 
+determined without interrupting it.
+
+Three signals are sent to the Ultimate RISC's control unit by the APM.
+These can instruct it to start and stop executing instructions, or to perform a memory access for the host.
+
+The complete list of connections is given in  table~\ref{table:hostif}, along 
+with their position the eurocard edge connector.
+
+The interface requirements are basic enough that it should be 
+connectable to any host with a Peripheral Interface Adaptor (PIA) interface --which has 16  lines for external input and output.
+
+The Real Time Systems M6809 co-processor board does have one of these devices, and
+it is to this that my board is designed to connect. It can in fact be connected to many simple computers, provided the software support is available.
+
+The host must execute a monitor program to communicate with the Ultimate RISC. This is described in a later chapter.
+
+\begin{table}
+\label{table:hostif}
+\begin{tabular}{||l|lll||}
+\hline
+direction & signal & pin no. & description \\
+\hline 
+Output
+ & State 0 & C2 & these give the current state of the control unit\\
+ & State 1 & C3 & \\
+ & State 2 & C4 & \\
+ & State 3 & C5 & \\
+ & State 4 & C6 & \\
+ & $\overline{halt}$	& C7 & indicates the current read should cause a Halt\\
+ & SDI	& C8 & SSR chain input to the host\\
+\hline
+Input 
+ & SDO & C7 & SSR chain output from the host\\
+ & $\overline{freerun}$ & C12 & instructs the URISC to run from its own clock\\
+ & clock & C13 & the clock signal when not running freely\\
+ & $\overline{go}$ & C14 & execute an instruction or a memory access\\
+ & $\overline{load}$ & C15 & load {\bf address} and {\bf data} registers\\
+ & l/$\overline{s}$ & C16 & indicates the type of the memory access\\
+ & mode & C17 & SSR control\\
+ & dclk & C18 & SSR shadow register clock\\
+ & $\overline{reset}$ & C19 & reset program counter\\
+ \hline
+ \end{tabular}
+ \caption{Host Interface Specification}
+
+ \end{table}
+ 
+ 
+

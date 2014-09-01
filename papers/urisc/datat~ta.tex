@@ -1,0 +1,234 @@
+First  defined are the thirty-two bit and fifteen bit boolean tuples used
+in the specification.
+Constants and conversion functions are also listed; these conversion functions do not work correctly in SML or New Jersey ML due to overflow conditions.
+\begin{verbatim}
+(* Datatypes.L v1.8
+   ==================
+Datatypes used in ultimate RISC: revised version
+2/1/89 sal *)
+(* Int15 *)
+type Int15=(bool * bool * bool * bool * bool * bool * bool *bool
+                * bool * bool * bool * bool * bool * bool * bool);
+val Zero15=(false,false,false,false,false,false,false,
+                false,false,false,false,false,false,false,false):Int15;
+val Maxint15=(true,true,true,true,true,true,true,
+                true,true,true,true,true,true,true,true):Int15;
+(* bit extraction functions *)
+fun addressBit14 ((b,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int15)=b:bool;
+fun addressBit13 ((_,b,_,_,_,_,_,_,_,_,_,_,_,_,_):Int15)=b:bool;
+fun addressBit12 ((_,_,b,_,_,_,_,_,_,_,_,_,_,_,_):Int15)=b:bool;
+fun addressBit11 ((_,_,_,b,_,_,_,_,_,_,_,_,_,_,_):Int15)=b:bool;
+fun addressBit10 ((_,_,_,_,b,_,_,_,_,_,_,_,_,_,_):Int15)=b:bool;
+fun addressBit9  ((_,_,_,_,_,b,_,_,_,_,_,_,_,_,_):Int15)=b:bool;
+fun addressBit8  ((_,_,_,_,_,_,b,_,_,_,_,_,_,_,_):Int15)=b:bool;
+fun addressBit7  ((_,_,_,_,_,_,_,b,_,_,_,_,_,_,_):Int15)=b:bool;
+fun addressBit6  ((_,_,_,_,_,_,_,_,b,_,_,_,_,_,_):Int15)=b:bool;
+fun addressBit5  ((_,_,_,_,_,_,_,_,_,b,_,_,_,_,_):Int15)=b:bool;
+fun addressBit4  ((_,_,_,_,_,_,_,_,_,_,b,_,_,_,_):Int15)=b:bool;
+fun addressBit3  ((_,_,_,_,_,_,_,_,_,_,_,b,_,_,_):Int15)=b:bool;
+fun addressBit2  ((_,_,_,_,_,_,_,_,_,_,_,_,b,_,_):Int15)=b:bool;
+fun addressBit1  ((_,_,_,_,_,_,_,_,_,_,_,_,_,b,_):Int15)=b:bool;
+fun addressBit0  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,b):Int15)=b:bool;
+(* a little type conversion utility *)
+fun booltoNat false=0
+ |  booltoNat true=1;
+fun Int15toNat (i:Int15)=
+        (booltoNat (addressBit0 i)) + 
+	2 * (booltoNat (addressBit1 i)) +
+	4 * (booltoNat (addressBit2 i))
+        + 8*(booltoNat (addressBit3 i)) +
+	16 * (booltoNat (addressBit4 i)) +
+	32 * (booltoNat (addressBit5 i))
+        + 64*(booltoNat (addressBit6 i)) +
+	128*(booltoNat (addressBit7 i))
+        + 256*(booltoNat (addressBit8 i)) +
+	512*(booltoNat (addressBit9 i))
+        + 1024*(booltoNat (addressBit10 i)) +
+	2048*(booltoNat (addressBit11 i))
+        + 4096*(booltoNat (addressBit12 i)) +
+	8192*(booltoNat (addressBit13 i))
+        + 16384*(booltoNat (addressBit14 i));
+(* Int32 -very similar to Int15 *)
+type Int32=(bool * bool * bool * bool * bool * bool * bool *bool *
+              bool * bool * bool * bool * bool * bool * bool * bool*
+              bool * bool * bool * bool * bool * bool * bool *bool*
+              bool * bool * bool * bool * bool * bool * bool *bool);
+val Zero32=(false,false,false,false,false,false,false,false,
+                false,false,false,false,false,false,false,false,
+                false,false,false,false,false,false,false,false,
+                false,false,false,false,false,false,false,false):Int32;
+val Maxint32=(true,true,true,true,true,true,true,true,
+                true,true,true,true,true,true,true,true,
+                true,true,true,true,true,true,true,true,
+                true,true,true,true,true,true,true,true):Int32;
+(* bit extraction functions *)
+fun dataBit31 ((b,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit30 ((_,b,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit29 ((_,_,b,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit28 ((_,_,_,b,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit27 ((_,_,_,_,b,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit26 ((_,_,_,_,_,b,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit25 ((_,_,_,_,_,_,b,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit24 ((_,_,_,_,_,_,_,b,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit23 ((_,_,_,_,_,_,_,_,b,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit22 ((_,_,_,_,_,_,_,_,_,b,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit21 ((_,_,_,_,_,_,_,_,_,_,b,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit20 ((_,_,_,_,_,_,_,_,_,_,_,b,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit19 ((_,_,_,_,_,_,_,_,_,_,_,_,b,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit18 ((_,_,_,_,_,_,_,_,_,_,_,_,_,b,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit17 ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,b,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit16 ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,b,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit15 ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 b,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit14 ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,b,_,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit13 ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,b,_,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit12 ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,b,_,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit11 ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,b,_,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit10 ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,b,_,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit9  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,b,_,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit8  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,b,_,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit7  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,b,_,_,_,_,_,_,_):Int32)=b;
+fun dataBit6  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,b,_,_,_,_,_,_):Int32)=b;
+fun dataBit5  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,b,_,_,_,_,_):Int32)=b;
+fun dataBit4  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,b,_,_,_,_):Int32)=b;
+fun dataBit3  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,b,_,_,_):Int32)=b;
+fun dataBit2  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,b,_,_):Int32)=b;
+fun dataBit1  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,b,_):Int32)=b;
+fun dataBit0  ((_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+                 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,b):Int32)=b;
+(* another little type conversion utility *)
+fun Int32toNat i=
+        (booltoNat ( dataBit0 i)) + 
+	2 * (booltoNat (dataBit1 i)) + 
+	4 * (booltoNat (dataBit2 i))
+        + 8*(booltoNat (dataBit3 i)) +
+	16 * (booltoNat (dataBit4 i)) +
+	32 * (booltoNat (dataBit5 i))
+        + 64*(booltoNat (dataBit6 i)) 
+	+ 128*(booltoNat (dataBit7 i))
+        + 256*(booltoNat (dataBit8 i)) 
+	+ 512*(booltoNat (dataBit9 i))
+        + 1024*(booltoNat (dataBit10 i)) 
+	+ 2048*(booltoNat (dataBit11 i))
+        + 4096*(booltoNat (dataBit12 i)) 
+	+ 8192*(booltoNat (dataBit13 i))
+        + 16384*(booltoNat (dataBit14 i)) 
+	+ 32768*(booltoNat (dataBit15 i))
+        + 65536*(booltoNat (dataBit16 i)) 
+	+ 131072*(booltoNat (dataBit17 i))
+        + 262144*(booltoNat (dataBit18 i)) 
+	+ 524288*(booltoNat (dataBit19 i))
+        + 1048576*((booltoNat (dataBit20 i)) 
+         + 2*((booltoNat (dataBit21 i))
+          + 2*((booltoNat (dataBit22 i))
+           + 2*((booltoNat (dataBit23 i))
+            + 2*((booltoNat (dataBit24 i))
+             + 2*((booltoNat (dataBit25 i))
+              + 2*((booltoNat (dataBit26 i))
+               + 2*((booltoNat (dataBit27 i))
+                + 2*((booltoNat (dataBit28 i))
+                 + 2*((booltoNat (dataBit29 i))
+                  + 2*((booltoNat (dataBit30 i))
+                   + 2*(booltoNat (dataBit31 i))
+                  )
+                 )
+                )
+               )
+              )
+             )
+            )
+           )
+          )
+         )
+       ) 
+      ;
+
+(* definition of 4-tuples and 8-tuples (used in the alu) *)
+type 'a four_tuple = ('a * 'a * 'a * 'a);
+type nibble=bool four_tuple;
+fun one4 (_,_,_,a) = a;
+fun two4 (_,_,a,_)=a;
+fun three4 (_,a,_,_)=a;
+fun four4 (a,_,_,_)=a;
+type 'a eight_tuple = ('a * 'a * 'a * 'a * 'a * 'a * 'a * 'a);
+(* and a function to convert a 32 bit number into an 8-tuple
+of boolean 4-tuples *)
+fun split d=
+        ((dataBit31 d,dataBit30 d,dataBit29 d,dataBit28 d),
+         (dataBit27 d,dataBit26 d,dataBit25 d,dataBit24 d),
+         (dataBit23 d,dataBit22 d,dataBit21 d,dataBit20 d),
+         (dataBit19 d,dataBit18 d,dataBit17 d,dataBit16 d),
+         (dataBit15 d,dataBit14 d,dataBit13 d,dataBit12 d),
+         (dataBit11 d,dataBit10 d,dataBit9 d,dataBit8 d),
+         (dataBit7 d,dataBit6 d,dataBit5 d,dataBit4 d),
+         (dataBit3 d,dataBit2 d,dataBit1 d,dataBit0 d));
+type byte=bool eight_tuple;
+fun split8 d=
+        ((dataBit31 d,dataBit30 d,dataBit29 d,dataBit28 d,
+         dataBit27 d,dataBit26 d,dataBit25 d,dataBit24 d),
+         (dataBit23 d,dataBit22 d,dataBit21 d,dataBit20 d,
+         dataBit19 d,dataBit18 d,dataBit17 d,dataBit16 d),
+         (dataBit15 d,dataBit14 d,dataBit13 d,dataBit12 d,
+         dataBit11 d,dataBit10 d,dataBit9 d,dataBit8 d),
+         (dataBit7 d,dataBit6 d,dataBit5 d,dataBit4 d,
+         dataBit3 d,dataBit2 d,dataBit1 d,dataBit0 d));
+fun Int15toByte ((a6,a5,a4,a3,a2,a1,a0,b7,b6,b5,b4,b3,b2,b1,b0):Int15)=
+        ((false,a6,a5,a4,a3,a2,a1,a0),(b7,b6,b5,b4,b3,b2,b1,b0));
+(* inverse functions *)
+fun BytetoInt15 (_,a6,a5,a4,a3,a2,a1,a0) (b7,b6,b5,b4,b3,b2,b1,b0)=
+        (a6,a5,a4,a3,a2,a1,a0,b7,b6,b5,b4,b3,b2,b1,b0);
+fun merge8 (a7,a6,a5,a4,a3,a2,a1,a0) (b7,b6,b5,b4,b3,b2,b1,b0)
+           (f7,f6,f5,f4,f3,f2,f1,f0) (g7,g6,g5,g4,g3,g2,g1,g0)=
+        ((a7,a6,a5,a4,a3,a2,a1,a0,b7,b6,b5,b4,b3,b2,b1,b0,
+         f7,f6,f5,f4,f3,f2,f1,f0,g7,g6,g5,g4,g3,g2,g1,g0):Int32);
+fun merge  (a7,a6,a5,a4) (a3,a2,a1,a0) (b7,b6,b5,b4) (b3,b2,b1,b0)
+           (f7,f6,f5,f4) (f3,f2,f1,f0) (g7,g6,g5,g4) (g3,g2,g1,g0)=
+        ((a7,a6,a5,a4,a3,a2,a1,a0,b7,b6,b5,b4,b3,b2,b1,b0,
+         f7,f6,f5,f4,f3,f2,f1,f0,g7,g6,g5,g4,g3,g2,g1,g0):Int32);
+fun splitInt15 ((a6,a5,a4,a3,a2,a1,a0,b7,b6,b5,b4,b3,b2,b1,b0):Int15)=
+        ((false,a6,a5,a4),(a3,a2,a1,a0),(b7,b6,b5,b4),(b3,b2,b1,b0));
+fun mergeInt15 (_,a6,a5,a4) (a3,a2,a1,a0) (b7,b6,b5,b4) (b3,b2,b1,b0)=
+        ((a6,a5,a4,a3,a2,a1,a0,b7,b6,b5,b4,b3,b2,b1,b0):Int15);
+(* plus one to split & merge into4 tuples of 7 plus 4 leftovers *)
+fun merge7 (h3,h2,h1,h0)
+	   (a6,a5,a4,a3,a2,a1,a0) (b6,b5,b4,b3,b2,b1,b0)
+           (f6,f5,f4,f3,f2,f1,f0) (g6,g5,g4,g3,g2,g1,g0)
+	   =
+        ((h3,h2,h1,h0,a6,a5,a4,a3,a2,a1,a0,b6,b5,b4,b3,b2,b1,b0,
+         f6,f5,f4,f3,f2,f1,f0,g6,g5,g4,g3,g2,g1,g0):Int32);
+fun split7 ((h3,h2,h1,h0,a6,a5,a4,a3,a2,a1,a0,b6,b5,b4,b3,b2,b1,b0,
+         f6,f5,f4,f3,f2,f1,f0,g6,g5,g4,g3,g2,g1,g0):Int32)=
+	((h3,h2,h1,h0),
+	   (a6,a5,a4,a3,a2,a1,a0),(b6,b5,b4,b3,b2,b1,b0),
+           (f6,f5,f4,f3,f2,f1,f0),(g6,g5,g4,g3,g2,g1,g0));
+\end{verbatim}
