@@ -14,3 +14,7 @@ hs_err_pid*
 # Tex artifacts
 *.dvi
 *.aux
+*.pdf
+*.log
+.project
+*.toolbox
