@@ -183,7 +183,8 @@ purgeAction == [
 
 mkDirAction == [
     type: "mkdir",
-    path: STRING
+    path: STRING,
+    parents: BOOLEAN
 ]
 
 
@@ -239,6 +240,10 @@ isAncestorOf(path, d) ==
     /\ path /= d 
     /\ \E k : SubSeq(d, 0, k) = path
 
+
+ancestorPathOf(path) == 
+    \A a \in Paths: isAncestorOf(a, path)
+
 (* the set of all children of a path in the registry *)
 
 children(R, path) == \A c \in R: isParent(path, c.path)
@@ -249,6 +254,8 @@ hasChildren(R, path) == children(R, path) /= {}
 (* Descendant: a child of a path or a descendant of a child of a path *)
 
 descendants(R, path) == \A e \in R: isAncestorOf(path, e.path)
+
+ancestors(R, path) == \A e \in R: isAncestorOf(e.path, path)
 
 (*
 The set of entries that are a path and its descendants
@@ -290,18 +297,6 @@ validRegistry(R) ==
 *)
 
 (*
-    mkdir() adds a new empty entry where there was none before. 
-*)
-
-mkdir(R, path) ==
-    \/ exists(R, path)
-    \/ (exists(R, parent(path)) /\ (R' = R \union [ path |-> path, ephemeral |-> FALSE, data |-> <<>>  ]))
-
-
-(*
-/\  )
-*)
-(*
  An entry can be put into the registry iff 
  -its parent is present or it is the root entry
  -if it is marked as ephemeral, there are no child entries in the registry
@@ -309,9 +304,9 @@ mkdir(R, path) ==
 
 *)
 canPut(R, e) == 
-    /\   isRootEntry(e) \/ exists(R, parent(e.path)) 
-    /\ ~(isEphemeral(e) /\  hasChildren(R, e.path))
-    /\ ~(isEphemeral(e) /\  isRootEntry(e))
+    /\  isRootEntry(e) \/ (\A p \in parentEntry(R, e.path): ~p.ephemeral )  
+    /\ (isEphemeral(e) => ~hasChildren(R, e.path))
+    /\ (isEphemeral(e) => ~isRootEntry(e))
 
 (* put adds/replaces an entry if permitted *)
 
@@ -320,6 +315,32 @@ put(R, e) ==
     /\ R' = (R \ lookup(R, e.path)) \union e
     
 
+(*
+    mkdir() adds a new empty entry where there was none before, iff
+    -the parent exists
+    -it meets the requirement for being "put"
+*)
+
+mkdirSimple(R, path) ==
+    LET record == [ path |-> path, ephemeral |-> FALSE, data |-> <<>>  ]
+    IN  \/ exists(R, path)
+        \/ (exists(R, parent(path))  /\ canPut(R, record) /\ (R' = R \union record ))
+
+
+(*
+For all parents, the mkdirSimple criteria must apply.
+This could be defined recursively, except what is not being defined here is a set. 
+
+It declares that the mkdirSimple state applies to the path and all its parents in the set R'
+
+*)
+mkdirWithParents(R, path) ==
+    /\ \A p2 \in ancestors(R, path) : mkdirSimple(R, p2)
+    /\ mkdirSimple(R, path)
+    
+
+mkdir(R, path, recursive) ==
+   IF recursive THEN mkdirWithParents(R, path) ELSE mkdirSimple(R, path)
   
 (* Deletion is set difference on any existing entries *)
 
@@ -352,6 +373,18 @@ purge(R, path, id, persistence) ==
     /\ (persistence \in PersistPolicySet)
     /\ \A p2 \in pathAndDescendants(R, path) :
          (p2.id = id /\ p2.persistence = persistence) => recursiveDelete(R, p2.path) 
+
+(*
+Resolve() resolves the record at a path or fails.
+
+It relies on the fact that if the cardinality of a set is 1, then the CHOOSE operator
+is guaranteed to return the single entry of that set, iff the choice predicate holds. Using
+a predicate of TRUE, it always succeeds, so this function selects the sole entry of the lookup operation.
+*)
+resolveRecord(R, path) ==
+    LET l == lookup(R, path) IN
+        /\ Cardinality(l) = 1
+        /\ CHOOSE e \in l : TRUE
 
 
 (*
@@ -399,7 +432,7 @@ putRecord(R, path, ephemeral, record) ==
  
 applyAction(R, a) == 
     \/ (a \in PutActions /\ putRecord(R, a.path, a.ephemeral, a.record) )
-    \/ (a \in MkdirActions /\ mkdir(R, a.path) )
+    \/ (a \in MkdirActions /\ mkdir(R, a.path, a.recursive) )
     \/ (a \in DeleteActions /\ delete(R, a.path, a.recursive) )
     \/ (a \in PurgeActions /\ purge(R, a.path, a.id, a.persistence))
  
