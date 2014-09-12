@@ -89,12 +89,11 @@ vars == << registry, actions >>
 
 (* Persistence policy *)
 PersistPolicySet == {
-    "MANUAL",              \* persists until manually removed 
+    "PERMANENT",            \* persists until explicitly removed 
     "CLUSTER-RESTART",      \* persists until the cluster is restarted
     "APPLICATION",          \* persists until the application finishes
     "APPLICATION-ATTEMPT",  \* persists until the application attempt finishes
-    "CONTAINER",            \* persists until the container finishes 
-    "EPHEMERAL"            \* the record is ephemeral
+    "CONTAINER"             \* persists until the container finishes 
     }
 
 (* Type invariants. *)
@@ -109,7 +108,7 @@ TypeInvariant ==
 
 (*
 
-An Entry is defined as a path, an ephemerality flag, and the actual
+An Entry is defined as a path, and the actual
 data which it contains.
 
 By including the path in an entry, we avoid having to define some
@@ -122,9 +121,6 @@ RegistryEntry == [
     \* The path to the entry
     path: Paths, 
 
-    \* A flag to indicate when the entry is ephemeral
-    ephemeral: BOOLEAN, 
-
     \* the data in the entry
     data: Data
     ]
@@ -136,6 +132,7 @@ RegistryEntry == [
 Endpoint == [
     \* API of the endpoint: some identifier
     api: STRING,
+    
     \* A list of address n-tuples
     addresses: Addresses
 ]
@@ -145,7 +142,8 @@ Endpoint == [
 *)
 ServiceRecord == [
     \* ID -used when applying the persistence policy
-    id: STRING,             
+    id: STRING,     
+            
     \* the persistence policy
     persistence: PersistPolicySet,
     
@@ -188,8 +186,6 @@ mkDirAction == [
 ]
 
 
-
-
 ----------------------------------------------------------------------------------------
 
 (*
@@ -229,10 +225,6 @@ isRootPath(path) == path = <<>>
 isRootEntry(entry) == entry.path = <<>>
 
 
-(* ephemeral *)
-
-isEphemeral(entry) == entry.ephemeral
-
 (* A path p is an ancestor of another path d if they are different, and the path d
    starts with path p *) 
    
@@ -255,6 +247,7 @@ hasChildren(R, path) == children(R, path) /= {}
 
 descendants(R, path) == \A e \in R: isAncestorOf(path, e.path)
 
+(* Ancestors: all entries in the registry whose path is an entry of the path argument *)
 ancestors(R, path) == \A e \in R: isAncestorOf(e.path, path)
 
 (*
@@ -268,7 +261,6 @@ pathAndDescendants(R, path) ==
 (*
 
 For validity, all entries must match the following criteria
-
  *)
 
 validRegistry(R) ==
@@ -278,17 +270,11 @@ validRegistry(R) ==
         \* There's at least one root entry 
         /\ \E e \in R: isRootEntry(e)                   
         
-        \* no root entry may be ephemeral             
-        /\ \E e \in R: isRootEntry(e) => ~e.ephemeral
-                
-         \* an entry must be the root entry or have a parent entry
+        \* an entry must be the root entry or have a parent entry
         /\ \A e \in R: isRootEntry(e) \/ exists(R, parent(e.path))
           
         \* If the entry has data, it must be a service record
         /\ \A e \in R: (e.data = << >> \/ e.data \in ServiceRecords) 
-        
-        \* if an entry is not root, it cannot have an ephemeral parent
-        /\ \A e \in R: (isRootEntry(e) \/  ~isEphemeral(Head(parentEntry(R, e.path)) ) ) 
 
 
 ----------------------------------------------------------------------------------------
@@ -299,20 +285,16 @@ validRegistry(R) ==
 (*
  An entry can be put into the registry iff 
  -its parent is present or it is the root entry
- -if it is marked as ephemeral, there are no child entries in the registry
- -if it is marked as ephemeral, it is not a change to the root entry
 
 *)
 canPut(R, e) == 
-    /\  isRootEntry(e) \/ (\A p \in parentEntry(R, e.path): ~p.ephemeral )  
-    /\ (isEphemeral(e) => ~hasChildren(R, e.path))
-    /\ (isEphemeral(e) => ~isRootEntry(e))
+    isRootEntry(e) \/ exists(R, parent(e.path))
 
 (* put adds/replaces an entry if permitted *)
 
 put(R, e) ==
     /\ canPut(R, e)
-    /\ R' = (R \ lookup(R, e.path)) \union e
+    /\ R' = (R \ lookup(R, e.path)) \union {e}
     
 
 (*
@@ -322,9 +304,9 @@ put(R, e) ==
 *)
 
 mkdirSimple(R, path) ==
-    LET record == [ path |-> path, ephemeral |-> FALSE, data |-> <<>>  ]
+    LET record == [ path |-> path, data |-> <<>>  ]
     IN  \/ exists(R, path)
-        \/ (exists(R, parent(path))  /\ canPut(R, record) /\ (R' = R \union record ))
+        \/ (exists(R, parent(path))  /\ canPut(R, record) /\ (R' = R \union {record} ))
 
 
 (*
@@ -351,11 +333,12 @@ simpleDelete(R, path) ==
 
 (* recursive delete: neither the path or its descendants exists in the new registry *)
 
-(* TODO: Define the special case of root delete: the path remains but nothing else *)
-
 recursiveDelete(R, path) ==
-    /\ ~isRootPath(path)
-    /\ R' = R \ ( lookup(R, path) \union descendants(R, path))
+
+       (* Root directory: the new registry is the initial registry again *)
+    /\ isRootPath(path) => R' = { [ path |-> <<>>, data |-> <<>> ] }
+       (* Any other entry: the new registry is a set with any existing entry for that path is removed, and the new entry added *)
+    /\ ~isRootPath(path) => R' = R \ ( lookup(R, path) \union descendants(R, path))
 
 
 (* Delete operation which chooses the recursiveness policy based on an argument*)
@@ -391,22 +374,18 @@ resolveRecord(R, path) ==
  The specific action of putting an entry into a record includes validating the record
 *)
 
-validRecordToPut(path, ephemeral, record) ==
-        \* all records declared ephemeral must be put
-        \* as an ephemeral node -and vice versa
-    /\ (ephemeral <=> record.persistence = "EPHEMERAL")
-    
-        \* The root entry must have manual persistence  
-    /\ (isRootPath(path) => record.persistence = "MANUAL")
+validRecordToPut(path, record) ==
+      \* The root entry must have permanent persistence  
+    /\ (isRootPath(path) => record.persistence = "PERMANENT")
 
 
 (* 
  putting a service record involves validating it then putting it in the registry
  marshalled as the data in the entry
  *)
-putRecord(R, path, ephemeral, record) ==
-    /\ validRecordToPut(path, ephemeral, record)
-    /\ put(R, [path |-> path, ephemeral |-> ephemeral, data |-> record])
+putRecord(R, path, record) ==
+    /\ validRecordToPut(path, record)
+    /\ put(R, [path |-> path, data |-> record])
 
 
 ----------------------------------------------------------------------------------------
@@ -431,7 +410,7 @@ putRecord(R, path, ephemeral, record) ==
 *)
  
 applyAction(R, a) == 
-    \/ (a \in PutActions /\ putRecord(R, a.path, a.ephemeral, a.record) )
+    \/ (a \in PutActions /\ putRecord(R, a.path, a.record) )
     \/ (a \in MkdirActions /\ mkdir(R, a.path, a.recursive) )
     \/ (a \in DeleteActions /\ delete(R, a.path, a.recursive) )
     \/ (a \in PurgeActions /\ purge(R, a.path, a.id, a.persistence))
@@ -461,7 +440,7 @@ The initial state of a registry has the root entry.
 *)
 
 InitialRegistry == registry = {
-  [ path |-> <<>>, ephemeral |-> FALSE, data |-> <<>> ]
+  [ path |-> <<>>, data |-> <<>> ]
 }
 
 
@@ -505,6 +484,9 @@ Theorem: for all operations from that initial state, the type invariants hold
 *)
 THEOREM InitialState => [] TypeInvariant
 
+(* 
+Theorem: the queue invariants hold
+*)
 THEOREM InitialState => [] QueueInvariant
 
 =============================================================================
