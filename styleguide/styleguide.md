@@ -16,11 +16,98 @@
 
 # Hadoop Coding Standards: Java
 
+## Introduction
+
+Apache Hadoop is one of the most complicated open source projects being developed. Its code is nothing compared to the scale of the Linux Kernel and device drivers, yet it has some of the same characteristics: a filesystem API and implementations(s) (HDFS), a scheduler for executing work along with a means of submitting work to it (YARN), programs to process data on it (MAPREDUCE, Tez), databases (Apache HBase, Apache Accumulo) and management and monitoring tools, both open source and closed). 
+
+Where it is complicated is that it is designed to run across hundreds to thousands of individual servers, to store tens of petabytes of data, and to execute those scheduled programs in the face of failures of those servers. 
+
+It is both a distributed system, and a filesystem and OS for data & datacenter-scale applications. It is possibly the most ambitious "unified" distributed computing projects ever attempted. (HTTP servers and browsers atop the network stack are significantly larger, but developed in a loosely couple way that reflects their layering and distribution). The core of Hadoop is a single system; the key apps that run atop it and developed alongside it, very tightly coupled to that underlying Hadoop application.
+
+For that reason, the project has high expectations and standards of changes to the code. This document attempts to describe them.
+
+## Designing for Scale; Designing for Fail
+
+Hadoop is designed to work at the scale of thousands of machines 
+
 ## Code Style
 
 Follow the Sun guidelines with some specific exceptions
 
 1. two spaces are used for indentation
+
+## Public, Private and Limited Private code
+
+The hadoop codebase consists of internal implementation classes, public Java-level classes and APIs, and public IPC protocol interfaces. The java language scope annotations: `public`, `private`, `protected` and package-scoped aren't sufficient to describe these —we need to distinguish a class that may be public, yet intended for internal use, from something that is for external callers. We also need to warn those external callers where an API is considered stable, versus an API that may change from release to release, as it stabilizes or evolves.
+
+For this reason, the `hadoop-annotations` module/JAR contains some java `@` attributes for use in declaring the scope and stability of classes.
+
+The interface audience is defined in the `org.apache.hadoop.classification.InterfaceAudience`
+
+    public class InterfaceAudience {
+      /**
+       * Intended for use by any project or application.
+       */
+      public @interface Public {};
+        
+      /**
+       * Intended only for the project(s) specified in the annotation.
+       * For example, "Common", "HDFS", "MapReduce", "ZooKeeper", "HBase".
+       */
+      public @interface LimitedPrivate {
+        String[] value();
+      };
+      /**
+       * Intended for use only within Hadoop itself.
+       */
+      public @interface Private {};
+
+The `@Private` and `@Public` annotations resemble those in the Java code. `@Private` means within the `hadoop` source tree ONLY. `@Public` means any application MAY use the class —though the stability annotation may be used as a warning about whether that interface is something the code may rely on.
+
+The unusual one is `@LimitedPrivate`. This is used to declare that a class or interface is intended for use by specific modules and applications. 
+
+The `@LimitedPrivate` attribute is a troublesome one. It implies that the Hadoop core codebase is not only aware of applications downstream, but that it is explicitly adding features purely for those applications and nothing else. As well as showing favoritism to those applications, it's potentially dangerous. Those special features created for  specific applications are effectively commitments to maintain the special feature indefinitely. In which case: why the special scope? Why not add a public API and make it a good one? This is not a hypothetical question, because special support was added into HDFS for HBase support -an append operation, and an atomic create-a-directory-but-not-its-parent method. The append operation eventually evolved into a public method, with HBase then needing to transition from its back-door operation to the public API. And [HADOOP-10995](https://issues.apache.org/jira/browse/HADOOP-10995) showed where some operations thought to be unused/deprecated were pulled —only to discover that HBase stopped compiling. 
+
+What does that mean? Try to avoid this notion altogether.
+
+
+### Stability
+
+The stability of a class's public methods is declared via the `org.apache.hadoop.classification.InterfaceStability` annotation, which has three values, `Unstable`, `Stable` and `Evolving`.
+
+    public class InterfaceStability {
+      /**
+       * Can evolve while retaining compatibility for minor release boundaries.; 
+       * can break compatibility only at major release (ie. at m.0).
+       */
+      public @interface Stable {};  
+      
+      /**
+       * Evolving, but can break compatibility at minor release (i.e. m.x)
+       */
+      public @interface Evolving {};
+      
+      /**
+       * No guarantee is provided as to reliability or stability across any
+       * level of release granularity.
+       */
+      public @interface Unstable {};
+    }
+
+It is a requirement that: **all public interfaces must have a stability annotation**
+
+ 1. All classes that are annotated with `Public` or`LimitedPrivate` MUST have an `InterfaceStability` annotation.
+ 1. Classes that are `Private` MUST be considered unstable unless a different `InterfaceStability` annotation states otherwise.
+ 1. Incompatible changes MUST NOT be made to classes marked as stable.
+ 
+ What does that mean?
+ 
+ 1. The `interface` of a class is, according to the *Hadoop Compatibility Guidelines*, defined as the API level binding, **the signature**, and the actual behavior of the methods, **the semantics**. A stable interface not only has to be compatible at the source and binary level, it has to work the same.
+ 1. During development of a new feature, tag the public APIs as `Unstable` or `Evolving`. Declaring that something new is `Stable` is unrealistic. There will be changes, so not constrain yourself by declaring that it isn't going to change.
+ 1. There's also an implicit assumption that any class or interface that does not have any scope attribute is private. Even so, there is no harm in explicitly stating this.
+
+Submitted patches which provide new APIs for use within the Hadoop stack MUST have scope attributes for all public APIs.
+ 
 
 
 ## Concurrency
@@ -152,6 +239,7 @@ Best: rethrow the exception if it doesn't match, after adding a log message expl
         LOG.error("No " + Errors.FAILURE_ON_PATH + " in {}" ,e, e)
         throw e;
       }
+    }
 
 This implementation ensures all exception information is propagated. As the
 test is failing because the code in question is not behaving as expected, 
@@ -178,7 +266,8 @@ Areas for improvement include: including some links to diagnostics pages on the 
 1. ERROR, WARN and INFO level events MAY be logged without guarding
   their invocation.
 1. DEBUG-level log calls MUST be guarded. This eliminates the need
-to construct string instances 
+to construct string instances.
+1. Unguarded log statements MUST NOT use string concatenation operations to build the log string, as these are called even if the logging does not take place. Use `{}` clauses in the log string.
 1. Classes SHOULD have lightweight `toString()` operators to aid logging. These MUST be robust
 against failures if some of the inner fields are null.
 1. Exceptions should be logged with the text and the exception included as a
@@ -295,9 +384,19 @@ There are three ways of exporting private methods in a production class for test
 1. Mark `@VisibleForTesting`, but make package scoped. This allows tests in the same package to use the method,
 so is unlikely to become part of the API. It does require all tests to be in the same package, which
 can be a constraint.
-1. Mark as Mark `@VisibleForTesting`, but make `protected`, then subclass in the test source tree with a class that exposes the methods. This adds a new risk: that it is subclassed in production. It may also add more maintenance costs.
+1. Mark `@VisibleForTesting`, but make `protected`, then subclass in the test source tree with a class that exposes the methods. This adds a new risk: that it is subclassed in production. It may also add more maintenance costs.
 
 There is no formal Hadoop policy here.
+
+There is however, another strategy: don't expose your internal methods for testing. The test cases around a class are the defacto test of that classes APIs. If the functionality of a class cannot be tested without diving below that API —it's a sign that the API is limited. For any class which is designed for external invocation, this implies you should think about improving that public API for testability, rather than sneaking into the internals. 
+
+If your class isn't designed for direct public consultation, but instead a small part of a service remotely accessible over the network —then yes, exposing the internals may be justifiable.
+
+
+*Further Reading*
+
+* [Standard for Software Component Testing](http://www.testingstandards.co.uk/Component%20Testing.pdf)
+
 
 ### Tips
 
@@ -365,3 +464,12 @@ side-by-side reviewing easier.
 
 1. C code
 1. Make no assumptions about ASCII/Unicode, 16 vs 32 bits: use `typedef` and `TSTR` definitions; `int32` and `int64` for explicit integer sizes.
+
+# JIRAs Patches (TODO)
+
+Here are some things which scare the developers when they arrive in JIRA:
+
+* Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
+* Patches which delve into the internals of critical classes. The HDFS Namenode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users. 
+* Big patches without tests.
+
