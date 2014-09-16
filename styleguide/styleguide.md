@@ -160,9 +160,11 @@ Hadoop services are highly concurrent. This codebase is not a place to learn abo
 1. Use the `java.utils.concurrent` classes wherever possible.
 1. Use the `AtomicBoolean` and `AtomicInteger` classes in preference to shared simple datatypes.
 1. If simple datatypes are shared across threads, they MUST be marked `volatile`.
+
 Note that Java `volatile` types are more expensive than C/C++ (they are memory barriers),
 so should not be used for types which are not `synchronized`, or which are only accessed within
 synchronization blocks.
+
 1. In the core services, try to avoid overreaching service-wide locks.
 1. Avoid calling native code in locked regions.
 1. Avoid calling expensive operations (including `System.currentTimeMillis()`)
@@ -177,6 +179,7 @@ fully constructed, leading to bizarre failure conditions.
 raise an exception.
 
 Key `java.utils.concurrent` classes include
+
 * `ExecutorService`
 * `Callable<V>`
 * Queues, including the `BlockingQueue`.
