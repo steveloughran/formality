@@ -14,7 +14,7 @@
   
 
 
-# Hadoop Coding Standards: Java
+# Hadoop Coding Standards
 
 ## Introduction
 
@@ -26,15 +26,57 @@ It is both a distributed system, and a filesystem and OS for data & datacenter-s
 
 For that reason, the project has high expectations and standards of changes to the code. This document attempts to describe them.
 
+It is also intended to provide guidelines for anyone writing applications on top of Hadoop, including YARN applications.
+
 ## Designing for Scale; Designing for Fail
 
-Hadoop is designed to work at the scale of thousands of machines 
+Hadoop is designed to work at the scale of thousands of machines. Some of them will fail on large jobs or jobs that take time. Code needs to be designed for both the scale and the failure modes.
+
+### Scale
+
+Hadoop applications need to be designed to scale to thousands —even tens of thousands— of distributed components.
+
+1. Data structures must be designed to scale, ideally at O(1), O(log2(n)) or O(n).
+1. The algorithms to work with the data structures must also scale well.
+1. Services need to be designed to handle the challenge of many thousands of services reporting near-simultaneously. The "cluster restart" scenario is a classic example here.
+
+Datasets may be measured in tens or hundreds of Terabytes.
+1. Algorithms to work with these datasets must be designed to scale across the cluster: no single node will suffice.
+1. In-memory storage is too expensive for data of this scale. While the cost will fall over time, the dataset size is likely to grow at a similar rate. Design algorithms to work efficiently when data is stored on a (slower) persistent storage, be it Hard disk or, in future, SSD.
+1. Hadoop is moving towards heterogenous data storage; data may be stored at different levels in the hierarchy, with these details being potentially transparent to the application. Consider using this rather than trying to implement your own memory caches —the HDFS system is designed to support administrator-managed quotas, and distribute the cached layers around the cluster so as to make more efficient use of the storage tiers.
+1. Applications need to be careful not to accidentally overload other parts of the infrastructure. Making too many simultaneous requests to the Hadoop namenode (i.e directory listing and file status queries) can impact HDFS. Even something as "harmless" as a DNS lookup can be disruptive if a single DNS server is used to service the requests of a large cluster. 
+1. Use `long` over `int`.
+
+### Failure
+
+1. Don't expect everything to complete: rely on timeouts. YARN applications will have failures reported to their Application Master —this has to handle them.
+1. Slow processes/YARN container-hosted applications can be as troublesome as failing ones, as they can slow down entire workflows. An example of this is the MapReduce "straggler". MapReduce handles these by supporting speculative execution of the trailing work, and by blacklisting nodes. Different applications will need different strategies.
+1. Failures can just as easily be caused by bad application configurations and data: tracking repeated failures of part of an application can be used with some heuristics to conclude that there may be a problem. Here MapReduce can be set to react by skipping specific portions of its input data. Other applications may be able to follow this strategy, or they may have to react differently.
+1. Failure at scale can have its own problems, especially in the specific case of a Hadoop cluster partition. An application may get simultaneous reports of hundreds or thousands components failing within a few seconds or minutes —it has to respond to these, possibly by recognising the cluster partition simply by the size of the failure report. (HDFS itself has known weaknesses here).
+1. YARN applications: do not assume that reallocated containers will come up on the same nodes, or be able to open the same network ports.
+1. YARN applications: the AM itself may fail. The default policy in this situation is that YARN kills all the containers then relaunches the AM somewhere. It is possible to request an alternative policy of "retain containers over AM restarts". In this case it becomes the duty of the AM to rebuild its state on restart. Long lived YARN applications should consider this policy.
+1. Dependent services such as HDFS and YARN may themselves fail. While the HA modes should recover from the failures, the cost of this recovery is delays until the failover is complete. Applications need to consider whether they want the default mode of operation (block until failover/restart) or be designed to detect the failures and react in some way. Failure detection is relatively straightforward: configure the IPC layer to report problems rather than block. Reacting to the failure is a significantly harder issue which must be addressed on a case-by-case basis —even within an application.
+1. At sufficiently large scale, data corruption may set in. This is why HDFS checksums its data —and why Hadoop may add its own checksums to Hadoop's IPC layers before long.
+
+Hard disks fail more often than individual servers —they are mechanical and fail over time, and as there are many HDDs to a server, statistics catches up with them. SSDs have their own failure modes as they wear out.
+
+In production clusters, disk and server failures tend to surface when a cluster is restarted; this is time that disks are checked most thoroughly by the OS, and power cycles themselves can cause problems. Applications do not have to worry about this startup phase, but HDFS does.
 
 ## Code Style
 
-Follow the Sun guidelines with some specific exceptions
+For Java code, follow the Sun guidelines with some specific exceptions
 
-1. two spaces are used for indentation
+1. Two spaces are used for indentation.
+1. Don't use `.*` imports except for `import static` imports. This means: *turn off IDE features that automatically update and re-order imports*. This feature makes merging patches harder.
+
+### Configuration options
+
+1. Declare configuration options as constants, instead of inline
+
+          public static final string KEY_REGISTRY_ZK_QUORUM = "yarn.registry.zk.quorum";
+1. Give them meaningful names, scoped by the service on which they operate.
+1. Code which retrieves string options SHOULD use `Configuration.getTrimmed()` unless they have a specific need to include leading and trailing strings in the values.
+
 
 ## Public, Private and Limited Private code
 
@@ -142,6 +184,88 @@ Key `java.utils.concurrent` classes include
 There is a reasonable amount of code that can be considered dated in Hadoop, using threads and runnables.
 These should be cleaned up at some point —rather than mimicked.
 
+
+
+## Logging
+
+There's a number of audiences for Hadoop logging:
+
+* People who are new to Hadoop and trying to get a single node cluster to work.
+* hadoop sysadmins
+* people who help other people's hadoop clusters to work (that includes those companies that provide some form of Hadoop support).
+* Hadoop JIRA bug reports.
+* Hadoop developers.
+* Programs that analyze the logs to extract information.
+
+Hadoop's logging could be improved —there's a bias towards logging for Hadoop developers than for other people, because it's the developers who add the logs they need to get things to work.
+
+Areas for improvement include: including some links to diagnostics pages on the wiki, including more URLs for the hadoop services just brought up, and printing out some basic statistics. 
+
+1. SLF4J is the logging API to use for all new classes. It MUST be used.
+1. ERROR, WARN and INFO level events MAY be logged without guarding
+  their invocation.
+1. DEBUG-level log calls MUST be guarded. This eliminates the need
+to construct string instances.
+1. Unguarded log statements MUST NOT use string concatenation operations to build the log string, as these are called even if the logging does not take place. Use `{}` clauses in the log string.
+1. Classes SHOULD have lightweight `toString()` operators to aid logging. These MUST be robust
+against failures if some of the inner fields are null.
+1. Exceptions should be logged with the text and the exception included as a
+ final argument, for the trace.
+1. `Exception.toString()` must be used instead of `Exception.getMessage()`,
+as some classes have a null message.
+
+         LOG.error("Failed to start: {}", ex, ex)
+
+There is also the opportunity to add logs for machines to parse, not people. The HDFS Audit Log is an example of this —it enables off-line analysis of what a filesystem has been used for, including by interesting programs to detect which files are popular, and which files never get used after a few hours -and so can be deleted. Any contributions here are welcome.
+
+
+
+## Cross-Platform Support
+
+Hadoop is used in Production server-side on Linux and Windows, with some Solaris and AIX deployments. Code needs to work on all of these. 
+
+Java 6 is unsupported from Hadoop 2.7+, with Java 7 and 8 being the target platforms. Java 9 is expected to remove some of the operations. The old Apple Java 6 JVMs are obsolete and not relevant, even for development. 
+
+Hadoop is used client-side on Linux, Windows, OS/X and other systems.
+
+CPUs may be 32-bit or 64-bit, x86, PPC, ARM or other parts. 
+
+JVMs may be: the classic "sun" JVM; openjdk, IBM JDK, or other JVMs based off the sun source tree. These tend to differ in
+
+* heap management.
+* non-standard libraries (`com.sun`, `com.ibm`, ...). Some parts of the code —in particularly the Kerberos support— has to use reflection to make use of these JVM-specific libraries.
+* Garbage collection implementation, pauses and such like. 
+
+Operating Systems vary more, with key areas being:
+
+* Case sensitivity and semantics of underlying native filesystem. Example, Windows NTFS does not support rename operations while a file in a path is open. 
+* Native paths. Again, windows with its drive letter `c:\path` structure stands out. Hadoop's `Path` class contains logic to handle these...sometimes test construct paths by going
+
+        File file = something();
+        Path p = new Path("file://" + file.toString())
+  use
+        String p = new Path(file.toURI());
+
+* Process execution. Example: as OS/X does not support process groups, YARN containers do not automatically destroy all children when the container's parent (launcher) process terminates.
+* Process signalling
+* Environment variables. Names and case may be different.
+* Arguments to the standard Unix commands such as 'ls', 'ps', 'kill', 'top' and suchlike.
+
+## Performance
+
+Hadoop prioritizes correctness over performance. It absolutely prioritizes data preservation over performance. Data must not get lost or corrupted.
+
+
+
+## Internationalization
+
+
+1. Error messages use EN_US, US English in their text messages.
+1. Code must use `String.toLower(EN_US).equals()` rather than
+ `String.equalsIgnoreCase()`. Otherwise the comparison will fail in
+ some locales (example: turkey). Yes, a lot of existing code gets
+ this wrong —that does not justify continuing to make the mistake.
+
 ## Exceptions
 
 Exceptions are a critical form of diagnostics on system failures.
@@ -245,50 +369,6 @@ This implementation ensures all exception information is propagated. As the
 test is failing because the code in question is not behaving as expected, 
 having a stack trace in the test results can be invaluable. 
 
-
-
-## Logging
-
-There's a number of audiences for Hadoop logging:
-
-* People who are new to Hadoop and trying to get a single node cluster to work.
-* hadoop sysadmins
-* people who help other people's hadoop clusters to work (that includes those companies that provide some form of Hadoop support).
-* Hadoop JIRA bug reports.
-* Hadoop developers.
-* Programs that analyze the logs to extract information.
-
-Hadoop's logging could be improved —there's a bias towards logging for Hadoop developers than for other people, because it's the developers who add the logs they need to get things to work.
-
-Areas for improvement include: including some links to diagnostics pages on the wiki, including more URLs for the hadoop services just brought up, and printing out some basic statistics. 
-
-1. SLF4J is the logging API to use for all new classes. It MUST be used.
-1. ERROR, WARN and INFO level events MAY be logged without guarding
-  their invocation.
-1. DEBUG-level log calls MUST be guarded. This eliminates the need
-to construct string instances.
-1. Unguarded log statements MUST NOT use string concatenation operations to build the log string, as these are called even if the logging does not take place. Use `{}` clauses in the log string.
-1. Classes SHOULD have lightweight `toString()` operators to aid logging. These MUST be robust
-against failures if some of the inner fields are null.
-1. Exceptions should be logged with the text and the exception included as a
- final argument, for the trace.
-1. `Exception.toString()` must be used instead of `Exception.getMessage()`,
-as some classes have a null message.
-
-         LOG.error("Failed to start: {}", ex, ex)
-
-There is also the opportunity to add logs for machines to parse, not people. The HDFS Audit Log is an example of this —it enables off-line analysis of what a filesystem has been used for, including by interesting programs to detect which files are popular, and which files never get used after a few hours -and so can be deleted. Any contributions here are welcome.
-
-
-
-## Internationalization
-
-
-1. Error messages use EN_US, US English in their text messages.
-1. Code must use `String.toLower(EN_US).equals()` rather than
- `String.equalsIgnoreCase()`. Otherwise the comparison will fail in
- some locales (example: turkey). Yes, a lot of existing code gets
- this wrong —that does not justify continuing to make the mistake.
 
 ## Tests
 
@@ -407,48 +487,6 @@ like by extracting the method name from JUnit:
       @Rule
       public TestName methodName = new TestName();
 
-
-## Cross-Platform Support
-
-Hadoop is used in Production server-side on Linux and Windows, with some Solaris and AIX deployments. Code needs to work on all of these. 
-
-Java 6 is unsupported from Hadoop 2.7+, with Java 7 and 8 being the target platforms. Java 9 is expected to remove some of the operations. The old Apple Java 6 JVMs are obsolete and not relevant, even for development. 
-
-Hadoop is used client-side on Linux, Windows, OS/X and other systems.
-
-CPUs may be 32-bit or 64-bit, x86, PPC, ARM or other parts. 
-
-JVMs may be: the classic "sun" JVM; openjdk, IBM JDK, or other JVMs based off the sun source tree. These tend to differ in
-
-* heap management.
-* non-standard libraries (`com.sun`, `com.ibm`, ...). Some parts of the code —in particularly the Kerberos support— has to use reflection to make use of these JVM-specific libraries.
-* Garbage collection implementation, pauses and such like. 
-
-Operating Systems vary more, with key areas being:
-
-* Case sensitivity and semantics of underlying native filesystem. Example, Windows NTFS does not support rename operations while a file in a path is open. 
-* Native paths. Again, windows with its drive letter `c:\path` structure stands out. Hadoop's `Path` class contains logic to handle these...sometimes test construct paths by going
-
-        File file = something();
-        Path p = new Path("file://" + file.toString())
-  use
-        String p = new Path(file.toURI());
-
-* Process execution. Example: as OS/X does not support process groups, YARN containers do not automatically destroy all children when the container's parent (launcher) process terminates.
-* Process signalling
-* Environment variables. Names and case may be different.
-* Arguments to the standard Unix commands such as 'ls', 'ps', 'kill', 'top' and suchlike.
-
-## Performance
-
-Hadoop prioritizes correctness over performance. It absolutely prioritizes data preservation over performance. Data must not get lost or corrupted.
-
-## Patches 
-
-Hadoop is developed by patches —changes to code needs to be designed
-to enable easy review. The 80 character limit is one example; it makes
-side-by-side reviewing easier.
-
 # Hadoop Coding Standards: Other Languages
 
 ### Code Style: Python
@@ -459,17 +497,37 @@ side-by-side reviewing easier.
 ### Code Style: Bash
 
 1. Bash lines may exceed the 80 character limit where necessary.
+1. Try not to be too clever in use of the more obscure bash features —most Hadoop developers don't know them.
+1. Make sure your code recognises problems and fails with exit codes.
 
 ### Code Style: Native
 
 1. C code
 1. Make no assumptions about ASCII/Unicode, 16 vs 32 bits: use `typedef` and `TSTR` definitions; `int32` and `int64` for explicit integer sizes.
+1. CMake for building
+1. Ideally: test the build and run on Linux, OS/X and Windows.
+1. Assembly code must be optional; the code and algorithms around it must not be optimized for one specific CPU family.
+1. While you can try optimising for memory models of modern systems, with NUMA storage, three levels of cache and the like, it does produce code that is brittle against CPU part evolution. Don't optimize prematurely here.
 
-# JIRAs Patches (TODO)
+### Code Style: Maven POM files
+
+* All declarations of dependencies with their versions must be the file `hadoop-project/pom.xml`. 
+
+# Patches to the code
 
 Here are some things which scare the developers when they arrive in JIRA:
 
 * Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
 * Patches which delve into the internals of critical classes. The HDFS Namenode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users. 
+* Changes to the key public APIs of Hadoop. That includes the FileSystem & FileContext APIs, YARN submission protocols, MapReduce APIs, and the like.
 * Big patches without tests.
+* Patches that reorganise the code as part of the diff. That includes imports. They make the patch bigger (hence harder to review) and may make it harder to merge in other patches.
+
+Things that are appreciated:
+
+* Documentation, in javadocs and in the `main\site` packages. Markdown is accepted there, and easy to write.
+* Good tests.
+* For code that is delving into the internals of the concurrency/consensus logic, well argued explanations of how the code works in all possible circumstances. State machine models and even TLA+ specifications can be used here to argue your case.
+* Any description of what scale/workload your code was tested with. If it was a big test, that reassures people that this scales well. And if not, at least you are being open about it.
+
 
