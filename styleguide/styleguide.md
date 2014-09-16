@@ -41,6 +41,7 @@ Hadoop applications need to be designed to scale to thousands —even tens of th
 1. Services need to be designed to handle the challenge of many thousands of services reporting near-simultaneously. The "cluster restart" scenario is a classic example here.
 
 Datasets may be measured in tens or hundreds of Terabytes.
+
 1. Algorithms to work with these datasets must be designed to scale across the cluster: no single node will suffice.
 1. In-memory storage is too expensive for data of this scale. While the cost will fall over time, the dataset size is likely to grow at a similar rate. Design algorithms to work efficiently when data is stored on a (slower) persistent storage, be it Hard disk or, in future, SSD.
 1. Hadoop is moving towards heterogenous data storage; data may be stored at different levels in the hierarchy, with these details being potentially transparent to the application. Consider using this rather than trying to implement your own memory caches —the HDFS system is designed to support administrator-managed quotas, and distribute the cached layers around the cluster so as to make more efficient use of the storage tiers.
