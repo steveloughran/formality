@@ -36,9 +36,10 @@ Hadoop is designed to work at the scale of thousands of machines. Some of them w
 
 Hadoop applications need to be designed to scale to thousands —even tens of thousands— of distributed components.
 
-1. Data structures must be designed to scale, ideally at O(1), O(log2(n)) or O(n).
+1. Data structures must be designed to scale, ideally at `O(1)`, `O(log2(n))` or similar. At the scale of Hadoop, `O(n)` is too expensive.
 1. The algorithms to work with the data structures must also scale well.
 1. Services need to be designed to handle the challenge of many thousands of services reporting near-simultaneously. The "cluster restart" scenario is a classic example here.
+1. Cluster operations MUST be designed to be O(1). That is: no harder to run a cluster of a thousand machines than a cluster of 10. Equally importantly, that single-node cluster should be easy to operate.
 
 Datasets may be measured in tens or hundreds of Terabytes.
 
@@ -67,7 +68,8 @@ In production clusters, disk and server failures tend to surface when a cluster 
 
 For Java code, follow the Sun guidelines with some specific exceptions
 
-1. Two spaces are used for indentation.
+1. Two spaces are used for indentation. Not tabs, not four spaces, not eight spaces. Two.
+1. 
 1. Don't use `.*` imports except for `import static` imports. This means: *turn off IDE features that automatically update and re-order imports*. This feature makes merging patches harder.
 
 ### Configuration options
@@ -81,7 +83,7 @@ For Java code, follow the Sun guidelines with some specific exceptions
 
 ## Public, Private and Limited Private code
 
-The hadoop codebase consists of internal implementation classes, public Java-level classes and APIs, and public IPC protocol interfaces. The java language scope annotations: `public`, `private`, `protected` and package-scoped aren't sufficient to describe these —we need to distinguish a class that may be public, yet intended for internal use, from something that is for external callers. We also need to warn those external callers where an API is considered stable, versus an API that may change from release to release, as it stabilizes or evolves.
+The Hadoop codebase consists of internal implementation classes, public Java-level classes and APIs, and public IPC protocol interfaces. The java language scope annotations: `public`, `private`, `protected` and package-scoped aren't sufficient to describe these —we need to distinguish a class that may be public, yet intended for internal use, from something that is for external callers. We also need to warn those external callers where an API is considered stable, versus an API that may change from release to release, as it stabilizes or evolves.
 
 For this reason, the `hadoop-annotations` module/JAR contains some java `@` attributes for use in declaring the scope and stability of classes.
 
@@ -166,15 +168,16 @@ so should not be used for types which are not `synchronized`, or which are only 
 synchronization blocks.
 
 1. In the core services, try to avoid overreaching service-wide locks.
+1. Consider operation-specific locks through having (`final`) fields which can be locked for access to specific areas.
+1. If-and-only-if-absolutely-necessary, lock on the `.class` object. This is justifiable if the operation would affect all instances of a class.
 1. Avoid calling native code in locked regions.
-1. Avoid calling expensive operations (including `System.currentTimeMillis()`)
-in locked regions.
+1. Avoid calling expensive operations (including `System.currentTimeMillis()`) in a locked region. If these operations do not need to be synchronized, Consider calling them in advance and cache the results
 1. Code MUST NOT ignore an `InterruptedException` —it is a sign that part of the
 system wishes to stop that thread, often on a process shutdown.
 Wrap it in an `InterruptedIOException` if you need to convert to an `IOException`.
 1. Code MUST NOT start threads inside constructors. These may execute before the class is
 fully constructed, leading to bizarre failure conditions.
-1. Use Executors over threads
+1. Use Executors over Threads
 1. Use `Callable<V>` over `Runnable`, as it can not only return a value —it can
 raise an exception.
 
@@ -195,8 +198,9 @@ These should be cleaned up at some point —rather than mimicked.
 There's a number of audiences for Hadoop logging:
 
 * People who are new to Hadoop and trying to get a single node cluster to work.
-* hadoop sysadmins
-* people who help other people's hadoop clusters to work (that includes those companies that provide some form of Hadoop support).
+* Hadoop sysadmins who don't want to have to become experts in reading Java stack traces to diagnose
+local cluster problems.
+* people who help other people's Hadoop clusters to work (that includes those companies that provide some form of Hadoop support).
 * Hadoop JIRA bug reports.
 * Hadoop developers.
 * Programs that analyze the logs to extract information.
@@ -205,12 +209,21 @@ Hadoop's logging could be improved —there's a bias towards logging for Hadoop 
 
 Areas for improvement include: including some links to diagnostics pages on the wiki, including more URLs for the hadoop services just brought up, and printing out some basic statistics. 
 
+Hadoop is also (slowly) migrating from the apache commons-logging API to SLF4J. This style guide covers SLF4J only:
+
 1. SLF4J is the logging API to use for all new classes. It MUST be used.
 1. ERROR, WARN and INFO level events MAY be logged without guarding
   their invocation.
 1. DEBUG-level log calls MUST be guarded. This eliminates the need
 to construct string instances.
-1. Unguarded log statements MUST NOT use string concatenation operations to build the log string, as these are called even if the logging does not take place. Use `{}` clauses in the log string.
+1. Unguarded statements MUST NOT use string concatenation operations to build the log string, as these are called even if the logging does not take place. Use `{}` clauses in the log string.
+  Bad:
+
+      LOG.info("Operation "+ action+ " outcome: " +outcome)
+  Good:
+
+      LOG.info("Operation {} outcome: {}", action, outcome)
+
 1. Classes SHOULD have lightweight `toString()` operators to aid logging. These MUST be robust
 against failures if some of the inner fields are null.
 1. Exceptions should be logged with the text and the exception included as a
@@ -234,7 +247,7 @@ Hadoop is used client-side on Linux, Windows, OS/X and other systems.
 
 CPUs may be 32-bit or 64-bit, x86, PPC, ARM or other parts. 
 
-JVMs may be: the classic "sun" JVM; openjdk, IBM JDK, or other JVMs based off the sun source tree. These tend to differ in
+JVMs may be: the classic "sun" JVM; OpenJDK, IBM JDK, or other JVMs based off the sun source tree. These tend to differ in
 
 * heap management.
 * non-standard libraries (`com.sun`, `com.ibm`, ...). Some parts of the code —in particularly the Kerberos support— has to use reflection to make use of these JVM-specific libraries.
@@ -248,6 +261,7 @@ Operating Systems vary more, with key areas being:
         File file = something();
         Path p = new Path("file://" + file.toString())
   use
+  
         String p = new Path(file.toURI());
 
 * Process execution. Example: as OS/X does not support process groups, YARN containers do not automatically destroy all children when the container's parent (launcher) process terminates.
@@ -259,16 +273,34 @@ Operating Systems vary more, with key areas being:
 
 Hadoop prioritizes correctness over performance. It absolutely prioritizes data preservation over performance. Data must not get lost or corrupted.
 
+## Security
+
+Hadoop supports insecure clusters and secure "Kerberized" clusters. 
+The latter uses Kerberos to authenticate services as well as users.
+This means it is **critical** that Hadoop code works in secure environments.
+
+Set up a machine/VM as a Kerberos Domain Controller (KDC) and use this
+to create the keytabs needed for Hadoop run in in secure mode. 
+This can take a couple of hours, hours in which you will learn the basics of Kerberos.
+
+Insecure clusters run in-cluster code in different accounts
+from the users submitting work. Access to HDFS propagates by passing
+the `HADOOP_USER` environment variable around. This variable is picked up
+by programs which use the Hadoop HDFS client libraries and used
+ to impersonate that user (in an unsecured cluster, obviously). 
+ 
+YARN applications MUST set this environment variable when launching an application in an insecure cluster.
+
+Secure clusters use Kerberos and require each user submitting work to have an account of the same name in the cluster.
+
+1. Do not assume that user names are simple "unix" names; they may have spaces and kerberos realms in them.
+1. Use the `UserGroupInformation` class to manage user identities; it's `doAs()` operation to perform actions
+as a specific user.
+1. Test against both secure and insecure clusters. The `MiniKDC` server provides a basic in-JVM
+Kerberos controller for JUnit tests. 
 
 
-## Internationalization
-
-
-1. Error messages use EN_US, US English in their text messages.
-1. Code must use `String.toLower(EN_US).equals()` rather than
- `String.equalsIgnoreCase()`. Otherwise the comparison will fail in
- some locales (example: turkey). Yes, a lot of existing code gets
- this wrong —that does not justify continuing to make the mistake.
+Java security is a complex beast, one which uses system-wide properties to be configured (the JAAS file reference); some parts of the Hadoop stack (e.g. Zookeeper) are also controlled by JVM properties. Be careful when setting up such applications to set the properties before 
 
 ## Exceptions
 
@@ -276,7 +308,7 @@ Exceptions are a critical form of diagnostics on system failures.
 
 * They should be designed to provide enough information to enable experienced
 Hadoop operators to identify the problem.
-* They should to provide enough information to enable new hadoop
+* They should to provide enough information to enable new Hadoop
 users to identify problems starting or connecting to their cluster.
 * They need to provide information for the Hadoop developers too.
 * Information MUST NOT be lost as the exception is passed up the stack.
@@ -298,81 +330,68 @@ as the namenode refusing connections, rather than them getting their destination
 general `IOException` —they are wrapped in new instances of the same exception class. This
 ensures that `catch()` clauses can select on exception types.
 
+In general:
 
 
+1. Try to use Hadoop's existing exception classes where possible.
 1. Except for some special cases, exceptions MUST be derived from `IOException`
 1. Use specific exceptions in preference to the generic `IOException` 
 1. `IllegalArgumentException` may be used for some checking of input parameters,
 but only where consistent with other parts of the stack.
-1. Exceptions should provide any extra information to aid diagnostics, 
-including —but not limited to— paths, remote hosts, and any details about
-the operation being attempted.
 1. If an exception is generated from another exception, the inner exception
 must be included, either via the constructor or through `Exception.initCause()`.
 1. If an exception is wrapping another exception, the inner exception
 text MUST be included in the message of the outer exception.
-1. Try to use Hadoop's existing exception classes where possible.
+1. The text value of an exception MUST be extracted from `Exception.toString`.
+1. `Exception.getMessage()` MUST NOT be used. For some exceptions this returns null.
 1. Where Hadoop adds support for extra exception diagnostics (such as with
 `NetUtils.wrapException()`) —use it.
+1. Exceptions should provide any extra information to aid diagnostics, 
+including —but not limited to— paths, remote hosts, and any details about
+the operation being attempted.
 1. Where Hadoop doesn't add support for extra diagnostics —try implementing it.
+
 
 The requirement to derive exceptions from `IOException` means that
 developers must not use Guava's `Preconditions.checkState()` check as
 these throw `IllegalStateException` instances. 
 
 
-### Testing with Exceptions
+## Internationalization
 
-Catching and validating exceptions are an essential 
-aspect of testing failure modes. However, it is dangerously
-easy to write brittle tests which fail the moment anyone changes the exception
-text.
 
-To avoid this:
-1. Use specific exception classes, then catch purely those exceptions.
-1. Use constants when defining error strings, so that the test
-can look for the same text
-1. When looking for the text, use `String.contains()` over
-`String.equals()` or `String.startsWith()`.
+1. Error messages use EN_US, US English in their text messages.
+1. Log messages must use US English as their text.
+1. Classes, methods and variables must use US English in their names.
+1. Names that are misspelled can be near-impossible to remove: please check with
+a spell checker set to the US if you have any doubts about your spelling.
+1. Code must use `String.toLower(EN_US).equals()` rather than
+ `String.equalsIgnoreCase()`. Otherwise the comparison will fail in
+ some locales (example: Turkey). Yes, a lot of existing code gets
+ this wrong —that does not justify continuing to make the mistake.
 
-Bad
+## Main functions
 
-    try {
-      doSomething("arg")
-      Assert.fail("should not have got here")
-    } catch(IOException e) {
-      Assert.assertEquals("failure on path /tmp", e.getMessage());
-    }
-    
 
-Good
+A static `main(String[] args)` method routine can be invoked via the
+`\bin\hadoop` script, a script which will set up the classpath and
+other environment variables consistently.
 
-    try {
-      doSomething("arg")
-      Assert.fail("should not have got here")
-    } catch(PathNotFoundException e) {
-      Assert.assertTrue(
-        "did not find " + Errors.FAILURE_ON_PATH + " in " + e,
-        e.toString().contains(Errors.FAILURE_ON_PATH);
-    }
-    
+Hadoop uses its `ToolRunner` class as the entry point to code —both
+client and server.
 
-Best: rethrow the exception if it doesn't match, after adding a log message explaining why it was rethrown:
+This provides a standard set of configuration parameters, including 
+adding the ability to define and  extend the Hadoop XML configuration to
+use.
 
-    try {
-      doSomething("arg")
-      Assert.fail("should not have got here")
-    } catch(PathNotFoundException e) {
-      if (!e.toString().contains(Errors.FAILURE_ON_PATH) {
-        LOG.error("No " + Errors.FAILURE_ON_PATH + " in {}" ,e, e)
-        throw e;
-      }
-    }
+Entry points SHOULD use the `TestRunner` interface for their entry point
+logic.
 
-This implementation ensures all exception information is propagated. As the
-test is failing because the code in question is not behaving as expected, 
-having a stack trace in the test results can be invaluable. 
-
+This is not mandatory; there may be valid reasons to avoid doing this, a key
+one being that the application may be using an alternative CLI parser such
+as `JCommander`. If an alternative CLI parser library is used, the `main()`
+routine SHOULD support the standard command line options, especially the
+`-D name=value` syntax.
 
 ## Tests
 
@@ -407,15 +426,18 @@ Tests MUST NOT
 * Require specific timings of operations, including the execution performance or ordering of asynchronous operations.
 
 Tests MAY
+
 * Assume the test machine is well-configured. That is, the machine knows its own name, which either reached 
 
 Tests SHOULD 
+
 * use loopback addresses `localhost` rather than hostnames, because the hostname to IP mapping may loop through the external network, where a firewall may then block network access.
 * use port '0' for registering services, as other ports may be in use.
+* Clean up after themselves.
 
 
 
-#### Assertions
+### Assertions
 
 Tests SHOULD provide meaningful text on assertion failures. The best metric is "can someone looking at the test results get any idea of what failed without chasing up the stack trace in an IDE?"
 
@@ -439,7 +461,7 @@ Good
 
 Such assertions are aided by having the classes under test having meaningful `toString()` operators —which is why these should be implemented.
 
-#### Timeouts
+### Timeouts
 
 Test MUST have timeouts. The test runner will kill tests that take too long -but this loses information about which test failed. By giving the individual tests a timeout, diagnostics are improved.
 
@@ -456,25 +478,43 @@ Better: declare a test rule which is picked by all test methods
 *Important*: make it a long enough timeout that only failing tests fail. The target machine
 here is not your own, it is an underpowered Linux VM spun up by Jenkins somewhere.
 
-#### Keeping tests fast
+### Keeping tests fast
 
 Slow tests don't get run. A big cause of delay in Hadoop's current test suite is the time to start up new Miniclusters ... the time to wait for an instance to start up can often take longer than the rest of the test.
 
 ### Exposing class methods for testing
 
-There are three ways of exporting private methods in a production class for testing
+Sometimes classes in Hadoop expose internal methods for use in testing. 
 
-1. Make public, mark `@VisibleForTesting`. Easiest, but risks implicitly becoming part of the API.
+There are three ways of exporting private methods in a production class for this
+
+1. Make `public` and mark `@VisibleForTesting`. Easiest, but risks implicitly becoming part of the API.
 1. Mark `@VisibleForTesting`, but make package scoped. This allows tests in the same package to use the method,
 so is unlikely to become part of the API. It does require all tests to be in the same package, which
 can be a constraint.
-1. Mark `@VisibleForTesting`, but make `protected`, then subclass in the test source tree with a class that exposes the methods. This adds a new risk: that it is subclassed in production. It may also add more maintenance costs.
+1. Mark `@VisibleForTesting`, but make `protected`, then subclass in the test source tree
+ with a class that exposes the methods. This adds a new risk: that it is subclassed 
+ in production. It may also add more maintenance costs.
+
 
 There is no formal Hadoop policy here.
 
-There is however, another strategy: don't expose your internal methods for testing. The test cases around a class are the defacto test of that classes APIs. If the functionality of a class cannot be tested without diving below that API —it's a sign that the API is limited. For any class which is designed for external invocation, this implies you should think about improving that public API for testability, rather than sneaking into the internals. 
+There is however, another strategy: don't expose your internal methods for testing.
+The test cases around a class are the test of that classes APIs —and often the
+code people start with to use the code.
 
-If your class isn't designed for direct public consultation, but instead a small part of a service remotely accessible over the network —then yes, exposing the internals may be justifiable.
+If the functionality of a class cannot be used without diving below that API,
+it's a sign that the API is limited.
+
+For any class which is designed for external invocation, this implies 
+you should think about improving that public API for testability,
+rather than sneaking into the internals. 
+
+If your class isn't designed for direct public consultation, but instead 
+a small part of a service remotely accessible over the network
+—then yes, exposing the internals may be justifiable. Just bear in mind that you are
+increasing the costs of maintaining the code: someone will need to update all
+the tests as changes are made to the internals of a class.
 
 
 *Further Reading*
@@ -482,7 +522,97 @@ If your class isn't designed for direct public consultation, but instead a small
 * [Standard for Software Component Testing](http://www.testingstandards.co.uk/Component%20Testing.pdf)
 
 
-### Tips
+### Testing with Exceptions
+
+Catching and validating exceptions are an essential 
+aspect of testing failure modes. However, it is dangerously
+easy to write brittle tests which fail the moment anyone changes the exception
+text.
+
+To avoid this:
+
+1. Use specific exception classes, then catch purely those exceptions.
+1. Use constants when defining error strings, so that the test
+can look for the same text
+1. When looking for the text, use `String.contains()` over
+`String.equals()` or `String.startsWith()`.
+
+Bad
+
+    try {
+      doSomething("arg")
+      Assert.fail("should not have got here")
+    } catch(IOException e) {
+      Assert.assertEquals("failure on path /tmp", e.getMessage());
+    }
+    
+
+This is way to brittle and doesn't help you find out what is going on on a failure.
+
+Good
+
+    @Test()
+    public void testSomething {
+      try {
+        doSomething("arg")
+        Assert.fail("should not have got here")
+      } catch(PathNotFoundException e) {
+        Assert.assertTrue(
+          "did not find " + Errors.FAILURE_ON_PATH + " in " + e,
+          e.toString().contains(Errors.FAILURE_ON_PATH);
+      }
+    }
+    
+
+Here a constant is used to define what is looked for (obviously, one used in the exception's constructor). It also uses the `String.contains()` operator —so if extra details are added to the exception, the assertion still holds.
+
+Good
+
+    @Test(expected = PathNotFoundException.class)
+    public void testSomething {
+        doSomething("arg")
+    }
+    
+
+This takes advantage of JUnit 4's ability to expect a specific exception class, and looks for it. This is nice and short. Where it is weak is that it doesn't let you check the contents of the exception. If the exception is sufficiently unique within the actions, that may be enough. 
+
+Best: rethrow the exception if it doesn't match, after adding a log message explaining why it was rethrown:
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSomething {
+      try {
+        result = doSomething("arg")
+        Assert.fail("expected a failure, got: " + result)
+      } catch(PathNotFoundException e) {
+        if (!e.toString().contains(Errors.FAILURE_ON_PATH) {
+          LOG.error("No " + Errors.FAILURE_ON_PATH + " in {}" ,e, e)
+          throw e;
+        }
+      }
+    }
+
+This implementation ensures all exception information is propagated. If it doesn't fail, the return value of the 
+operation is included in the failure exception, to aid debugging. 
+As the test is failing because the code in question is not behaving as expected, 
+having a stack trace in the test results can be invaluable. 
+
+### Skipping tests that aren't available on the test system
+
+Not all tests work everywhere
+
+    public static void skip(String message) {
+      log.warn("Skipping test: {}", message)
+      Assume.assumeTrue(message, false);
+    }
+
+    public static void assume(boolean condition, String message) {
+      if (!condition) {
+        log.warn("Skipping test: {}",  message)
+        Assume.assumeTrue(message, false);
+      }
+    }
+
+### Testing Tips
 
 
 You can automatically pick the name to use for instances of mini clusters and the
@@ -523,7 +653,7 @@ Here are some things which scare the developers when they arrive in JIRA:
 
 * Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
 * Patches which delve into the internals of critical classes. The HDFS Namenode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users. 
-* Changes to the key public APIs of Hadoop. That includes the FileSystem & FileContext APIs, YARN submission protocols, MapReduce APIs, and the like.
+* Changes to the key public APIs of Hadoop. That includes the `FileSystem` & `FileContext` APIs, YARN submission protocols, MapReduce APIs, and the like.
 * Big patches without tests.
 * Patches that reorganise the code as part of the diff. That includes imports. They make the patch bigger (hence harder to review) and may make it harder to merge in other patches.
 

@@ -38,16 +38,19 @@ It assumes that
 
 A Zookeeper-based registry does not meet all those assumptions
 
-1. changes may take time to propagate across the ZK quorum, hence changes cannot be considered immediate
-from the perspective of other registry clients. (assumptions (1) and (3)).
+1. changes may take time to propagate across the ZK quorum, hence changes cannot 
+be considered immediate from the perspective of other registry clients. (assumptions (1) and (3)).
 
 2. Selection operations may not be atomic. (assumption (2)).
 
 Operations will still happen in the order received by the elected ZK master
 
-A stricter definition would try to state that all operations are eventually true excluding other changes
-happening during a sequence of action. This is left as an excercise for the reader.
+A stricter definition would try to state that all operations are eventually 
+true excluding other changes happening during a sequence of action.
+This is left as an excercise for the reader.
 
+The specification also omits all coverage of the permissions policy. This is something
+which can be tuned by the Resource Manager: who sets up
 *)
 
 
@@ -65,7 +68,7 @@ CONSTANTS
     PutActions,     \* all possible put actions
     DeleteActions,  \* all possible delete actions
     PurgeActions,   \* all possible purge actions
-    MkdirActions    \* all possible mkdir actions
+    MknodeActions    \* all possible mkdir actions
 
 
 
@@ -89,12 +92,12 @@ vars == << registry, actions >>
 
 (* Persistence policy *)
 PersistPolicySet == {
+    "",                      \* Undefined; field not present. PERMANENT is implied.
     "PERMANENT",            \* persists until explicitly removed 
-    "CLUSTER-RESTART",      \* persists until the cluster is restarted
     "APPLICATION",          \* persists until the application finishes
     "APPLICATION-ATTEMPT",  \* persists until the application attempt finishes
     "CONTAINER"             \* persists until the container finishes 
-    }
+  }
 
 (* Type invariants. *)
 TypeInvariant ==
@@ -142,10 +145,10 @@ Endpoint == [
 *)
 ServiceRecord == [
     \* ID -used when applying the persistence policy
-    id: STRING,     
+    yarn_id: STRING,     
             
     \* the persistence policy
-    persistence: PersistPolicySet,
+    yarn_persistence: PersistPolicySet,
     
     \*A description
     description: STRING,
@@ -179,8 +182,8 @@ purgeAction == [
     persistence: PersistPolicySet
 ]
 
-mkDirAction == [
-    type: "mkdir",
+mkNodeAction == [
+    type: "mknode",
     path: STRING,
     parents: BOOLEAN
 ]
@@ -207,8 +210,8 @@ Registry Access Operations
 (* 
 Lookup all entries in a registry with a matching path
 *)
-lookup(Registry, path) == \A entry \in Registry: entry.path = path
 
+lookup(Registry, path) == \A entry \in Registry: entry.path = path
 
 (*
 A path exists in the registry iff there is an entry with that path
@@ -298,31 +301,36 @@ put(R, e) ==
     
 
 (*
-    mkdir() adds a new empty entry where there was none before, iff
+    mknode() adds a new empty entry where there was none before, iff
     -the parent exists
     -it meets the requirement for being "put"
 *)
 
-mkdirSimple(R, path) ==
+mknodeSimple(R, path) ==
     LET record == [ path |-> path, data |-> <<>>  ]
     IN  \/ exists(R, path)
         \/ (exists(R, parent(path))  /\ canPut(R, record) /\ (R' = R \union {record} ))
 
 
 (*
-For all parents, the mkdirSimple criteria must apply.
-This could be defined recursively, except what is not being defined here is a set. 
+For all parents, the mknodeSimple criteria must apply.
+This could be defined recursively, though as TLA+ does not support recursion,
+an alternative is required
+
+
+Because this specification is declaring the final state of a operation, not
+the implemental, all that is needed is to describe those parents.
 
 It declares that the mkdirSimple state applies to the path and all its parents in the set R'
 
 *)
-mkdirWithParents(R, path) ==
-    /\ \A p2 \in ancestors(R, path) : mkdirSimple(R, p2)
-    /\ mkdirSimple(R, path)
+mknodeWithParents(R, path) ==
+    /\ \A p2 \in ancestors(R, path) : mknodeSimple(R, p2)
+    /\ mknodeSimple(R, path)
     
 
-mkdir(R, path, recursive) ==
-   IF recursive THEN mkdirWithParents(R, path) ELSE mkdirSimple(R, path)
+mknode(R, path, recursive) ==
+   IF recursive THEN mknodeWithParents(R, path) ELSE mknodeSimple(R, path)
   
 (* Deletion is set difference on any existing entries *)
 
@@ -334,10 +342,10 @@ simpleDelete(R, path) ==
 (* recursive delete: neither the path or its descendants exists in the new registry *)
 
 recursiveDelete(R, path) ==
-
-       (* Root directory: the new registry is the initial registry again *)
+       \* Root path: the new registry is the initial registry again 
     /\ isRootPath(path) => R' = { [ path |-> <<>>, data |-> <<>> ] }
-       (* Any other entry: the new registry is a set with any existing entry for that path is removed, and the new entry added *)
+       \*  Any other entry: the new registry is a set with any existing
+       \* entry for that path is removed, and the new entry added 
     /\ ~isRootPath(path) => R' = R \ ( lookup(R, path) \union descendants(R, path))
 
 
@@ -355,20 +363,22 @@ afterwards
 purge(R, path, id, persistence) == 
     /\ (persistence \in PersistPolicySet)
     /\ \A p2 \in pathAndDescendants(R, path) :
-         (p2.id = id /\ p2.persistence = persistence) => recursiveDelete(R, p2.path) 
+         (p2.yarn_id = id /\ p2.yarn_ = persistence) => recursiveDelete(R, p2.path) 
 
 (*
-Resolve() resolves the record at a path or fails.
+resolveRecord() resolves the record at a path or fails.
 
 It relies on the fact that if the cardinality of a set is 1, then the CHOOSE operator
-is guaranteed to return the single entry of that set, iff the choice predicate holds. Using
-a predicate of TRUE, it always succeeds, so this function selects the sole entry of the lookup operation.
+is guaranteed to return the single entry of that set, iff the choice predicate holds. 
+
+Using a predicate of TRUE, it always succeeds, so this function selects 
+the sole entry of the lookup operation.
 *)
+
 resolveRecord(R, path) ==
     LET l == lookup(R, path) IN
         /\ Cardinality(l) = 1
         /\ CHOOSE e \in l : TRUE
-
 
 (*
  The specific action of putting an entry into a record includes validating the record
@@ -376,7 +386,7 @@ resolveRecord(R, path) ==
 
 validRecordToPut(path, record) ==
       \* The root entry must have permanent persistence  
-    /\ (isRootPath(path) => record.persistence = "PERMANENT")
+     isRootPath(path) => (record.yarn_persistence = "PERMANENT" \/ record.yarn_persistence = "")
 
 
 (* 
@@ -401,8 +411,7 @@ putRecord(R, path, record) ==
         \/ (a \in PutActions /\ a.type="put") 
         \/ (a \in DeleteActions /\ a.type="delete")
         \/ (a \in PurgeActions /\ a.type="purge")
-        \/ (a \in MkdirActions /\ a.type="mkdir")
-
+        \/ (a \in MknodeActions /\ a.type="mknode")
 
 
 (*
@@ -411,7 +420,7 @@ putRecord(R, path, record) ==
  
 applyAction(R, a) == 
     \/ (a \in PutActions /\ putRecord(R, a.path, a.record) )
-    \/ (a \in MkdirActions /\ mkdir(R, a.path, a.recursive) )
+    \/ (a \in MknodeActions /\ mknode(R, a.path, a.recursive) )
     \/ (a \in DeleteActions /\ delete(R, a.path, a.recursive) )
     \/ (a \in PurgeActions /\ purge(R, a.path, a.id, a.persistence))
  
