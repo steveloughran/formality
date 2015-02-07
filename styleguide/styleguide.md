@@ -18,7 +18,7 @@
 
 ## Introduction
 
-Apache Hadoop is one of the most complicated open source projects being developed. Its code is nothing compared to the scale of the Linux Kernel and device drivers, yet it has some of the same characteristics: a filesystem API and implementations(s) (HDFS), a scheduler for executing work along with a means of submitting work to it (YARN), programs to process data on it (MAPREDUCE, Tez), databases (Apache HBase, Apache Accumulo) and management and monitoring tools, both open source and closed). 
+Apache Hadoop is one of the most complicated open source projects being developed. Its code is nothing compared to the scale of the Linux Kernel and device drivers, yet it has some of the same characteristics: a filesystem API and implementations(s) (HDFS), a scheduler for executing work along with a means of submitting work to it (YARN), programs to process data on it (MAPREDUCE, Apache Tez), databases (Apache HBase, Apache Accumulo) and management and monitoring tools, both open source and closed). 
 
 Where it is complicated is that it is designed to run across hundreds to thousands of individual servers, to store tens of petabytes of data, and to execute those scheduled programs in the face of failures of those servers. 
 
@@ -46,8 +46,8 @@ Datasets may be measured in tens or hundreds of Terabytes.
 1. Algorithms to work with these datasets must be designed to scale across the cluster: no single node will suffice.
 1. In-memory storage is too expensive for data of this scale. While the cost will fall over time, the dataset size is likely to grow at a similar rate. Design algorithms to work efficiently when data is stored on a (slower) persistent storage, be it Hard disk or, in future, SSD.
 1. Hadoop is moving towards heterogenous data storage; data may be stored at different levels in the hierarchy, with these details being potentially transparent to the application. Consider using this rather than trying to implement your own memory caches —the HDFS system is designed to support administrator-managed quotas, and distribute the cached layers around the cluster so as to make more efficient use of the storage tiers.
-1. Applications need to be careful not to accidentally overload other parts of the infrastructure. Making too many simultaneous requests to the Hadoop namenode (i.e directory listing and file status queries) can impact HDFS. Even something as "harmless" as a DNS lookup can be disruptive if a single DNS server is used to service the requests of a large cluster. 
-1. Use `long` over `int`.
+1. Applications need to be careful not to accidentally overload other parts of the infrastructure. Making too many simultaneous requests to the Hadoop Namenode (i.e directory listing and file status queries) can impact HDFS. Even something as "harmless" as a DNS lookup can be disruptive if a single DNS server is used to service the requests of a large cluster. 
+1. A sensible size of number for storing things like counts is `long` rather than `int`.
 
 ### Failure
 
@@ -66,19 +66,34 @@ In production clusters, disk and server failures tend to surface when a cluster 
 
 ## Code Style
 
-For Java code, follow the Sun guidelines with some specific exceptions
+For Java code, start with the original "Sun" guidelines.
 
 1. Two spaces are used for indentation. Not tabs, not four spaces, not eight spaces. Two.
-1. 
+1. Eighty characters wide. This may seem dated, but it aids patch reviewing through side-by-side comparisons.
 1. Don't use `.*` imports except for `import static` imports. This means: *turn off IDE features that automatically update and re-order imports*. This feature makes merging patches harder.
+
+### Comments
+
+1. SHOULD use javadoc above methods, class, and field declarations.
+1. SHOULD Avoid explaining how a method works: it will only become obsolete in time and just confuse people. Write down what the method is expected to do.
+1. SHOULD use `// ` within methods. On their own lines, indented to match the source. Not: at end of line. Not: 
+1. MUST NOT: mix `//` comments within multiline code
+
+        String bad = evaluate() 
+                    //  update interval
+                    + conf.getUpdateInterval()
+1. MUST NOT: use comments to turn `log` commands on or off. Downgrade them or delete them; do not just comment them out.
 
 ### Configuration options
 
 1. Declare configuration options as constants, instead of inline
 
-          public static final string KEY_REGISTRY_ZK_QUORUM = "yarn.registry.zk.quorum";
+          public static final string KEY_REGISTRY_ZK_QUORUM = "hadoop.registry.zk.quorum";
 1. Give them meaningful names, scoped by the service on which they operate.
 1. Code which retrieves string options SHOULD use `Configuration.getTrimmed()` unless they have a specific need to include leading and trailing strings in the values.
+1. Provide meaningful default values in the java source
+1. Provide valid default values in `core-default.xml` and HDFS/YARN equivalents, with
+meaningful text to accompany the values. These XML files are used to automatically generate documentation about configuration values. If no XML entry or text is provided, the configuration option will remain an undocumented mystery.
 
 
 ## Public, Private and Limited Private code
@@ -171,7 +186,7 @@ synchronization blocks.
 1. Consider operation-specific locks through having (`final`) fields which can be locked for access to specific areas.
 1. If-and-only-if-absolutely-necessary, lock on the `.class` object. This is justifiable if the operation would affect all instances of a class.
 1. Avoid calling native code in locked regions.
-1. Avoid calling expensive operations (including `System.currentTimeMillis()`) in a locked region. If these operations do not need to be synchronized, Consider calling them in advance and cache the results
+1. Avoid calling expensive operations (including `System.currentTimeMillis()`) in a locked region. If these operations do not need to be synchronized, consider calling them in advance and cache the results
 1. Code MUST NOT ignore an `InterruptedException` —it is a sign that part of the
 system wishes to stop that thread, often on a process shutdown.
 Wrap it in an `InterruptedIOException` if you need to convert to an `IOException`.
@@ -188,8 +203,7 @@ Key `java.utils.concurrent` classes include
 * Queues, including the `BlockingQueue`.
 
 
-There is a reasonable amount of code that can be considered dated in Hadoop, using threads and runnables.
-These should be cleaned up at some point —rather than mimicked.
+There is a reasonable amount of code that can be considered dated in Hadoop, using threads and runnables. These should be cleaned up at some point —rather than mimicked.
 
 
 
@@ -228,7 +242,7 @@ to construct string instances.
 against failures if some of the inner fields are null.
 1. Exceptions should be logged with the text and the exception included as a
  final argument, for the trace.
-1. `Exception.toString()` must be used instead of `Exception.getMessage()`,
+1. `Exception.toString()` MUST be used instead of `Exception.getMessage()`,
 as some classes have a null message.
 
          LOG.error("Failed to start: {}", ex, ex)
@@ -365,16 +379,18 @@ these throw `IllegalStateException` instances.
 1. Classes, methods and variables must use US English in their names.
 1. Names that are misspelled can be near-impossible to remove: please check with
 a spell checker set to the US if you have any doubts about your spelling.
-1. Code must use `String.toLower(EN_US).equals()` rather than
+1. Code must use `String.toLowerCase(EN_US).equals()` rather than
  `String.equalsIgnoreCase()`. Otherwise the comparison will fail in
  some locales (example: Turkey). Yes, a lot of existing code gets
  this wrong —that does not justify continuing to make the mistake.
+1. Similarly, use `String.toLowerCase(EN_US)` and `String.toUpperCase(EN_US)` to
+change the case of text.
 
 ## Main functions
 
 
 A static `main(String[] args)` method routine can be invoked via the
-`\bin\hadoop` script, a script which will set up the classpath and
+`/bin/hadoop` script, a script which will set up the classpath and
 other environment variables consistently.
 
 Hadoop uses its `ToolRunner` class as the entry point to code —both
@@ -401,12 +417,12 @@ The standard for tests is as high as for the code itself.
 
 Tests MUST be
 
-* Executable by anyone, on any of the supported development platforms (Linux, Windows and mostly OSX)
-* Designed to show something works as intended even in the face of failure. That doesn't just mean "shows that given the right parameters, you get the right answers", it means "given the wrong args/state, it fails as expected". Good tests try to break the code under test.
+* Executable by anyone, on any of the supported development platforms (Linux, Windows and OS/X)
+* Designed to show something *works as intended even in the face of failure*. That doesn't just mean "shows that given the right parameters, you get the right answers", it means "given the wrong args/state, it fails as expected". Good tests try to break the code under test.
 * Be fast to run. Slow tests hamper the entire build and waste people's time.
-* Be designed for failures to be diagnosed purely from the assertion failure text and generated logs. 
+* Be designed for failures to be diagnosed purely from the assertion failure text and generated logs. Everything needed to understand why a test failed should be determinable from the results of a remote Jenkins/CI tool-managed run, the generated test reports and any log data collected.
 * Be deterministic. Everyone hates tests that fail intermittently.
-* Be designed for maintenance. Comments, meaningful names, etc. Equally importantly: not contained hard coded strings in log and exception searches ... use constants in the classes under test and refer to them.
+* Be designed for maintenance. Comments, meaningful names, etc. Equally importantly: not contained hard coded strings in log and exception searches, Instead use constants in the classes under test and refer to them.
 
 
 Tests MUST
@@ -416,7 +432,7 @@ Tests MUST
         new File(System.getProperty("test.dir", "target"));
 * shut down services after the test run.
 * Not leave threads running or services running irrespective of whether they fail or not. That is: always clean up afterwards, either in `try {} finally {}` clauses or `@After` and `@AfterClass` methods. This teardown code must also be robust against incomplete state, such as null object references.
-* Work on OSX, non-intel platforms and Windows. There's a field in `org.apache.hadoop.util.Shell` which can be used in an `Assert.assume()` clause to skip test cases which do not work here.
+* Work on OS/X, non-Intel platforms and Windows. There's a field in `org.apache.hadoop.util.Shell` which can be used in an `Assert.assume()` clause to skip test cases which do not work here.
 
 Tests MUST NOT
 
@@ -424,17 +440,18 @@ Tests MUST NOT
 * Contain any assumptions about the ordering of previous tests -such as expecting a prior test to have set up the system. Tests may run in different orders, or purely standalone.
 * Rely on a specific log-level for generating output that is then analyzed. Some tests do this, and they are problematic. The preference is to move away from these and instrument the classes better.
 * Require specific timings of operations, including the execution performance or ordering of asynchronous operations.
-
+* Run up large bills against remote cloud storage infrastructures *by default*. The object store client test suites are automatically skipped for this reason.
+* Take long times to complete. There are some in the codebase which are slow; these do not begin with the word `Test` to stop them being run except when explicitly requested to do so.
+ 
 Tests MAY
 
 * Assume the test machine is well-configured. That is, the machine knows its own name, which either reached 
 
 Tests SHOULD 
 
-* use loopback addresses `localhost` rather than hostnames, because the hostname to IP mapping may loop through the external network, where a firewall may then block network access.
-* use port '0' for registering services, as other ports may be in use.
+* Use loopback addresses `localhost` rather than hostnames, because the hostname to IP mapping may loop through the external network, where a firewall may then block network access.
+* Use port '0' for registering services, as other ports may be in use.
 * Clean up after themselves.
-
 
 
 ### Assertions
@@ -489,7 +506,7 @@ Sometimes classes in Hadoop expose internal methods for use in testing.
 There are three ways of exporting private methods in a production class for this
 
 1. Make `public` and mark `@VisibleForTesting`. Easiest, but risks implicitly becoming part of the API.
-1. Mark `@VisibleForTesting`, but make package scoped. This allows tests in the same package to use the method,
+1. Mark `@VisibleForTesting`, but make package scoped. This allows tests in the same package to use the method, 
 so is unlikely to become part of the API. It does require all tests to be in the same package, which
 can be a constraint.
 1. Mark `@VisibleForTesting`, but make `protected`, then subclass in the test source tree
@@ -572,11 +589,12 @@ Good
     public void testSomething {
         doSomething("arg")
     }
-    
+
 
 This takes advantage of JUnit 4's ability to expect a specific exception class, and looks for it. This is nice and short. Where it is weak is that it doesn't let you check the contents of the exception. If the exception is sufficiently unique within the actions, that may be enough. 
 
-Best: rethrow the exception if it doesn't match, after adding a log message explaining why it was rethrown:
+Good: examine the contents of the exception as well as the type. 
+Rethrow the exception if it doesn't match, after adding a log message explaining why it was rethrown:
 
     @Test(expected = IllegalArgumentException.class)
     public void testSomething {
@@ -595,6 +613,12 @@ This implementation ensures all exception information is propagated. If it doesn
 operation is included in the failure exception, to aid debugging. 
 As the test is failing because the code in question is not behaving as expected, 
 having a stack trace in the test results can be invaluable. 
+
+In comparing the two options, the JUnit 4 {{expected}} will be less informative, but it makes for a much easier to understand test. For it to be a good test, some conditions must be met
+
+1. There's only one place in the test case where raising the expected exception can happen. If the exception could get raised before or after the core operation being tested, then the test could be failing in the wrong place —with the test runner not picking it up.
+1. The type of the exception is sufficient to verify that the failure was as expected. A high level `Exception` or `IOException` is unlikely to be adequate.
+
 
 ### Skipping tests that aren't available on the test system
 
@@ -625,18 +649,23 @@ like by extracting the method name from JUnit:
 
 ### Code Style: Python
 
-1. The indentation should be two spaces per level
+1. The indentation should be two spaces.
+1. Code for Windows as well as Unix
 
 
 ### Code Style: Bash
 
 1. Bash lines may exceed the 80 character limit where necessary.
 1. Try not to be too clever in use of the more obscure bash features —most Hadoop developers don't know them.
-1. Make sure your code recognises problems and fails with exit codes.
+1. Make sure your code recognises problems and fails with exit codes. That is, it MUST check for non-zero return codes on its operations and SHOULD then exit the script with an error.
+
+The key thing to assume when writing Bash scripts is that the majority of the Hadoop project developers are not bash experts who know all the subtleties. If you are doing something
+reasonably complex, do add some comments explaining what you are doing.
+
 
 ### Code Style: Native
 
-1. C code
+1. C code following [Linux kernel style](https://www.kernel.org/doc/Documentation/CodingStyle) with one exception: indent by two spaces.
 1. Make no assumptions about ASCII/Unicode, 16 vs 32 bits: use `typedef` and `TSTR` definitions; `int32` and `int64` for explicit integer sizes.
 1. CMake for building
 1. Ideally: test the build and run on Linux, OS/X and Windows.
@@ -659,7 +688,7 @@ Here are some things which scare the developers when they arrive in JIRA:
 
 Things that are appreciated:
 
-* Documentation, in javadocs and in the `main\site` packages. Markdown is accepted there, and easy to write.
+* Documentation, in javadocs and in the `main/site` packages. Markdown is accepted there, and easy to write.
 * Good tests.
 * For code that is delving into the internals of the concurrency/consensus logic, well argued explanations of how the code works in all possible circumstances. State machine models and even TLA+ specifications can be used here to argue your case.
 * Any description of what scale/workload your code was tested with. If it was a big test, that reassures people that this scales well. And if not, at least you are being open about it.
