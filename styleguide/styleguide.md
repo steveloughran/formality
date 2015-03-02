@@ -172,7 +172,10 @@ Submitted patches which provide new APIs for use within the Hadoop stack MUST ha
 
 ## Concurrency
 
-Hadoop services are highly concurrent. This codebase is not a place to learn about the Java memory model and concurrency —developers are expected to have acquired knowledge and experience of Java threading and concurrency before getting involved in Hadoop internals.
+Hadoop services are highly concurrent. This codebase is not a place to learn about Java concurrency —developers are expected to have acquired knowledge and experience of Java threading and concurrency before getting involved in Hadoop internals.
+
+Background: the Java memory model:
+* [The Java Memory Model](http://www.cs.umd.edu/~pugh/java/memoryModel/), especially [this paper](http://dl.dropbox.com/u/1011627/journal.pdf).
 
 1. Use the `java.utils.concurrent` classes wherever possible.
 1. Use the `AtomicBoolean` and `AtomicInteger` classes in preference to shared simple datatypes.
