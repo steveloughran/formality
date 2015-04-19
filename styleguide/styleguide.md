@@ -290,6 +290,14 @@ Operating Systems vary more, with key areas being:
 
 Hadoop prioritizes correctness over performance. It absolutely prioritizes data preservation over performance. Data must not get lost or corrupted.
 
+That said, Hadoop is designed to scale to tens of thousands of machines. Algorithms should be designed to scale: ideally `O(1)`, failing that something `O(lg(n))`.
+
+## Protobuf and RPC
+
+* New fields on existing messages must be `optional`, otherwise all existing clients will be unable to talk to the far end.
+* Accordingly, services must be designed to have a valid default for a new field, handling the absence of a field value gracefully.
+
+
 ## Security
 
 Hadoop supports insecure clusters and secure "Kerberized" clusters. 
@@ -436,6 +444,7 @@ Tests MUST
 * shut down services after the test run.
 * Not leave threads running or services running irrespective of whether they fail or not. That is: always clean up afterwards, either in `try {} finally {}` clauses or `@After` and `@AfterClass` methods. This teardown code must also be robust against incomplete state, such as null object references.
 * Work on OS/X, non-Intel platforms and Windows. There's a field in `org.apache.hadoop.util.Shell` which can be used in an `Assert.assume()` clause to skip test cases which do not work here.
+* To avoid port in use exceptions, use port '0' for registering services, or scan for a free port.
 
 Tests MUST NOT
 
@@ -445,15 +454,17 @@ Tests MUST NOT
 * Require specific timings of operations, including the execution performance or ordering of asynchronous operations.
 * Run up large bills against remote cloud storage infrastructures *by default*. The object store client test suites are automatically skipped for this reason.
 * Take long times to complete. There are some in the codebase which are slow; these do not begin with the word `Test` to stop them being run except when explicitly requested to do so.
+* Store data in `/tmp`, or the temp dir suggested by `java.io.createTempFile(String, String)`. All temporary data must be created under the directory `./target`. This will be cleaned up in test runs, and not interfere with parallel test runs.
+* Have hard-coded network ports. This causes problems in parallel runs, especially on the Apache Jenkins servers. Either use port 0, or scan for a free port.
  
 Tests MAY
 
-* Assume the test machine is well-configured. That is, the machine knows its own name, which either reached 
+* Assume the test machine is well-configured. That is, the machine knows its own name, has adequate disk space.
 
 Tests SHOULD 
 
 * Use loopback addresses `localhost` rather than hostnames, because the hostname to IP mapping may loop through the external network, where a firewall may then block network access.
-* Use port '0' for registering services, as other ports may be in use.
+
 * Clean up after themselves.
 
 
@@ -524,7 +535,9 @@ The test cases around a class are the test of that classes APIs —and often the
 code people start with to use the code.
 
 If the functionality of a class cannot be used without diving below that API,
-it's a sign that the API is limited.
+it's a sign that the API is limited. People will end up using your test methods,
+either because they needed to, or just because they copied your code as a starting
+point —and it was using those methods.
 
 For any class which is designed for external invocation, this implies 
 you should think about improving that public API for testability,
@@ -668,12 +681,20 @@ reasonably complex, do add some comments explaining what you are doing.
 
 ### Code Style: Native
 
+
+#### MUST
+
 1. C code following [Linux kernel style](https://www.kernel.org/doc/Documentation/CodingStyle) with one exception: indent by two spaces.
 1. Make no assumptions about ASCII/Unicode, 16 vs 32 bits: use `typedef` and `TSTR` definitions; `int32` and `int64` for explicit integer sizes.
-1. CMake for building
-1. Ideally: test the build and run on Linux, OS/X and Windows.
+1. Use `CMake` for building.
 1. Assembly code must be optional; the code and algorithms around it must not be optimized for one specific CPU family.
 1. While you can try optimising for memory models of modern systems, with NUMA storage, three levels of cache and the like, it does produce code that is brittle against CPU part evolution. Don't optimize prematurely here.
+1. MUST compile on Linux, OSX and Windows platforms. You should test this as well as you can. If others are expected to do the work, it is likely to languish in the patch-pending state.
+1. MUST be accompanied by tests to verify the functionality.
+
+#### MUST NOT
+1. MUST NOT impact the performance of the x86 code. This is the primary CPU family used in production Hadoop. While the project is happy to accept patches for other CPUs (e.g. ARM, PPC, ...), it must not be at the expense of x86. 
+1. MUST NOT remove or rename existing methods.
 
 ### Code Style: Maven POM files
 
@@ -684,10 +705,12 @@ reasonably complex, do add some comments explaining what you are doing.
 Here are some things which scare the developers when they arrive in JIRA:
 
 * Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
-* Patches which delve into the internals of critical classes. The HDFS Namenode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users. 
+* Patches which delve into the internals of critical classes. The HDFS NameNode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users. 
 * Changes to the key public APIs of Hadoop. That includes the `FileSystem` & `FileContext` APIs, YARN submission protocols, MapReduce APIs, and the like.
-* Big patches without tests.
 * Patches that reorganise the code as part of the diff. That includes imports. They make the patch bigger (hence harder to review) and may make it harder to merge in other patches.
+* Big patches without tests.
+* Medium sized patches without tests.
+* Small patches without tests unless they are simple things like spelling corrections in strings or comments.
 
 Things that are appreciated:
 
