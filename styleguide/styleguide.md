@@ -284,7 +284,7 @@ Operating Systems vary more, with key areas being:
 * Process execution. Example: as OS/X does not support process groups, YARN containers do not automatically destroy all children when the container's parent (launcher) process terminates.
 * Process signalling
 * Environment variables. Names and case may be different.
-* Arguments to the standard Unix commands such as 'ls', 'ps', 'kill', 'top' and suchlike.
+* Arguments to the standard Unix commands such as `ls`, `ps`, `kill`, `top` and suchlike.
 
 ## Performance
 
@@ -303,6 +303,10 @@ That said, Hadoop is designed to scale to tens of thousands of machines. Algorit
 Hadoop supports insecure clusters and secure "Kerberized" clusters. 
 The latter uses Kerberos to authenticate services as well as users.
 This means it is **critical** that Hadoop code works in secure environments.
+
+As a developer, that means you need to understand (a) how to set up
+a secure Hadoop cluster and (b) how to write code that works in a
+secure Hadoop cluster.
 
 Set up a machine/VM as a Kerberos Domain Controller (KDC) and use this
 to create the keytabs needed for Hadoop run in in secure mode. 
@@ -323,7 +327,6 @@ Secure clusters use Kerberos and require each user submitting work to have an ac
 as a specific user.
 1. Test against both secure and insecure clusters. The `MiniKDC` server provides a basic in-JVM
 Kerberos controller for JUnit tests. 
-
 
 Java security is a complex beast, one which uses system-wide properties to be configured (the JAAS file reference); some parts of the Hadoop stack (e.g. Zookeeper) are also controlled by JVM properties. Be careful when setting up such applications to set the properties before 
 
@@ -392,8 +395,7 @@ these throw `IllegalStateException` instances.
 a spell checker set to the US if you have any doubts about your spelling.
 1. Code must use `String.toLowerCase(EN_US).equals()` rather than
  `String.equalsIgnoreCase()`. Otherwise the comparison will fail in
- some locales (example: Turkey). Yes, a lot of existing code gets
- this wrong —that does not justify continuing to make the mistake.
+ some locales (example: Turkey).
 1. Similarly, use `String.toLowerCase(EN_US)` and `String.toUpperCase(EN_US)` to
 change the case of text.
 
@@ -452,11 +454,12 @@ Tests MUST NOT
 * Contain any assumptions about the ordering of previous tests -such as expecting a prior test to have set up the system. Tests may run in different orders, or purely standalone.
 * Rely on a specific log-level for generating output that is then analyzed. Some tests do this, and they are problematic. The preference is to move away from these and instrument the classes better.
 * Require specific timings of operations, including the execution performance or ordering of asynchronous operations.
+* Have hard-coded network ports. This causes problems in parallel runs, especially on the Apache Jenkins servers. Either use port 0, or scan for a free port.
 * Run up large bills against remote cloud storage infrastructures *by default*. The object store client test suites are automatically skipped for this reason.
 * Take long times to complete. There are some in the codebase which are slow; these do not begin with the word `Test` to stop them being run except when explicitly requested to do so.
 * Store data in `/tmp`, or the temp dir suggested by `java.io.createTempFile(String, String)`. All temporary data must be created under the directory `./target`. This will be cleaned up in test runs, and not interfere with parallel test runs.
-* Have hard-coded network ports. This causes problems in parallel runs, especially on the Apache Jenkins servers. Either use port 0, or scan for a free port.
- 
+
+
 Tests MAY
 
 * Assume the test machine is well-configured. That is, the machine knows its own name, has adequate disk space.
@@ -612,7 +615,7 @@ This takes advantage of JUnit 4's ability to expect a specific exception class, 
 Good: examine the contents of the exception as well as the type. 
 Rethrow the exception if it doesn't match, after adding a log message explaining why it was rethrown:
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSomething {
       try {
         result = doSomething("arg")
