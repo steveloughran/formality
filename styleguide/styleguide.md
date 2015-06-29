@@ -40,6 +40,7 @@ Hadoop applications need to be designed to scale to thousands —even tens of th
 1. The algorithms to work with the data structures must also scale well.
 1. Services need to be designed to handle the challenge of many thousands of services reporting near-simultaneously. The "cluster restart" scenario is a classic example here.
 1. Cluster operations MUST be designed to be O(1). That is: no harder to run a cluster of a thousand machines than a cluster of 10. Equally importantly, that single-node cluster should be easy to operate.
+1. Do not have one-thread-per-request service architectures without size-limited thread pools or other form of thread sharing.
 
 Datasets may be measured in tens or hundreds of Terabytes.
 
@@ -195,9 +196,15 @@ system wishes to stop that thread, often on a process shutdown.
 Wrap it in an `InterruptedIOException` if you need to convert to an `IOException`.
 1. Code MUST NOT start threads inside constructors. These may execute before the class is
 fully constructed, leading to bizarre failure conditions.
-1. Use Executors over Threads
 1. Use `Callable<V>` over `Runnable`, as it can not only return a value —it can
 raise an exception.
+1. Use Executors over Threads
+1. Use fixed pool executors over creating a new thread per request/operation.
+ The one-thread-per-action architecture does not scale to the size of workloads which Hadoop applications can generate.
+ This is not just server side; it has surfaced in pure-client-side code, such as the S3A filesystem Client
+ [HADOOP-11446)](https://issues.apache.org/jira/browse/HADOOP-11446). A good design for a small application, one
+ that works in the test cases, can fail dramatically in the field.
+
 
 Key `java.utils.concurrent` classes include
 
@@ -322,13 +329,56 @@ YARN applications MUST set this environment variable when launching an applicati
 
 Secure clusters use Kerberos and require each user submitting work to have an account of the same name in the cluster.
 
+### Prerequisite Knowledge
+
+
+* Basic Kerberos concepts and architecture.
+* How to set up a secure Hadoop cluster (at least a VM) —including SPNEGO authenticated HDFS and RM web .
+* How to read and edit a `krb5.conf` file.
+* What SPNEGO is; how to set your web browser up to use it.
+* What Hadoop Delegation Tokens are for; how they differ from Authentication tokens, and when to use them.
+* Web services: how to use the Authentication Filter and how to offer a token renewal service.
+* REST clients: how to set up Jersey for SPNEGO & how to react to authentication failures.
+* RPC services: how to declare the principal for communications in
+ `META-INF/services/org.apache.hadoop.security.SecurityInfo` and the matching `SecurityInfo` subclass.
+* YARN applications: how to get delegation tokens from clients to your application; which ones you will need.
+* Long-lived YARN services: how to work with keytabs
+* The meaning of obscure GSS API error messages (you can always learn these as you go along).
+
+Is this a lot to know? Yes. Is it intimidating? Don't worry: we all find Kerberos hard.
+But do not think you can get away without this knowledge -all you are doing is putting
+your learning off.
+
+
+### References
+
+Read these. You do need to know the details.
+
+1. [Adding Security to Apache Hadoop](http://hortonworks.com/wp-content/uploads/2011/10/security-design_withCover-1.pdf)
+1. [The Role of Delegation Tokens in Apache Hadoop Security](http://hortonworks.com/blog/the-role-of-delegation-tokens-in-apache-hadoop-security/)
+1. [Chapter 8. Secure Apache HBase](http://hbase.apache.org/book/security.html)
+1. Hadoop Operations 1st edition, p135+
+1. [Java 8 Kerberos Requirements](http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/KerberosReq.html)
+1. [Troubleshooting Kerberos on Java 8](http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/Troubleshooting.html)
+1. [JAAS Configuration (Java 8)](http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/LoginConfigFile.html)
+
+### Coding equirements
+
+1. DO NOT PUT SECURITY AND KERBEROS OFF UNTIL THE END OF YOUR WORK
 1. Do not assume that user names are simple "unix" names; they may have spaces and kerberos realms in them.
 1. Use the `UserGroupInformation` class to manage user identities; it's `doAs()` operation to perform actions
 as a specific user.
 1. Test against both secure and insecure clusters. The `MiniKDC` server provides a basic in-JVM
-Kerberos controller for JUnit tests. 
+Kerberos controller for tests. 
+1. Some parts of the Hadoop stack (e.g. Zookeeper) are also controlled by JVM properties. Be careful when setting
+up such applications to set the properties before.
 
-Java security is a complex beast, one which uses system-wide properties to be configured (the JAAS file reference); some parts of the Hadoop stack (e.g. Zookeeper) are also controlled by JVM properties. Be careful when setting up such applications to set the properties before 
+Key has to be the first point: Security cannot be an afterthought. If you put it off you will find your
+near-deadline time spent trying to debug security issues in code that hasn't been designed to be secure,
+while struggling to read those documents referenced above and learn the associated concepts in a hurry.
+Avoid this by putting in the effort early.
+
+
 
 ## Exceptions
 
