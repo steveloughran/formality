@@ -1,0 +1,139 @@
+<html>
+
+<head>
+<title>kerberos_the_madness</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+	body {background-color: #bac0c7}
+    p.binderItem {margin: 10.0px 0.0px 0.0px 05.0px; font-family:Constantia, Cochin, Times, Courier, Arial, serif; font-size:12.0px;}
+    .page {border: 1px solid #727272; background: #fff}
+    hr {
+      border-top: 1px dashed #000;
+      border-bottom: 0px solid #fff;
+      color: #fff;
+      background-color: #fff;
+      height: 0px;
+  </style>
+</head>
+
+<body>
+
+<table border="0" width="100%" cellspacing="3">
+<tr>
+<td>
+
+<table class="page" width="100%" cellspacing="10" cellpadding="2">
+<tr>
+<td valign="top">
+
+<ul>
+<li>
+<p class="binderItem"><strong>Front page</strong><br/><$Projecttitle><br/>
+<br/>
+<br/>
+Authors:<br/>
+<br/>
+S.A.Loughran<br/>
+<br/>
+Word count: <$wc></p>
+</li>
+<li>
+<p class="binderItem"><strong>Main content</strong></p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Introduction</strong><br/>Introduction<br/>
+<br/>
+When HP Lovecraft wrote his books about forbidden knowledge which would reduce the reader to insanity, of "Elder Gods" to whom all of humanity were a passing inconvenience, most people assumed that he was making up a fantasy world.<br/>
+In fact he was documenting Kerberos.<br/>
+What is remarkable is that he did this fifty years before kerberos was developed. This makes him less of an author, instead: a prophet.<br/>
+What he wrote was true: there are some things humanity was not meant to know. Mos...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Foundational Concepts</strong><br/># Foundational Concepts<br/>
+<br/>
+What is the problem that Hadoop security is trying to address?<br/>
+Apache Hadoop is "an OS for data". A Hadoop cluster can rapidly become the largest stores of data in an organisation. That data can explicitly include sensitive information: financial, personal, business, and can often implicitly contain data which needs to be sensitive about the privacy of individuals (for example, log data of web accesses alone). Much of this data is protected by laws of different countries...</p>
+</li>
+<li>
+<p class="binderItem"><strong>The Limits of Hadoop Security</strong><br/># The Limits of Hadoop Security<br/>
+What are the limits of Hadoop security? Even with Kerberos enabled, what vulnerabilities exist?<br/>
+## Unpatched and 0-day holes in the layers underneath.<br/>
+The underlying OS in a Hadoop cluster may have known or 0-day security holes, allowing a malicious (YARN?) application to gain root access to a host in the cluster. Once this is done it would have direct access to blocks stored by the datanode, and to secrets held in the various processes, including keytabs in the l...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Hadoop IPC Security</strong><br/># Hadoop IPC Security<br/>
+<br/>
+## Adding a new IPC interface to a Hadoop Service/Application<br/>
+<br/>
+This is "fiddly". It's not impossible, it just involves effort. In its favour: it's a lot easier than SPNEGO.</p>
+</li>
+<li>
+<p class="binderItem"><strong>SPNEGO</strong><br/># SPNEGO<br/>
+SPNEGO is the acronym of the protocol by which HTTP clients can authenticate with a web site using Kerberos. This allows the client to identify and authenticate itself to a web site or a web service.<br/>
+SPNEGO is supported by<br/>
+* the standard browsers, to different levels of pain of use<br/>
+* `curl` on the command line<br/>
+* `java.net.URL` in Java7+<br/>
+The final point is key: it can be used programmatically in Java, so used by REST client applications to authenticate with a remote Web Service.<br/>
+### CAUT...</p>
+</li>
+<li>
+<p class="binderItem"><strong>ZOOKEEPER and SASL</strong><br/># ZOOKEEPER and SASL<br/>
+<br/>
+Apache Zookeeper uses SASL to authenticate callers. <br/>
+Other than SASL, its access control is all based around secrets which are shared between client and server, and sent over the (unencrypted) channel. This means they cannot be relied upon to securely identify callers.<br/>
+## Enabling SASL in ZK<br/>
+SASL is enabled in ZK by setting a system property. While adequate for a server, it's less than convenient when using ZK in an application as it means something very important: you cann...</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Acknowledgements</strong><br/>Acknowledgements<br/>
+<br/>
+[Insert text here]</p>
+</li>
+<li>
+<p class="binderItem"><strong>References</strong><br/>References<br/>
+<br/>
+[Leave this empty to use a reference manager like Zotero. Once you create a bibliography in LibreOffice/Word, paste the generated references into this part of the document]</p>
+</li>
+<li>
+<p class="binderItem"><strong>Figure legends</strong><br/>Figure Legends<br/>
+Figure 1: [insert text here]<br/>
+Figure 2: [insert text here]</p>
+</li>
+<li>
+<p class="binderItem"><strong>Tables</strong></p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Table 1</strong><br/>After you insert Table caption, you may either make the table in Scrivener, or you may insert it in text-processor (Word etc) after compiling.</p>
+</li>
+</ul>
+<hr/>
+<li>
+<p class="binderItem"><strong>Figures</strong></p>
+</li>
+<hr/>
+<ul>
+<li>
+<p class="binderItem"><strong>Configuring Firefox for SPNEGO</strong></p>
+</li>
+</ul>
+</ul>
+
+</td>
+<td width="8">
+</td>
+</tr>
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,325 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1347\cocoasubrtf570
+{\fonttbl\f0\fnil\fcharset0 Cambria;\f1\fswiss\fcharset0 Helvetica;\f2\fswiss\fcharset0 Optima-Regular;
+\f3\fmodern\fcharset0 Courier;\f4\fnil\fcharset0 Consolas;\f5\froman\fcharset0 Times-Roman;
+\f6\fnil\fcharset0 TrebuchetMS;\f7\fmodern\fcharset0 Courier-Bold;\f8\fnil\fcharset0 SourceCodePro-Regular;
+}
+{\colortbl;\red255\green255\blue255;\red38\green38\blue38;\red240\green240\blue240;\red115\green245\blue255;
+\red21\green102\blue47;\red255\green238\blue149;\red89\green219\blue255;\red47\green255\blue18;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid101\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid2}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\f0\fs24 \cf0  Links\
+\
+\pard\tx220\tx720\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li720\fi-720\pardirnatural
+\ls1\ilvl0
+\f1 \cf0 {\listtext	\'95	}{\field{\*\fldinst{HYPERLINK "https://help.ubuntu.com/community/Kerberos"}}{\fldrslt https://help.ubuntu.com/community/Kerberos}}\
+{\listtext	\'95	}Hadoop Operations p135+\
+{\listtext	\'95	}http://hbase.apache.org/book/security.html\
+{\listtext	\'95	}{\field{\*\fldinst{HYPERLINK "http://docs.oracle.com/javase/6/docs/technotes/guides/security/jgss/tutorials/Troubleshooting.html"}}{\fldrslt http://docs.oracle.com/javase/6/docs/technotes/guides/security/jgss/tutorials/Troubleshooting.html}}\
+{\listtext	\'95	}http://docs.oracle.com/javase/7/docs/technotes/guides/security/jgss/tutorials/KerberosReq.html\
+{\listtext	\'95	}{\field{\*\fldinst{HYPERLINK "http://hortonworks.com/wp-content/uploads/2011/10/security-design_withCover-1.pdf"}}{\fldrslt http://hortonworks.com/wp-content/uploads/2011/10/security-design_withCover-1.pdf}}\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\
+COTHAM \
+ubuntu admin=ubuntu\
+\
+	COTHAM = \{\
+		kdc = ubuntu\
+		admin_server = ubuntu\
+	\}\
+\
+realm pass = //\
+\
+principals\
+stevel@COTHAM\
+ 'K/M@COTHAM'\
+\
+\
+\
+\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\f2\i\b\fs36 \cf0 Linux setup\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f1\i0\b0\fs24 \cf0 \
+\pard\pardeftab720\sl320
+
+\f3\fs26 \cf2 \cb3 set up kerberos first\
+\
+\
+kdb5_util create \
+\
+\
+\
+# kadmin.local\
+\
+  addprinc stevel\
+addprinc stevel/admin\
+\
+Keytab for each service\
+-create a principal  hadoop/ubuntu hbase/ubuntu\
+ktadd -k /etc/hadoop/keytab hadoop/devix\
+\
+kinit  // plus pass\
+klist //list the tickets\
+keytabs can be copied around\
+\
+principal is (service,host,realm)\
+\
+hdfs/devix, hdfs/server2, yarn/devix hbase/devix mapred/devix, mapred/server2, \'85\
+\
+nb: exporting a key to a keytab invalidates existing copies unless -norandkey is set\
+\
+key arch: every service needs a principal and a keytab on every node\
+\
+admin for hdfs needs the hdfs keytab, or to be member of the hdfs super group\
+taskcontroller.cfg limits the accounts that can su - in cluster jobs\
+\
+\
+Ticket expiry: use kinit to renew\
+\
+\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f1\fs24 \cf0 \cb1 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\f2\i\b\fs36 \cf0 OS/X\
+\
+\pard\tx220\tx720\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li720\fi-720\pardirnatural
+\ls2\ilvl0{\field{\*\fldinst{HYPERLINK "http://computing.help.inf.ed.ac.uk/kerberos-mac-os-x"}}{\fldrslt 
+\f1\i0\b0\fs24 \cf0 http://computing.help.inf.ed.ac.uk/kerberos-mac-os-x}}
+\f1\i0\b0\fs24 \
+{\listtext	\'95	}{\field{\*\fldinst{HYPERLINK "http://kb.mit.edu/confluence/display/istcontrib/Acquiring+Kerberos+Tickets+in+Mac+OS+X+10.7+(Lion)+or+OS+X+10.8+(Mountain+Lion)"}}{\fldrslt http://kb.mit.edu/confluence/display/istcontrib/Acquiring+Kerberos+Tickets+in+Mac+OS+X+10.7+(Lion)+or+OS+X+10.8+(Mountain+Lion)}}\
+{\listtext	\'95	}{\field{\*\fldinst{HYPERLINK "http://support.apple.com/kb/ht5385"}}{\fldrslt http://support.apple.com/kb/ht5385}}
+\f2\i\b\fs36 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f4\i0\b0\fs20 \cf0 # emacs krb5.conf\
+\
+[libdefaults]\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f1\fs24 \cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f4\fs20 \cf0 [realms]\
+ COTHAM = \{\
+   kdc = devix\
+   admin_server = devix\
+ \}\
+\
+# then kinit\
+\
+kinit stevel@COTHAM\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f1\fs24 \cf0 \
+\
+\pard\pardeftab720\sl320
+
+\f3\fs26 \cf2 \cb3 \
+\
+#hadoop ops script\
+krb_realm=COTHAM\
+for name in $(cat hostnames.txt); do\
+install -o root -g root -m 0700 -d $\{name\}\
+kadmin.local <<EOF\
+addprinc -randkey host/$\{name\}@$\{krb_realm\}\
+addprinc -randkey stevel/devix@COTHAM\
+\
+addprinc -randkey hdfs/devix@COTHAM\
+addprinc -randkey yarn/devix@COTHAM\
+addprinc -randkey hbase/devix@COTHAM\
+addprinc -randkey host/devix@COTHAM\
+addprinc -randkey mapred/devix@COTHAM\
+addprinc -randkey zookeeper/devix@COTHAM\
+addprinc -randkey ambari-qa/devix@COTHAM\
+\
+addprinc -randkey HTTP/devix@COTHAM\
+\
+addprinc -randkey HTTP/devix.cotham.uk@COTHAM\
+addprinc -randkey service/devix@COTHAM\
+addprinc -randkey nagios/devix@COTHAM\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf2 listprincs\
+\
+\
+\pard\pardeftab720\sl320
+\cf2 addprinc -randkey hdfs/$\{name\}@$\{krb_realm\} addprinc -randkey 
+\fs24 \cf0 \cb1 -maxrenewlife 3days 
+\fs26 \cf2 \cb3 mapred/$\{name\}@$\{krb_realm\}\
+ktadd -k $\{name\}/hdfs.keytab -norandkey hdfs/$\{name\}@$\{krb_realm\} host/$\{name\}@$\{krb_realm\}\
+ktadd -k $\{name\}/mapred.keytab -norandkey \\ mapred/$\{name\}@$\{krb_realm\} host/$\{name\}@$\{krb_realm\} EOF\
+ktadd -k $\{name\}/hbase.keytab -norandkey \\ hbase/$\{name\}@$\{krb_realm\} host/$\{name\}@$\{krb_realm\} EOF\
+\
+addprinc -randkey host/devix@COTHAM\
+ktadd -k /home/stevel/conf/stevel.keytab -norandkey \\ stevel@COTHAM host/devix@COTHAM\
+ktadd -k /home/stevel/conf/stevel.keytab -norandkey stevel/devix@COTHAM \
+\
+addprinc -randkey homemac/devix@COTHAM\
+\
+\
+ EOF\
+\
+ktadd -k /home/stevel/stevel.keytab -norandkey stevel/devix@COTHAM \
+\
+addprinc -randkey spark/devix@COTHAM\
+ktadd -k spark.keytab -norandkey spark/devix@COTHAM \
+ktadd -k spark.keytab -norandkey spark/stevel-3@COTHAM \
+\
+\
+#create 3x keytabs\
+hdfs\
+HTTP\
+\
+yarn\
+HTTP\
+\
+mapred\
+HTTP  \
+\
+\pard\pardeftab720
+
+\fs24 \cf0 \cb1 HTTP/fully.qualified.domain.name@YOUR-REALM.COM
+\fs26 \cf2 \cb3 \
+\pard\pardeftab720\sl320
+\cf2 \
+zookeeper/devix@COTHAM\
+\
+$ kadmin.local:\
+\pard\pardeftab720
+
+\fs24 \cf0 \cb1 xst -norandkey -k hdfs.keytab hdfs/fully.qualified.domain.name HTTP/fully.qualified.domain.name\
+xst -norandkey -k mapred.keytab mapred/fully.qualified.domain.name \
+xst -norandkey -k yarn.keytab yarn/fully.qualified.domain.name HTTP/fully.qualified.domain.name\
+xst -norandkey -k hbase.keytab hbase/fully.qualified.domain.name HTTP/fully.qualified.domain.name\
+xst -norandkey -k zookeeper.keytab zookeeper/fully.qualified.domain.name HTTP/fully.qualified.domain.name\
+\
+xst -norandkey -k hdfs.keytab hdfs/devix HTTP/devix\
+\
+\
+\pard\pardeftab720\sl320
+
+\fs26 \cf2 \cb3 cp mapred, hdfs and yarn keytabs to hadoop-conf (& hbase for completeness)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\f2\i\b\fs36 \cf0 \cb1 Fixing up hadoop\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\i0\b0\fs24 \cf0 core site: \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f4\fs20 \cf0 <property> <name>hadoop.security.authentication</name> <value>kerberos</value></property>\
+<property> <name>hadoop.security.authorization</name> <value>true</value></property>\
+\pard\pardeftab720\sa240
+
+\f5\fs24 \cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\f2\i\b\fs36 \cf0 YARN\
+HBase\
+\pard\pardeftab720
+
+\f3\i0\b0\fs24 \cf0       <property>\
+        <name>hbase.regionserver.kerberos.principal</name>\
+        <value>hbase/_HOST@YOUR-REALM.COM</value>\
+      </property>\
+      <property>\
+        <name>hbase.regionserver.keytab.file</name>\
+        <value>/etc/hbase/conf/keytab.krb5</value>\
+      </property>\
+      <property>\
+        <name>hbase.master.kerberos.principal</name>\
+        <value>hbase/_HOST@YOUR-REALM.COM</value>\
+      </property>\
+      <property>\
+        <name>hbase.master.keytab.file</name>\
+        <value>/etc/hbase/conf/keytab.krb5</value>\
+      </property>\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\f2\i\b\fs36 \cf0 \
+\pard\pardeftab720
+
+\f3\i0\b0\fs24 \cf0 <property>\
+        <name>hbase.security.authentication</name>\
+        <value>kerberos</value>\
+      </property>\
+      <property>\
+        <name>hbase.security.authorization</name>\
+        <value>true</value>\
+      </property>\
+      <property>\
+      <name>hbase.coprocessor.region.classes</name>\
+        <value>org.apache.hadoop.hbase.security.token.TokenProvider</value>\
+      </property>\
+    \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa240\pardirnatural
+
+\f2\i\b\fs56 \cf0 ZOOKEEPER\
+\pard\pardeftab720\sa240
+
+\f5\i0\b0\fs24 \cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa240\pardirnatural
+
+\f2\i\b\fs56 \cf0 Security Plan\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\i0\b0\fs24 \cf0 -kerberos details used to auth user.\
+-hoya option to indicate security enabled. \
+Triggers client side:\
+  -secure protocol to talk to AM.\
+  -add a marker to the CD to say "secure" on.\
+  -HBase provider to verify cluster ops specify master and RS keytabs\
+ \
+AM\
+ -"secure" flag =>SASL auth only\
+ -HBase provider to inject the principal using the pattern "hbase/%s@%s" (hostname, realm)\
+\
+Protocol security\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f4\fs20 \cf0 auths \{\
+  method: "KERBEROS"\
+  mechanism: "GSSAPI"\
+  protocol: "stevel"\
+  serverId: ""\
+\}\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\f2\fs24 \cf0 \
+this is translated into a search for a principal "stevel/"\
+interface details come back as\
+proto: "interface org.apache.hadoop.hoya.yarn.appmaster.rpc.HoyaClusterProtocolPB" \
+info:null\
+\
+\pard\pardeftab720
+
+\f6\fs56 \cf0 Kerberos Error Messages\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+
+\f2\fs24 \cf0 \
+ Server not found in Kerberos database (7) : DNS is a mess\
+\
+Asking for a limited lifespan ticket\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f7\b\fs28 \cf4 \cb5 \CocoaLigature0 kinit
+\f3\b0 \cf6  \cf7 -l\cf6  \cf7 2h
+\f2\fs24 \cf0 \cb1 \CocoaLigature1 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\cf0 \
+Switching to a keytab\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+
+\f8\fs28 \cf8 \cb0 \CocoaLigature0 stevel-3.local}
