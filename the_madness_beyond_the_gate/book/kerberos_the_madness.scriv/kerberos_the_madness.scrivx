@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<ScrivenerProject Version="1.0" Creator="SCRMAC-2.6-25480" Modified="2015-06-29 09:43:06 +0100">
+<ScrivenerProject Version="1.0" Creator="SCRMAC-2.6-25480" Modified="2015-06-29 11:03:21 +0100">
     <Binder>
         <BinderItem ID="0" Type="DraftFolder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
             <Title>Draft</Title>
@@ -70,7 +70,7 @@
                                 <TextSelection>2,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="37" Type="Text" Created="2015-06-19 18:01:46 +0100" Modified="2015-06-24 11:27:30 +0100">
+                        <BinderItem ID="37" Type="Text" Created="2015-06-19 18:01:46 +0100" Modified="2015-06-29 10:39:29 +0100">
                             <Title>Hadoop IPC Security</Title>
                             <MetaData>
                                 <StatusID>5</StatusID>
@@ -78,7 +78,7 @@
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>3,0</TextSelection>
+                                <TextSelection>1842,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
                         <BinderItem ID="50" Type="Text" Created="2015-06-24 13:06:04 +0100" Modified="2015-06-26 16:08:31 +0100">
@@ -152,7 +152,7 @@
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>639,0</TextSelection>
+                                <TextSelection>2856,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
                         <BinderItem ID="47" Type="Text" Created="2015-06-24 11:20:51 +0100" Modified="2015-06-24 13:03:51 +0100">
@@ -185,14 +185,24 @@
                                 <TextSelection>154,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="55" Type="Text" Created="2015-06-29 08:50:28 +0100" Modified="2015-06-29 08:57:41 +0100">
-                            <Title>Chapter</Title>
+                        <BinderItem ID="55" Type="Text" Created="2015-06-29 08:50:28 +0100" Modified="2015-06-29 10:18:04 +0100">
+                            <Title>Notes of Obscurity</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                             </MetaData>
                             <TextSettings>
-                                <TextSelection>329,0</TextSelection>
+                                <TextSelection>907,0</TextSelection>
+                            </TextSettings>
+                        </BinderItem>
+                        <BinderItem ID="57" Type="Text" Created="2015-06-29 10:39:40 +0100" Modified="2015-06-29 11:02:54 +0100">
+                            <Title>Checklists</Title>
+                            <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
+                                <NotesTextSelection>0,0</NotesTextSelection>
+                            </MetaData>
+                            <TextSettings>
+                                <TextSelection>7,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
                     </Children>
@@ -207,14 +217,26 @@
                         <TextSelection>0,36</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="19" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-26 16:25:05 +0100">
+                <BinderItem ID="19" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-29 10:39:02 +0100">
                     <Title>References</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
+                        <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>135,0</NotesTextSelection>
                     </MetaData>
                     <TextSettings>
-                        <TextSelection>1246,0</TextSelection>
+                        <TextSelection>1134,98</TextSelection>
+                    </TextSettings>
+                </BinderItem>
+                <BinderItem ID="56" Type="Text" Created="2015-06-29 10:37:01 +0100" Modified="2015-06-29 10:37:23 +0100">
+                    <Title>References-1</Title>
+                    <MetaData>
+                        <PageBreakBefore>Yes</PageBreakBefore>
+                        <IncludeInCompile>Yes</IncludeInCompile>
+                        <NotesTextSelection>135,0</NotesTextSelection>
+                    </MetaData>
+                    <TextSettings>
+                        <TextSelection>0,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
                 <BinderItem ID="16" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-19 19:20:58 +0100">
@@ -255,6 +277,7 @@
                     <Title>Figures</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
+                        <IncludeInCompile>Yes</IncludeInCompile>
                         <NotesTextSelection>0,0</NotesTextSelection>
                         <IconFileName>Figures and Graphs.tiff</IconFileName>
                     </MetaData>
@@ -265,6 +288,7 @@
                         <BinderItem ID="20" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-19 17:21:32 +0100">
                             <Title>Configuring Firefox for SPNEGO</Title>
                             <MetaData>
+                                <IncludeInCompile>Yes</IncludeInCompile>
                                 <NotesTextSelection>0,0</NotesTextSelection>
                                 <IconFileName>Figures and Graphs.tiff</IconFileName>
                             </MetaData>
@@ -624,7 +648,7 @@
     <ProjectTargets Notify="No">
         <DraftTarget Type="Words" CountIncludedOnly="Yes" CurrentCompileGroupOnly="No" Deadline="2014-06-19 13:28:32 +0100" IgnoreDeadline="Yes">0</DraftTarget>
         <SessionTarget Type="Words" CountDraftOnly="Yes" AllowNegatives="Yes" ResetType="Midnight" DeterminedFromDeadline="No" WritingDays="" CanWriteOnDeadlineDate="No">0</SessionTarget>
-        <PreviousSession Words="104" Characters="800" Date="2015-06-29 08:50:10 +0100"></PreviousSession>
+        <PreviousSession Words="659" Characters="4975" Date="2015-06-29 08:50:10 +0100"></PreviousSession>
     </ProjectTargets>
     <TemplateFolderID>22</TemplateFolderID>
     <PrintSettings PaperSize="595.289978,841.890015" LeftMargin="72.0" RightMargin="72.0" TopMargin="90.0" BottomMargin="90.0" PaperType="iso-a4" Orientation="Portrait" HorizontalPagination="Clip" VerticalPagination="Auto" ScaleFactor="1.0" HorizontallyCentered="Yes" VerticallyCentered="Yes" Collates="Yes" PagesAcross="1" PagesDown="1"></PrintSettings>

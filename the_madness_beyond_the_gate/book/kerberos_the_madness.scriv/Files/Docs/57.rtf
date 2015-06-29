@@ -1,0 +1,50 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1347\cocoasubrtf570
+{\fonttbl\f0\fnil\fcharset0 P22Typewriter;}
+{\colortbl;\red255\green255\blue255;}
+\deftab720
+\pard\pardeftab720
+
+\f0\fs56 \cf0 # Checklists\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs24 \cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa200\pardirnatural
+
+\fs28 \cf0 ## Hadoop RPC Service\
+\
+[ ] Principal for Service defined. This is generally a configuration property.\
+[ ] `SecurityInfo` subclass written.\
+[ ] `META-INF/services/org.apache.hadoop.security.SecurityInfo` resource lists.\
+the `SecurityInfo` subclass.\
+[ ] `PolicyProvider` subclass written.\
+[ ] RPC server handed `PolicyProvider` subclass during setup.\
+\
+## YARN Client/launcher\
+[ ] `HADOOP_USER` env variable set on AM launch context in insecure clusters.\
+[ ] In secure cluster: all delegation tokens needed (HDFS, Hive, HBase, Zookeeper) created and added to launch context.\
+## YARN Application\
+[ ] Delegation tokens extracted and saved.\
+[ ] When launching containers, the relevant subset of delegation tokens are passed to the containers. (This normally omits the RM/AM token).\
+[ ] Container Credentials are retrieved in AM and containers.\
+## Web Service\
+[ ] `AuthenticationFilter` added to web filter chain\
+[ ] Token renewal policy defined and implemented. (Look at `TimelineClientImpl` for an example of this)\
+\
+## Clients\
+### All clients\
+[ ] Supports keytab login and calls `UserGroupInformation.loginUserFromKeytab(principalName, keytabFilename)` call during initialization.\
+[ ] Issues `UserGroupInformation.getCurrentUser().checkTGTAndReloginFromKeytab()` call during connection setup/token reset. This is harmless on an insecure or non-keytab client.\
+[ ] Client supports Authentication Token option\
+[ ] Client supports Delegation Token option. (not so relevant for most YARN clients)\
+[ ] For Delegation-token authenticated connections, something runs in the background to regularly update delegation tokens.\
+[ ] Tested against secure clusters with user logged out (kdestroy).\
+[ ] Logs basic security operations at INFO, with detailed operations at DEBUG level.\
+\
+### RESTful client\
+[ ] Jersey: URL constructor handles SPNEGO Auth\
+[ ] URL constructor reacts to 401/403 responses when using Authentication Token by deleting creating a new Auth Token and re-issuing request. (this triggers re-authentication)\
+\
+\
+\
+\
+}
