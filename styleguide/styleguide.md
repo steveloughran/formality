@@ -201,8 +201,8 @@ raise an exception.
 1. Use Executors over Threads
 1. Use fixed pool executors over creating a new thread per request/operation.
  The one-thread-per-action architecture does not scale to the size of workloads which Hadoop applications can generate.
- This is not just server side; it has surfaced in pure-client-side code, such as the S3A filesystem Client
- [HADOOP-11446)](https://issues.apache.org/jira/browse/HADOOP-11446). A good design for a small application, one
+ This is not just server side; it has surfaced in pure-client-side code, such as the S3A filesystem client
+ ([HADOOP-11446](https://issues.apache.org/jira/browse/HADOOP-11446)). A good design for a small application, one
  that works in the test cases, can fail dramatically in the field.
 
 
@@ -219,7 +219,7 @@ There is a reasonable amount of code that can be considered dated in Hadoop, usi
 
 ## Logging
 
-There's a number of audiences for Hadoop logging:
+Hadoop logging has several audiences:
 
 * People who are new to Hadoop and trying to get a single node cluster to work.
 * Hadoop sysadmins who don't want to have to become experts in reading Java stack traces to diagnose
@@ -271,10 +271,10 @@ Hadoop is used client-side on Linux, Windows, OS/X and other systems.
 
 CPUs may be 32-bit or 64-bit, x86, PPC, ARM or other parts. 
 
-JVMs may be: the classic "sun" JVM; OpenJDK, IBM JDK, or other JVMs based off the sun source tree. These tend to differ in
+JVMs may be: the classic "Sun/Oracle" JVM, OpenJDK, IBM JDK, or other JVMs based off the Sun/Oracle source tree. These tend to differ in
 
 * heap management.
-* non-standard libraries (`com.sun`, `com.ibm`, ...). Some parts of the code —in particularly the Kerberos support— has to use reflection to make use of these JVM-specific libraries.
+* non-standard libraries (`com.sun`, `com.ibm`, ...). Some parts of the code —particularly the Kerberos support— has to use reflection to make use of these JVM-specific libraries.
 * Garbage collection implementation, pauses and such like. 
 
 Operating Systems vary more, with key areas being:
@@ -366,7 +366,7 @@ Read these. You do need to know the details.
 
 1. DO NOT PUT SECURITY AND KERBEROS OFF UNTIL THE END OF YOUR WORK
 1. Do not assume that user names are simple "unix" names; they may have spaces and kerberos realms in them.
-1. Use the `UserGroupInformation` class to manage user identities; it's `doAs()` operation to perform actions
+1. Use the `UserGroupInformation` class to manage user identities; its `doAs()` operation to perform actions
 as a specific user.
 1. Test against both secure and insecure clusters. The `MiniKDC` server provides a basic in-JVM
 Kerberos controller for tests. 
@@ -386,7 +386,7 @@ Exceptions are a critical form of diagnostics on system failures.
 
 * They should be designed to provide enough information to enable experienced
 Hadoop operators to identify the problem.
-* They should to provide enough information to enable new Hadoop
+* They should provide enough information to enable new Hadoop
 users to identify problems starting or connecting to their cluster.
 * They need to provide information for the Hadoop developers too.
 * Information MUST NOT be lost as the exception is passed up the stack.
@@ -396,7 +396,7 @@ Exceptions written purely for the benefit of developers are not what end users
 or operations teams need —and in some cases can be misleading. As an example,
 the java network stack returns errors such as `java.net.ConnectionRefusedException`
 which returns none of the specifics about what connection was being refused 
-destination host & port), and can be misinterpreted by people unfamiliar with
+(destination host & port), and can be misinterpreted by people unfamiliar with
 Java exceptions or the sockets API as a Java-side problem. 
 
 This is why Hadoop wraps the standard socket exceptions in `NetUtils.wrapException()`
@@ -404,7 +404,7 @@ This is why Hadoop wraps the standard socket exceptions in `NetUtils.wrapExcepti
 1. These extend the normal error messages with host and port information for the experts,
 1. They add links to Hadoop wiki pages for the newbies who interpret "Connection Refused"
 as the namenode refusing connections, rather than them getting their destination port misconfigured.
-1. It retains all the existing socket classes. The aren't just wrapped in a
+1. It retains all the existing socket classes. They aren't just wrapped in a
 general `IOException` —they are wrapped in new instances of the same exception class. This
 ensures that `catch()` clauses can select on exception types.
 
@@ -751,14 +751,14 @@ reasonably complex, do add some comments explaining what you are doing.
 
 ### Code Style: Maven POM files
 
-* All declarations of dependencies with their versions must be the file `hadoop-project/pom.xml`. 
+* All declarations of dependencies with their versions must be in the file `hadoop-project/pom.xml`. 
 
 # Patches to the code
 
 Here are some things which scare the developers when they arrive in JIRA:
 
 * Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
-* Patches which delve into the internals of critical classes. The HDFS NameNode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users. 
+* Patches that delve into the internals of critical classes. The HDFS NameNode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact on the big Hadoop users. 
 * Changes to the key public APIs of Hadoop. That includes the `FileSystem` & `FileContext` APIs, YARN submission protocols, MapReduce APIs, and the like.
 * Patches that reorganise the code as part of the diff. That includes imports. They make the patch bigger (hence harder to review) and may make it harder to merge in other patches.
 * Big patches without tests.
