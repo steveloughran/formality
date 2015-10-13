@@ -375,7 +375,7 @@ Operating Systems vary more, with key areas being:
         Path p = new Path("file://" + file.toString())
   use
   
-        String p = new Path(file.toURI());
+        Path p = new Path(file.toURI());
 
 * Process execution. Example: as OS/X does not support process groups, YARN containers do not automatically destroy all children when the container's parent (launcher) process terminates.
 * Process signalling
