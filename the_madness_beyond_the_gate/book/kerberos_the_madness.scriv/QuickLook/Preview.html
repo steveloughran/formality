@@ -43,12 +43,12 @@ Word count: <$wc></p>
 <hr/>
 <ul>
 <li>
-<p class="binderItem"><strong>Introduction</strong><br/>Introduction<br/>
+<p class="binderItem"><strong>Introduction</strong><br/># Introduction<br/>
 <br/>
 When HP Lovecraft wrote his books about forbidden knowledge which would reduce the reader to insanity, of "Elder Gods" to whom all of humanity were a passing inconvenience, most people assumed that he was making up a fantasy world.<br/>
 In fact he was documenting Kerberos.<br/>
 What is remarkable is that he did this fifty years before kerberos was developed. This makes him less of an author, instead: a prophet.<br/>
-What he wrote was true: there are some things humanity was not meant to know. Mos...</p>
+What he wrote was true: there are some things humanity was not meant to know. M...</p>
 </li>
 <li>
 <p class="binderItem"><strong>Foundational Concepts</strong><br/># Foundational Concepts<br/>
@@ -66,8 +66,23 @@ The underlying OS in a Hadoop cluster may have known or 0-day security holes, al
 <p class="binderItem"><strong>Hadoop IPC Security</strong><br/># Hadoop IPC Security<br/>
 <br/>
 ## Adding a new IPC interface to a Hadoop Service/Application<br/>
+This is "fiddly". It's not impossible, it just involves effort. In its favour: it's a lot easier than SPNEGO.<br/>
 <br/>
-This is "fiddly". It's not impossible, it just involves effort. In its favour: it's a lot easier than SPNEGO.</p>
+### SecurityInfo<br/>
+Every exported RPC service will need its own extension of the SecurityInfo class, to provide two things<br/>
+1. The name of the principal to use in this communication<br/>
+1. The token used to authenticate ongoing communications.<br/>
+<br/>
+### PolicyProvider<br/>
+A PolicyProvider subclass. This is used to info...</p>
+</li>
+<li>
+<p class="binderItem"><strong>UGI</strong><br/># UGI<br/>
+<br/>
+If there is one class guaranteed to strike fear into anyone with experience in Hadoop+Kerberos code it is UserGroupInformation, abbreviated to "UGI"<br/>
+UGI troublespots<br/>
+* It's a singleton. Don't expect to have one "real user" per process. This sort of makes sense when you think about it.<br/>
+* Once initialized, it stays initialized *and cannot be reset*. This makes it critical to load in your configuration information including keytabs and principals, before that first initialization of the UGI....</p>
 </li>
 <li>
 <p class="binderItem"><strong>SPNEGO</strong><br/># SPNEGO<br/>
@@ -87,17 +102,96 @@ Other than SASL, its access control is all based around secrets which are shared
 ## Enabling SASL in ZK<br/>
 SASL is enabled in ZK by setting a system property. While adequate for a server, it's less than convenient when using ZK in an application as it means something very important: you cann...</p>
 </li>
+<li>
+<p class="binderItem"><strong>java.security.krb5.conf</strong><br/># JVM kerberos config customisation<br/>
+<br/>
+java.security.krb5.conf<br/>
+The JVM kerberos operations are configured via krb5.conf file specified in the JVM option "java.security.krb5.conf", which can be done on the JVM command line, or inside the JVM<br/>
+System.setProperty("java.security.krb5.conf", krbfilepath);<br/>
+<br/>
+Notes<br/>
+* use double backslash to escape paths on Windows platforms, e.g. C:\\keys\\key1, or \\\\server4\\shared\\tokens<br/>
+* Different JVMs (e.g. IBM JVM) want different fields in their krb5.conf file. Ho...</p>
+</li>
+<li>
+<p class="binderItem"><strong>JAAS Configuration</strong><br/># JAAS Configuration</p>
+</li>
+<li>
+<p class="binderItem"><strong>Logging</strong><br/># Logging<br/>
+## Hadoop Logging<br/>
+JVM Kerberos Library logging<br/>
+You can turn Kerberos low-level logging on<br/>
+-Dsun.security.krb5.debug=true<br/>
+<br/>
+This doesn't come out via Log4J, or java.util logging; it just comes out on the console. Which is somewhat inconvenient —but bear in mind they are logging at a very low level part of the system. And it does at least log.<br/>
+If you find yourself down at this level you are in trouble. Bear that in mind.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Error Messages to Fear</strong><br/># Error Messages to Fear<br/>
+<br/>
+# OS/JVM Layer<br/>
+Some of these are covered in Oracle's Troubleshooting Kerberos docs. This section just highlights some of the common causes, other causes that Oracle don't mention —and messages they haven't covered.<br/>
+<br/>
+## Server not found in Kerberos database (7) <br/>
+* DNS is a mess and your machine does not know its own name.<br/>
+* Your machine has a hostname, but it's not one there's an entry in the keytab for<br/>
+<br/>
+## No valid credentials provided (Mechanism level: Illegal key size...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Kerberos Tests with MiniKDC</strong><br/># Writing Kerberos Tests with MiniKDC<br/>
+<br/>
+The Hadoop project has an in-VM Kerberos Controller for tests, MiniKDC, which is packaged as its own JAR for downstream use. The core of this code actually comes from the Apache Directory Services project.</p>
+</li>
+<li>
+<p class="binderItem"><strong>Testing against Kerberized Hadoop clusters</strong><br/>Testing against Kerberized Hadoop clusters<br/>
+This is not actually the hardest form of testing; getting the MiniKDC working holds that honour.<br/>
+It does have some pre-requisites<br/>
+1. Everyone running the tests has set up a Hadoop cluster/single VM with Kerberos enabled.<br/>
+2. The software project has a test runner capable of deploying applications into a remote Hadoop cluster/VM and assessing the outcome.<br/>
+It's primarily the test runner which matters. Without that you cannot do functional tests against any...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Low-level secrets</strong><br/># Low-level secrets<br/>
+KRB5CCNAME<br/>
+The environment variable `KRB5CCNAME` (cite: http://web.mit.edu/kerberos/krb5-1.4/krb5-1.4/doc/klist.html)<br/>
+As the docs say:<br/>
+If the KRB5CCNAME environment variable is set, its value is used to name the default ticket cache.<br/>
+IP addresses vs. Hostnames<br/>
+Kerberos principals are traditionally defined with hostnames of the form hbase@worker3/EXAMPLE.COM, not hbase/10.10.15.1/EXAMPLE.COM<br/>
+The issue of whether Hadoop should support IP addresses has been raised [HADOOP-9019](...</p>
+</li>
+<li>
+<p class="binderItem"><strong>Checklists</strong><br/># Checklists<br/>
+<br/>
+## All programs<br/>
+[ ] Sets up security before accessing any Hadoop services, including FileSystem APIs<br/>
+[ ] Sets up security after loading local configuration files, such as `core-site.xml`. Creating instances of HdfsConfiguration and YarnConfiguration will do this automatically.<br/>
+[ ] Are tested against a secure cluster<br/>
+## Hadoop RPC Service<br/>
+<br/>
+[ ] Principal for Service defined. This is generally a configuration property.<br/>
+[ ] `SecurityInfo` subclass written.<br/>
+[ ] `META-INF/services/org.ap...</p>
+</li>
 </ul>
 <hr/>
 <li>
 <p class="binderItem"><strong>Acknowledgements</strong><br/>Acknowledgements<br/>
 <br/>
-[Insert text here]</p>
+Everyone who has struggled to secure Hadoop deserves to be recognised, their sacrifice acknowledged.<br/>
+Everyone who has got their application to work within a secure Hadoop cluster will have suffered without any appreciation; without anyone appreciating their effort. Indeed, all that they are likely to have received is complaints about how their software is late.<br/>
+<br/>
+However, our best praise, our greatest appreciation, has to go to everyone who added logging statements in the Hadoop...</p>
 </li>
 <li>
 <p class="binderItem"><strong>References</strong><br/>References<br/>
 <br/>
-[Leave this empty to use a reference manager like Zotero. Once you create a bibliography in LibreOffice/Word, paste the generated references into this part of the document]</p>
+<br/>
+[Leave this empty to use a reference manager like Zotero. Once you create a bibliography in LibreOffice/Word, paste the generated references into this part of the document]<br/>
+1. IETF [RFC 4120](https://www.ietf.org/rfc/rfc4120.txt)<br/>
+1. [Adding Security to Apache Hadoop](http://hortonworks.com/wp-content/uploads/2011/10/security-design_withCover-1.pdf)<br/>
+1. [The Role of Delegation Tokens in Apache Hadoop Security](http://hortonworks.com/blog/the-role-of-delegation-tokens-in-apache-hadoop-...</p>
 </li>
 <li>
 <p class="binderItem"><strong>Figure legends</strong><br/>Figure Legends<br/>

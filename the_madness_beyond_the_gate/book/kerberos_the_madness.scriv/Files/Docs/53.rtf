@@ -4,18 +4,21 @@
 \deftab720
 \pard\pardeftab720\sa400
 
-\f0\fs56 \cf0 Low-level secrets\
-\pard\tx720\fi720\sl480\slmult1\pardirnatural\qj
-
-\f1\fs24 \cf0 \
-\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa200\pardirnatural
-
-\f0\fs28 \cf0 KRB5CCNAME\
+\f0\fs56 \cf0 # Low-level secrets
+\f1\fs24 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
 
-\fs24 \cf0 The environment variable `
-\fs28 KRB5CCNAME` (cite: http://web.mit.edu/kerberos/krb5-1.4/krb5-1.4/doc/klist.html)\
+\f0\fs22 \cf0 \ul \ulc0 KRB5CCNAME\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+\cf0 \ulnone The environment variable `KRB5CCNAME` (cite: http://web.mit.edu/kerberos/krb5-1.4/krb5-1.4/doc/klist.html)\
 As the docs say:\
-\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li553\fi19\ri-5062\sa160\pardirnatural\qj
-\cf0 If the KRB5CCNAME environment variable is set, its value is used to name the default ticket cache.}
+If the KRB5CCNAME environment variable is set, its value is used to name the default ticket cache.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+\cf0 \ul \ulc0 IP addresses vs. Hostnames\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs24 \cf0 \ulnone Kerberos principals are traditionally defined with hostnames of the form hbase@worker3/EXAMPLE.COM, not hbase/10.10.15.1/EXAMPLE.COM\
+The issue of whether Hadoop should support IP addresses has been raised [HADOOP-9019]({\field{\*\fldinst{HYPERLINK "https://issues.apache.org/jira/browse/HADOOP-9019"}}{\fldrslt https://issues.apache.org/jira/browse/HADOOP-9019}}) [{\field{\*\fldinst{HYPERLINK "https://issues.apache.org/jira/browse/HADOOP-7510"}}{\fldrslt HADOOP-7510}}]({\field{\*\fldinst{HYPERLINK "https://issues.apache.org/jira/browse/HADOOP-7510"}}{\fldrslt https://issues.apache.org/jira/browse/HADOOP-7510}})\
+Current consensus is no: you need DNS set up, or at least a consistent and valid /etc/hosts file on every node in the cluster.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+\cf0 \ul Warning\ulnone : Windows does not reverse-DNS 127.0.0.1 to localhost or the local machine name; this can cause problems with MiniKDC tests in Windows, where adding a user/127.0.0.1@REALM principal will be needed [example] ({\field{\*\fldinst{HYPERLINK "https://github.com/apache/hadoop/blob/trunk/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-registry/src/test/java/org/apache/hadoop/registry/secure/AbstractSecureRegistryTest.java#L209"}}{\fldrslt https://github.com/apache/hadoop/blob/trunk/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-registry/src/test/java/org/apache/hadoop/registry/secure/AbstractSecureRegistryTest.java#L209}}).}

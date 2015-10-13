@@ -4,87 +4,101 @@
 \deftab720
 \pard\pardeftab720
 
-\f0\fs56 \cf0 Error Messages to Fear\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\f0\fs56 \cf0 # Error Messages to Fear\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
 \fs24 \cf0 \
 \pard\pardeftab720\sa400
 
-\fs56 \cf0 OS/JVM Layer\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\fs56 \cf0 # OS/JVM Layer\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
-\fs24 \cf0 Some of these are covered in Oracle's Troubleshooting Kerberos docs. This section just highlights some of the common causes, other causes that Oracle don't mention \'97and messages they haven't covered.\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\fs22 \cf0 Some of these are covered in Oracle's Troubleshooting Kerberos docs. This section just highlights some of the common causes, other causes that Oracle don't mention \'97and messages they haven't covered.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
-\f1 \cf0 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa200\pardirnatural
+\f1\fs24 \cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
 
 \f0\fs28 \cf0 ## Server not found in Kerberos database (7) \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
-\fs24 \cf0 * DNS is a mess and your machine does not know its own name.\
+\fs22 \cf0 * DNS is a mess and your machine does not know its own name.\
 * Your machine has a hostname, but it's not one there's an entry in the keytab for\
-\
-## 
-\fs28 No valid credentials provided (Mechanism level: Illegal key size)]\
-
-\fs24 Your JVM doesn't have the extended cryptography package and can't talk to the KDC. Switch to openjdk or go to your JVM supplier (Oracle, IBM) and download the JCE extension package, and install it in the hosts where you want Kerberos to work.\
-\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa200\pardirnatural
-
-\fs28 \cf0 ## No valid credentials provided (Mechanism level: Failed to find any Kerberos tgt\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
-
-\fs24 \cf0 This may appear in a stack trace starting with something like:\
-\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li559\fi4\pardirnatural
-
-\fs22 \cf0 javax.security.sasl.SaslException: GSS initiate failed [Caused by GSSException: No valid credentials provided (Mechanism level: Failed to find any Kerberos tgt)]\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
 \fs24 \cf0 \
-Causes \
+## 
+\fs28 No valid credentials provided (Mechanism level: Illegal key size)]\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs22 \cf0 Your JVM doesn't have the extended cryptography package and can't talk to the KDC. Switch to openjdk or go to your JVM supplier (Oracle, IBM) and download the JCE extension package, and install it in the hosts where you want Kerberos to work.
+\fs24 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
+
+\fs28 \cf0 ## No valid credentials provided (Mechanism level: Failed to find any Kerberos tgt\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs22 \cf0 This may appear in a stack trace starting with something like:\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\li559\fi4\pardirnatural
+\cf0 javax.security.sasl.SaslException: GSS initiate failed [Caused by GSSException: No valid credentials provided (Mechanism level: Failed to find any Kerberos tgt)]\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs24 \cf0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs22 \cf0 Causes \
 1. You aren't logged in via `kinit`.\
 2. You did specify a keytab but it isn't there or is somehow otherwise invalid\
 3. You don't have the Java Cryptography Extensions installed.\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa200\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
 
-\fs28 \cf0 \
-\
-## Clock skew too great\
-\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li559\fi4\pardirnatural
+\fs28 \cf0 ## Clock skew too great\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\li559\fi4\pardirnatural
 
 \fs22 \cf0 ## GSSException: No valid credentials provided (Mechanism level: Attempt to obtain new INITIATE credentials failed! (null)) . . . Caused by: javax.security.auth.login.LoginException: Clock skew too great\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
 \fs24 \cf0 \
-This comes from the clocks on the machines being too far out of sync. This can surface if you are doing Hadoop work on some VMs and have been suspending and resuming them; they've lost track of when they are. Reboot them.\
-If its a physical cluster, make sure that your NTP daemons are pointing at the same NTP server, one that is actually reachable from the Hadoop cluster. And that the timezone settings of all the hosts are consistent.\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa200\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs22 \cf0 This comes from the clocks on the machines being too far out of sync. This can surface if you are doing Hadoop work on some VMs and have been suspending and resuming them; they've lost track of when they are. Reboot them.\
+If it's a physical cluster, make sure that your NTP daemons are pointing at the same NTP server, one that is actually reachable from the Hadoop cluster. And that the timezone settings of all the hosts are consistent.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
 
 \fs28 \cf0 KDC has no support for encryption type\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
-\fs24 \cf0 This crops up on the MiniKDC if you are trying to be clever about encryption types. It doesn't support many.\
-\
-## Failure unspecified at GSS-API level (Mechanism level: Checksum failed)\
-Kerberos is very strict about hostnames and DNS [{\field{\*\fldinst{HYPERLINK "http://stackoverflow.com/questions/12229658/java-spnego-unwanted-spn-canonicalization"}}{\fldrslt http://stackoverflow.com/questions/12229658/java-spnego-unwanted-spn-canonicalization}}]({\field{\*\fldinst{HYPERLINK "http://stackoverflow.com/questions/12229658/java-spnego-unwanted-spn-canonicalization"}}{\fldrslt http://stackoverflow.com/questions/12229658/java-spnego-unwanted-spn-canonicalization}}); Java 8 behaves differently from Java 6 & 7 here which can cause problems (HADOOP-11628)[{\field{\*\fldinst{HYPERLINK "https://issues.apache.org/jira/browse/HADOOP-11628"}}{\fldrslt https://issues.apache.org/jira/browse/HADOOP-11628}}].\
-\
+\fs22 \cf0 This crops up on the MiniKDC if you are trying to be clever about encryption types. It doesn't support many.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs24 \cf0 ## Failure unspecified at GSS-API level (Mechanism level: Checksum failed)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs22 \cf0 \
+1. Kerberos is very strict about hostnames and DNS\
+[{\field{\*\fldinst{HYPERLINK "http://stackoverflow.com/questions/12229658/java-spnego-unwanted-spn-canonicalization"}}{\fldrslt http://stackoverflow.com/questions/12229658/java-spnego-unwanted-spn-canonicalization}}]({\field{\*\fldinst{HYPERLINK "http://stackoverflow.com/questions/12229658/java-spnego-unwanted-spn-canonicalization"}}{\fldrslt http://stackoverflow.com/questions/12229658/java-spnego-unwanted-spn-canonicalization}}); \
+2. Java 8 behaves differently from Java 6 & 7 here which can cause problems\
+(HADOOP-11628)[{\field{\*\fldinst{HYPERLINK "https://issues.apache.org/jira/browse/HADOOP-11628"}}{\fldrslt https://issues.apache.org/jira/browse/HADOOP-11628}}].\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs24 \cf0 \
 \pard\pardeftab720\sa400
 
 \fs56 \cf0 Hadoop Web/REST APIs\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa200\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
 
 \fs28 \cf0 ## AuthenticationToken ignored\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
-\fs24 \cf0 Surfaces in the HTTP logs of Hadoop REST/Web UIs:\
-\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li559\fi4\pardirnatural
-
-\fs22 \cf0 2015-06-26 13:49:02,239 WARN org.apache.hadoop.security.authentication.server.AuthenticationFilter: AuthenticationToken ignored: org.apache.hadoop.security.authentication.util.SignerException: Invalid signature\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa160\pardirnatural
+\fs22 \cf0 Surfaces in the HTTP logs of Hadoop REST/Web UIs:\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\li559\fi4\pardirnatural
+\cf0 2015-06-26 13:49:02,239 WARN org.apache.hadoop.security.authentication.server.AuthenticationFilter: AuthenticationToken ignored: org.apache.hadoop.security.authentication.util.SignerException: Invalid signature\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
 \fs24 \cf0 \
-This means that the caller did not have the credentials to talk to a Kerberos-secured channel.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs22 \cf0 This means that the caller did not have the credentials to talk to a Kerberos-secured channel.\
 1. The caller may not be logged in.\
 2. The caller may have been logged in, but its kerberos token has expired, so its authentication headers are not considered valid any more.\
 3. The time limit of a negotiated token for the HTTP connection has expired. Here the calling app is expected to recognise this, discard its old token and renegotiate a new one. If the calling app is a YARN hosted service, then something should have been refreshing the tokens for you.\

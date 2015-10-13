@@ -8,19 +8,35 @@
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
 
 \fs24 \cf0 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sa200\pardirnatural
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
+
+\fs28 \cf0 ## All programs\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\li550\fi-551\sa160\pardirnatural
+
+\fs22 \cf0 [ ] Sets up security before accessing any Hadoop services, including FileSystem APIs\
+[ ] Sets up security after loading local configuration files, such as `core-site.xml`. Creating instances of HdfsConfiguration and YarnConfiguration will do this automatically.\
+[ ] Are tested against a secure cluster\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
 
 \fs28 \cf0 ## Hadoop RPC Service\
-\
-[ ] Principal for Service defined. This is generally a configuration property.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural
+
+\fs22 \cf0 \
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\li550\fi-551\sa160\pardirnatural
+\cf0 [ ] Principal for Service defined. This is generally a configuration property.\
 [ ] `SecurityInfo` subclass written.\
 [ ] `META-INF/services/org.apache.hadoop.security.SecurityInfo` resource lists.\
-the `SecurityInfo` subclass.\
+[ ] the `SecurityInfo` subclass written\
 [ ] `PolicyProvider` subclass written.\
 [ ] RPC server handed `PolicyProvider` subclass during setup.\
-\
+[ ] Uses `doAs()` to perform operations as the user making the RPC call.\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
+
+\fs28 \cf0 \
 ## YARN Client/launcher\
-[ ] `HADOOP_USER` env variable set on AM launch context in insecure clusters.\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\li550\fi-551\sa160\pardirnatural
+
+\fs22 \cf0 [ ] `HADOOP_USER` env variable set on AM launch context in insecure clusters, and in launched containers.\
 [ ] In secure cluster: all delegation tokens needed (HDFS, Hive, HBase, Zookeeper) created and added to launch context.\
 ## YARN Application\
 [ ] Delegation tokens extracted and saved.\
@@ -29,21 +45,30 @@ the `SecurityInfo` subclass.\
 ## Web Service\
 [ ] `AuthenticationFilter` added to web filter chain\
 [ ] Token renewal policy defined and implemented. (Look at `TimelineClientImpl` for an example of this)\
-\
-## Clients\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
+
+\fs28 \cf0 ## Clients\
 ### All clients\
-[ ] Supports keytab login and calls `UserGroupInformation.loginUserFromKeytab(principalName, keytabFilename)` call during initialization.\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\li550\fi-551\sa160\pardirnatural
+
+\fs22 \cf0 [ ] Supports keytab login and calls `UserGroupInformation.loginUserFromKeytab(principalName, keytabFilename)` during initialization.\
 [ ] Issues `UserGroupInformation.getCurrentUser().checkTGTAndReloginFromKeytab()` call during connection setup/token reset. This is harmless on an insecure or non-keytab client.\
 [ ] Client supports Authentication Token option\
 [ ] Client supports Delegation Token option. (not so relevant for most YARN clients)\
 [ ] For Delegation-token authenticated connections, something runs in the background to regularly update delegation tokens.\
 [ ] Tested against secure clusters with user logged out (kdestroy).\
 [ ] Logs basic security operations at INFO, with detailed operations at DEBUG level.\
-\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
+
+\fs28 \cf0 \
 ### RESTful client\
-[ ] Jersey: URL constructor handles SPNEGO Auth\
-[ ] URL constructor reacts to 401/403 responses when using Authentication Token by deleting creating a new Auth Token and re-issuing request. (this triggers re-authentication)\
-\
+\pard\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\li550\fi-551\sa160\pardirnatural
+
+\fs22 \cf0 [ ] Jersey: URL constructor handles SPNEGO Auth\
+[ ] Code invoking Jersey Client reacts to 401/403 exception responses when using Authentication Token by deleting creating a new Auth Token and re-issuing request. (this triggers re-authentication)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa200\pardirnatural
+
+\fs28 \cf0 \
 \
 \
 \

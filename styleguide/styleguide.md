@@ -1,20 +1,18 @@
-<!---
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-  
-   http://www.apache.org/licenses/LICENSE-2.0
-  
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License. See accompanying LICENSE file.
--->
-  
 
 
-# Hadoop Coding Standards
+# Coding Standards for Apache Hadoop
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License. See accompanying LICENSE file.
 
 ## Introduction
 
@@ -200,10 +198,6 @@ fully constructed, leading to bizarre failure conditions.
 raise an exception.
 1. Use Executors over Threads
 1. Use fixed pool executors over creating a new thread per request/operation.
- The one-thread-per-action architecture does not scale to the size of workloads which Hadoop applications can generate.
- This is not just server side; it has surfaced in pure-client-side code, such as the S3A filesystem Client
- [HADOOP-11446)](https://issues.apache.org/jira/browse/HADOOP-11446). A good design for a small application, one
- that works in the test cases, can fail dramatically in the field.
 
 
 Key `java.utils.concurrent` classes include
@@ -215,7 +209,89 @@ Key `java.utils.concurrent` classes include
 
 There is a reasonable amount of code that can be considered dated in Hadoop, using threads and runnables. These should be cleaned up at some point —rather than mimicked.
 
+Warning signs of dated code
 
+1. Subclassing `Thread`.
+1. Spawning off threads, rather than using thread pools via executors.
+1. Using `volatile` fields rather than `Atomic*` classes. 
+1. Using `Object.notify()` and `Object.wait()` to signal a thread. If the notification signal is lost, there is a risk that the waiting thread may miss things. Much better: have a concurrent queue with the sending thread posting something to the queue; the receiver fetching it blocking with `take()`  or via a time limited `poll()`.
+
+
+### Scale problems of threaded code.
+
+One danger in Hadoop code is to write anything which can spawn unlimited threads. That is, for every incoming network call, IO operation or other action, a new thread is created. Under heavy workloads, the number of threads created will exhaust the amount of memory available.
+
+This is not just server side; it has surfaced in pure-client-side code, such as the S3A filesystem Client
+[HADOOP-11446)](https://issues.apache.org/jira/browse/HADOOP-11446). A good design for a small application, one
+that works in the test cases, can fail dramatically in the field.
+
+1 Any asynchronous code which is not directly part of a system singleton class must be launched in a thread pool. Specifically the simple "one thread per JVM" strategy is acceptable for singleton items such as `UserGroupInformation` keytab renewer, Namenode token renewer and similar classes for which a single instance is only expected in production use.
+What is unacceptable is anything spawning unlimited threads off proportional to the number of callers or recipients of a remote API call, per numbers of users, blocks, hosts or other variable which scales with cluster size, or anything which can scale with large local-JVM workflows.
+
+Asynchronous code spawned off in this way must
+
+1. Be started in a thread pool of limited size. (Choosing that size is a hard problem; they are usually configurable).
+1. Have a policy to handle exhausted thread pools. Blocking callers, for example, maybe failing with explicit retry-later messages. *Expect the thread pool to be exhausted in day-to-day operation, so design the code to handle it*.
+1. Have some means of being stopped.
+
+
+### `volatile` vs. non-`volatile` vs. `java.util.concurrent.atomic`
+
+
+Java's `volatile` keyword indicates that a field may change in different threads. It has the following semantics:
+
+1. read/write operations are not re-ordered above or below volatile access. That also applies to access of non-volatile data.
+1. values are not cached
+1. volatile accesses to `int`, `byte` `char`, `short`, `boolean`, `float` and all object references are guaranteed to be atomic. What is not guaranteed to be atomic are accesses to `long` and `double` fields. The atomicity of their accesses may depend upon the architecture of the CPU running the Java code, and possibly byte alignment of the data. You can be confident that volatile access to fields *wider* than the underlying CPU will not be atomic. Even on a 64-bit CPU, `long` and `double` accesses may not be atomic.
+1. operations such aa `++`, `--`, `+=`, `-=`, `&=`, `|=`, `^=` are not atomic.
+
+The fact that some types are atomic, and others are not is dangerous: even if the original code was written by people who knew that `volatile int` access was atomic, maintainers in future may need to expand that to a `volatile long` to handle scale -at which point atomicity of access is lost. Which means that a race condition which can lead to invalid data is entirely possible.
+
+Because reads are not not cached, and because `volatile` accesses are "barrier" operations, accesses to `volatile` fields is still less efficient than non-volatile accesses. The latter can be rearranged by the compiler, pulled out of loops or cached for re-use, and accessed out-of-order in any CPU capable of out-of-order execution. (all conventional modern non-embedded CPUs).
+
+Use Atomic classes instead
+
+
+*Bad*
+
+```
+volatile int counter;
+volatile boolean finished;
+volatile float average;
+volatile Object handle;
+```
+
+Forbidden operations on volatile values
+
+```
+counter++;
+counter += 1;
+counter = counter + 1;
+finished &= updated;
+average /= 4;
+```
+
+All those operations are non-atomic. Essentially, `volatile` fields may only be used for simple get/set operations, not
+for any operation which uses the current value of the field as part of the operation.
+
+*Broken*
+
+Any volatile types wider than 32 bits is capable of being corrupted on some architectures/JVMs. 
+
+```
+volatile long counter2;
+volatile double average;
+```
+
+*Good*
+
+```
+final AtomicInteger counter = new AtomicInteger(0);
+final AtomicBoolean finished = new AtomicBoolean(false)
+final AtomicLong counter2 = new AtomicLong(0);
+final AtomicDouble average = new AtomicDouble(0);
+final AtomicReference<MyType> handle = new AtomicReference<>(null);
+```
 
 ## Logging
 
@@ -235,18 +311,22 @@ Areas for improvement include: including some links to diagnostics pages on the 
 
 Hadoop is also (slowly) migrating from the apache commons-logging API to SLF4J. This style guide covers SLF4J only:
 
-1. SLF4J is the logging API to use for all new classes. It MUST be used.
-1. ERROR, WARN and INFO level events MAY be logged without guarding
-  their invocation.
+1. SLF4J is the logging API to use for all new classes. It SHOULD be used.
+1. The main body of the code uses Commons Logging APIs. These can be migrated —though check for tests which access the logs, and grab the matching log4j appender by way of class casts. These uses cannot be migrated easily.
+1. With commons logging, all log calls must be guarded with a check for log level.
+
+SLF4J specific issues:
+
+1. ERROR, WARN and INFO level events MAY be logged without guarding their invocation.
 1. DEBUG-level log calls MUST be guarded. This eliminates the need
 to construct string instances.
 1. Unguarded statements MUST NOT use string concatenation operations to build the log string, as these are called even if the logging does not take place. Use `{}` clauses in the log string.
   Bad:
-
-      LOG.info("Operation "+ action+ " outcome: " +outcome)
+  
+        LOG.info("Operation "+ action + " outcome: " +outcome)
   Good:
 
-      LOG.info("Operation {} outcome: {}", action, outcome)
+        LOG.info("Operation {} outcome: {}", action, outcome)
 
 1. Classes SHOULD have lightweight `toString()` operators to aid logging. These MUST be robust
 against failures if some of the inner fields are null.
@@ -258,6 +338,15 @@ as some classes have a null message.
          LOG.error("Failed to start: {}", ex, ex)
 
 There is also the opportunity to add logs for machines to parse, not people. The HDFS Audit Log is an example of this —it enables off-line analysis of what a filesystem has been used for, including by interesting programs to detect which files are popular, and which files never get used after a few hours -and so can be deleted. Any contributions here are welcome.
+
+## Metrics and Monitoring
+
+Hadoop's Metrics 2 is the framework for collecting and publishing statistics on running applications.
+
+All pieces of code collecting information which may need monitoring should consider adding metrics 2 support. Note that as these can be used in tests and debugging, adding them early aids development.
+
+There is ongoing work in adding `htrace` tracing across the Hadoop stack, so that it will become easy to correlate load issues in one layer (such as HDFS) with work going on at a higher layer (e.g. specific Apache Hive queries).
+Contributions in this area are welcome. Any component which performs work for callers —especially those which then invoke remote work on those caller's behalf, should be htrace-enabled
 
 
 
@@ -303,7 +392,6 @@ That said, Hadoop is designed to scale to tens of thousands of machines. Algorit
 
 * New fields on existing messages must be `optional`, otherwise all existing clients will be unable to talk to the far end.
 * Accordingly, services must be designed to have a valid default for a new field, handling the absence of a field value gracefully.
-
 
 ## Security
 
@@ -395,8 +483,8 @@ users to identify problems starting or connecting to their cluster.
 Exceptions written purely for the benefit of developers are not what end users
 or operations teams need —and in some cases can be misleading. As an example,
 the java network stack returns errors such as `java.net.ConnectionRefusedException`
-which returns none of the specifics about what connection was being refused 
-destination host & port), and can be misinterpreted by people unfamiliar with
+which returns none of the specifics about what connection was being refused,
+especially the destination host and port, and can be misinterpreted by people unfamiliar with
 Java exceptions or the sockets API as a Java-side problem. 
 
 This is why Hadoop wraps the standard socket exceptions in `NetUtils.wrapException()`
@@ -496,7 +584,7 @@ Tests MUST
 * shut down services after the test run.
 * Not leave threads running or services running irrespective of whether they fail or not. That is: always clean up afterwards, either in `try {} finally {}` clauses or `@After` and `@AfterClass` methods. This teardown code must also be robust against incomplete state, such as null object references.
 * Work on OS/X, non-Intel platforms and Windows. There's a field in `org.apache.hadoop.util.Shell` which can be used in an `Assert.assume()` clause to skip test cases which do not work here.
-* To avoid port in use exceptions, use port '0' for registering services, or scan for a free port.
+* Use port '0' for registering TCP & UDP endpoints, or scan for a free port with `ServerSocketUtil`.
 
 Tests MUST NOT
 
@@ -504,10 +592,11 @@ Tests MUST NOT
 * Contain any assumptions about the ordering of previous tests -such as expecting a prior test to have set up the system. Tests may run in different orders, or purely standalone.
 * Rely on a specific log-level for generating output that is then analyzed. Some tests do this, and they are problematic. The preference is to move away from these and instrument the classes better.
 * Require specific timings of operations, including the execution performance or ordering of asynchronous operations.
-* Have hard-coded network ports. This causes problems in parallel runs, especially on the Apache Jenkins servers. Either use port 0, or scan for a free port.
-* Run up large bills against remote cloud storage infrastructures *by default*. The object store client test suites are automatically skipped for this reason.
+* Have hard-coded network ports. This causes problems in parallel runs, especially on the Apache Jenkins servers. Either use port 0, or scan for a free port. `ServerSocketUtil` has code to pick a free port: tests should use this.
 * Take long times to complete. There are some in the codebase which are slow; these do not begin with the word `Test` to stop them being run except when explicitly requested to do so.
 * Store data in `/tmp`, or the temp dir suggested by `java.io.createTempFile(String, String)`. All temporary data must be created under the directory `./target`. This will be cleaned up in test runs, and not interfere with parallel test runs.
+* Run up large bills against remote cloud storage infrastructures *by default*. The object store client test suites are automatically skipped for this reason.
+* Require cloud infrastructure keys be added into SCM-managed files for test runs. This makes it all to easy to accidentally commit AWS login credentials to public repositories, which can be an expensive mistake.
 
 
 Tests MAY
@@ -520,26 +609,118 @@ Tests SHOULD
 
 * Clean up after themselves.
 
-
 ### Assertions
+
+
+1. Complex assertions should be broken into smaller ones, so that failure causes can be more easily determined.
+1. Assertions should use the more specific `assertXXX` checks over `assertTrue()` and `assertFalse()`.
+1. Uses of `assertTrue()` and `assertFalse()` MUST include an error message which provides information on what has failed and why -a message which itself must be robust against null pointers.
+1. Other assertions SHOULD provide an error message for extra diagnostics.
+1. Checks for equality should use `assertEquals(expected, actual)` and `assertNotEquals(expected, actual)`.
+1. Checks for equality of `double` and `float` MUST use `assertEquals(expected, actual, delta)` 
+   and `assertNotEquals(expected, actual, delta)`.
+ 1. Array Equality checks should use `assertArrayEquals(expected, actual)`.
+
+#### `assertTrue()` and `assertFalse()`
+
+These are the default assertions. While simple, they provide minimal diagnostics. The value or purpose of the test are unknown, with test reports only stating the line which failed. This is not enough.
+
+
+A good tactic for coming up with some meaningful messages and assertions is to imagine that a test run has failed on an assertion, and all you have for diagnostics is the exception stack trace, not any logs. Ask yourself: "If I had to fix this, is there enough information for me to even start to guess what has failed".
+
+By default, `assertTrue()` utterly fails this test.
+
+*Bad*
+
+    assertTrue(client != null && client.connected() && client.remoteHost().equals("localhost"))
+
+This is bad because if there is a failure, there's no clue as to what it was. Furthermore, it contains the assumption that when `client.connected()` is true, `client.remoteHost()` is never null. That may be something to check for explicitly.
+
+*Good*  
+
+    assertNotNull("null client", client)
+    assertTrue("Not connected: " + client, client.connected())
+    assertEquals("Wrong remote host:" + client, "localhost", client.remoteHost())
+
+This pulls out the three checks and orders them such that the successive assertions can rely on the predecessors being true.
+There is no need to add an `assertNotNull("no remote host: "+ client, client.remoteHost())` check, as the `assertEquals()` assertion
+does that automatically.
+
+With three separate assertions, we'll know immediately which one failed. With a stack trace, we can even get the specific line.
+
+
+#### `assertEquals()` and `assertNotEquals()`
+
+These assertions SHOULD be used in place of `assertTrue(expected.equals(actual))` and `assertFalse(expected.equals(actual))`
+
+1. They handle null values in the equality check (though there, `assertNull()` and `assertNotNull()` should be used wherever the
+expected value is known to be null).
+1. They automatically generate error messages listing the expected and actual values, highlighting the difference.
+1. There's a special variant for asserting equality of floating point numbers, where a delta value is provided; two float or double arguments are considered equal if the difference between them is less than the `delta`
+
+For `assertEquals()` and and `assertNotEquals()`, the expected value MUST be the first element listed. This because when the test fails, the assertion thrown states that the first value was the expected one. It gets confusing trying to diagnose the failure when the messages
+are misleading.
+
+*Bad*
+
+    assertEquals(counter.get(), 7);
+
+If the counter was only "3", the error text would be
+
+    expected:<3> but was:<7>
+
+*Good*
+
+    assertEquals(7, counter.get());
+
+For the counter==3 error condition, the text would now be
+
+    expected:<7> but was:<3>
+
+Which correctly describes the problem.
+
+*Best*
+
+    assertEquals("current counter", 7, counter.get());
+
+This would give an error message
+
+    current counter expected:<7> but was:<3>
+
+Because there's already a useful error message, adding a string is only a SHOULD or a MAY, not a MUST. Its purpose is to provide some more information on the test report, rather than actually show the values of the arguments.
+
+### `fail()`
+
+`Assert.fail()` is the method to call when a test has failed in a way too complex for one of the existing assertions, or in any new assertions that you have written yourself. It should always be called with meaningful text
+
+    try {
+      String s = operationExpectedToFail(null);
+      fail("expected a failure -but got " + s)
+      } catch {IOException expected} {
+        // expected
+      }
+
+
+
+#### Assertion Text
 
 Tests SHOULD provide meaningful text on assertion failures. The best metric is "can someone looking at the test results get any idea of what failed without chasing up the stack trace in an IDE?"
 
 That means adding meaningful text to assertions, along with any diagnostics information that can be picked up.
 
-Bad:
+*Bad*
 
     assertTrue(target.exec());
 
-Good
+*Good*
 
     assertTrue("exec() failed on " + target, target.exec());
 
-Bad
+*Bad*
 
-    assertTrue(target.update()==0);
+    assertTrue(target.update() == 0);
 
-Good
+*Good*
 
     assertEquals("update() failed on " + target, 0, target.update());
 
@@ -652,7 +833,7 @@ Good
 
 Here a constant is used to define what is looked for (obviously, one used in the exception's constructor). It also uses the `String.contains()` operator —so if extra details are added to the exception, the assertion still holds.
 
-Good
+*Good*
 
     @Test(expected = PathNotFoundException.class)
     public void testSomething {
@@ -662,7 +843,7 @@ Good
 
 This takes advantage of JUnit 4's ability to expect a specific exception class, and looks for it. This is nice and short. Where it is weak is that it doesn't let you check the contents of the exception. If the exception is sufficiently unique within the actions, that may be enough. 
 
-Good: examine the contents of the exception as well as the type. 
+*Good*: examine the contents of the exception as well as the type. 
 Rethrow the exception if it doesn't match, after adding a log message explaining why it was rethrown:
 
     @Test
@@ -683,10 +864,23 @@ operation is included in the failure exception, to aid debugging.
 As the test is failing because the code in question is not behaving as expected, 
 having a stack trace in the test results can be invaluable. 
 
-In comparing the two options, the JUnit 4 {{expected}} will be less informative, but it makes for a much easier to understand test. For it to be a good test, some conditions must be met
+Even better, rather than write your own handler (repeatedly), use the one in `org.apache.hadoop.test.GenericTestUtils`, which is bundled in `hadoop-common-test` JAR:
+
+    @Test
+    public void testSomething {
+      try {
+        result = doSomething("arg")
+        Assert.fail("expected a failure, got: " + result)
+      } catch(PathNotFoundException e) {
+        GenericTestUtils.assertExceptionContains(Errors.FAILURE_ON_PATH, e);
+      }
+    }
+
+
+In comparing the various options, the JUnit 4 {{expected}} will be less informative, but it makes for a much easier to understand test. For it to be a good test, some conditions must be met
 
 1. There's only one place in the test case where raising the expected exception can happen. If the exception could get raised before or after the core operation being tested, then the test could be failing in the wrong place —with the test runner not picking it up.
-1. The type of the exception is sufficient to verify that the failure was as expected. A high level `Exception` or `IOException` is unlikely to be adequate.
+1. The type of the exception is sufficient to verify that the failure was as expected. A high level `Exception` or `IOException` is unlikely to be adequate. Otherwise, go for the `GenericTestUtils` one.
 
 
 ### Skipping tests that aren't available on the test system
@@ -727,6 +921,7 @@ like by extracting the method name from JUnit:
 1. Bash lines may exceed the 80 character limit where necessary.
 1. Try not to be too clever in use of the more obscure bash features —most Hadoop developers don't know them.
 1. Make sure your code recognises problems and fails with exit codes. That is, it MUST check for non-zero return codes on its operations and SHOULD then exit the script with an error.
+1. Use `bats` for your bash unit tests.
 
 The key thing to assume when writing Bash scripts is that the majority of the Hadoop project developers are not bash experts who know all the subtleties. If you are doing something
 reasonably complex, do add some comments explaining what you are doing.
@@ -759,7 +954,7 @@ Here are some things which scare the developers when they arrive in JIRA:
 
 * Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
 * Patches which delve into the internals of critical classes. The HDFS NameNode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users. 
-* Changes to the key public APIs of Hadoop. That includes the `FileSystem` & `FileContext` APIs, YARN submission protocols, MapReduce APIs, and the like.
+* Changes to the key public APIs of Hadoop. That includes the `FileSystem` and `FileContext` APIs, YARN submission protocols, MapReduce APIs, and the like.
 * Patches that reorganise the code as part of the diff. That includes imports. They make the patch bigger (hence harder to review) and may make it harder to merge in other patches.
 * Big patches without tests.
 * Medium sized patches without tests.
