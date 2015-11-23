@@ -564,7 +564,14 @@ routine SHOULD support the standard command line options, especially the
 
 Tests are a critical part of the Hadoop codebase.
 
-The standard for tests is as high as for the code itself. 
+What are those tests for? More fundamentally: what is any test for?
+
+Tests are there to show that a feature works, that it recognises and reacts to invalid/illegal conditions, and fails acceptably in the face of problems. 
+
+That is: some tests verify that a feature behaves as expected given valid inputs and starting state of the system. Other tests should be designed to break that behaviour, to create invalid states, generate failure conditions, pass in invalid values —and then verify that the component under test is robust to such states.
+
+The quality standard for tests is as high as for production itself. They must be easy for successor developers to maintain, good at finding bugs and regressions in the production software —while not being buggy themselves. A bad test -be it unreliable, brittle to changes in implementation details, prone to race conditions is troublesome, and may end being cut, disabled or simply ignored. When a test fails, it has not be "crying wolf" —it needs to be showing there is a real problem, and provide as much information about the problem that it can.
+
 
 Tests MUST be
 
@@ -581,19 +588,20 @@ Tests MUST
 * Use directories under the property `test.dir` for temporary data. The way to get this dir dynamically is: 
 
         new File(System.getProperty("test.dir", "target"));
-* shut down services after the test run.
+* Shut down services after the test run.
 * Not leave threads running or services running irrespective of whether they fail or not. That is: always clean up afterwards, either in `try {} finally {}` clauses or `@After` and `@AfterClass` methods. This teardown code must also be robust against incomplete state, such as null object references.
 * Work on OS/X, non-Intel platforms and Windows. There's a field in `org.apache.hadoop.util.Shell` which can be used in an `Assert.assume()` clause to skip test cases which do not work here.
 * Use port '0' for registering TCP & UDP endpoints, or scan for a free port with `ServerSocketUtil`.
 
 Tests MUST NOT
 
-* Require internet access. That includes DNS lookup of remote sites.
-* Contain any assumptions about the ordering of previous tests -such as expecting a prior test to have set up the system. Tests may run in different orders, or purely standalone.
+* Require internet access. That includes DNS lookup of remote sites. It also included expecting lookups of non-resolvable hosts to fail —some ISPs return a search site in this situation, so an `nslookup invalid.example.org` does return an IP address.
+* Contain any assumptions about the ordering of previous tests —†such as expecting a prior test to have set up the system. Tests may run in different orders, or purely standalone.
 * Rely on a specific log-level for generating output that is then analyzed. Some tests do this, and they are problematic. The preference is to move away from these and instrument the classes better.
 * Require specific timings of operations, including the execution performance or ordering of asynchronous operations.
 * Have hard-coded network ports. This causes problems in parallel runs, especially on the Apache Jenkins servers. Either use port 0, or scan for a free port. `ServerSocketUtil` has code to pick a free port: tests should use this.
 * Take long times to complete. There are some in the codebase which are slow; these do not begin with the word `Test` to stop them being run except when explicitly requested to do so.
+* Assume they are running on a Unix system, with `/unix/style/paths`.
 * Store data in `/tmp`, or the temp dir suggested by `java.io.createTempFile(String, String)`. All temporary data must be created under the directory `./target`. This will be cleaned up in test runs, and not interfere with parallel test runs.
 * Run up large bills against remote cloud storage infrastructures *by default*. The object store client test suites are automatically skipped for this reason.
 * Require cloud infrastructure keys be added into SCM-managed files for test runs. This makes it all to easy to accidentally commit AWS login credentials to public repositories, which can be an expensive mistake.
@@ -606,7 +614,6 @@ Tests MAY
 Tests SHOULD 
 
 * Use loopback addresses `localhost` rather than hostnames, because the hostname to IP mapping may loop through the external network, where a firewall may then block network access.
-
 * Clean up after themselves.
 
 ### Assertions
@@ -812,7 +819,7 @@ Bad
     } catch(IOException e) {
       Assert.assertEquals("failure on path /tmp", e.getMessage());
     }
-    
+
 
 This is way to brittle and doesn't help you find out what is going on on a failure.
 
@@ -829,7 +836,7 @@ Good
           e.toString().contains(Errors.FAILURE_ON_PATH);
       }
     }
-    
+
 
 Here a constant is used to define what is looked for (obviously, one used in the exception's constructor). It also uses the `String.contains()` operator —so if extra details are added to the exception, the assertion still holds.
 
@@ -947,6 +954,15 @@ reasonably complex, do add some comments explaining what you are doing.
 ### Code Style: Maven POM files
 
 * All declarations of dependencies with their versions must be the file `hadoop-project/pom.xml`. 
+* Version information must be included as a property, set in the `<properties>` section. This is to make it easy for people to switch versions of dependencies —be it experimentally or when making a unified release of a set of Hadoop-stack artifacts.
+* Be as restrictive as possible in your dependency scoping: use `<test>` for anything only needed in tests in particular.
+* If it is for an optional feature, set the scope to `<provided>`. That means it will be used at build time, but not forced onto downstream dependents.
+* Avoid adding anything else to the main projects. If it adds something to the `hadoop-client` transitive dependency set, there's a risk of causing version problems with downstream users.
+* Be very cautious when updating dependencies.
+
+Dependency updates (HADOOP-9991)
+
+ The ones most troublesome have proven to be: 
 
 # Patches to the code
 
