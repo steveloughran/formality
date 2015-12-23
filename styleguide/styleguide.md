@@ -243,11 +243,11 @@ Java's `volatile` keyword indicates that a field may change in different threads
 1. read/write operations are not re-ordered above or below volatile access. That also applies to access of non-volatile data.
 1. values are not cached
 1. volatile accesses to `int`, `byte` `char`, `short`, `boolean`, `float` and all object references are guaranteed to be atomic. What is not guaranteed to be atomic are accesses to `long` and `double` fields. The atomicity of their accesses may depend upon the architecture of the CPU running the Java code, and possibly byte alignment of the data. You can be confident that volatile access to fields *wider* than the underlying CPU will not be atomic. Even on a 64-bit CPU, `long` and `double` accesses may not be atomic.
-1. operations such aa `++`, `--`, `+=`, `-=`, `&=`, `|=`, `^=` are not atomic.
+1. operations such as `++`, `--`, `+=`, `-=`, `&=`, `|=`, `^=` are not atomic.
 
 The fact that some types are atomic, and others are not is dangerous: even if the original code was written by people who knew that `volatile int` access was atomic, maintainers in future may need to expand that to a `volatile long` to handle scale -at which point atomicity of access is lost. Which means that a race condition which can lead to invalid data is entirely possible.
 
-Because reads are not not cached, and because `volatile` accesses are "barrier" operations, accesses to `volatile` fields is still less efficient than non-volatile accesses. The latter can be rearranged by the compiler, pulled out of loops or cached for re-use, and accessed out-of-order in any CPU capable of out-of-order execution. (all conventional modern non-embedded CPUs).
+Because reads are not cached, and because `volatile` accesses are "barrier" operations, accesses to `volatile` fields are still less efficient than non-volatile accesses. The latter can be rearranged by the compiler, pulled out of loops or cached for re-use, and accessed out-of-order in any CPU capable of out-of-order execution. (all conventional modern non-embedded CPUs).
 
 Use Atomic classes instead
 
@@ -404,7 +404,7 @@ a secure Hadoop cluster and (b) how to write code that works in a
 secure Hadoop cluster.
 
 Set up a machine/VM as a Kerberos Domain Controller (KDC) and use this
-to create the keytabs needed for Hadoop run in in secure mode. 
+to create the keytabs needed for Hadoop run in secure mode. 
 This can take a couple of hours, hours in which you will learn the basics of Kerberos.
 
 Insecure clusters run in-cluster code in different accounts
@@ -474,7 +474,7 @@ Exceptions are a critical form of diagnostics on system failures.
 
 * They should be designed to provide enough information to enable experienced
 Hadoop operators to identify the problem.
-* They should to provide enough information to enable new Hadoop
+* They should be designed to provide enough information to enable new Hadoop
 users to identify problems starting or connecting to their cluster.
 * They need to provide information for the Hadoop developers too.
 * Information MUST NOT be lost as the exception is passed up the stack.
@@ -492,7 +492,7 @@ This is why Hadoop wraps the standard socket exceptions in `NetUtils.wrapExcepti
 1. These extend the normal error messages with host and port information for the experts,
 1. They add links to Hadoop wiki pages for the newbies who interpret "Connection Refused"
 as the namenode refusing connections, rather than them getting their destination port misconfigured.
-1. It retains all the existing socket classes. The aren't just wrapped in a
+1. It retains all the existing socket classes. They aren't just wrapped in a
 general `IOException` —they are wrapped in new instances of the same exception class. This
 ensures that `catch()` clauses can select on exception types.
 
@@ -596,7 +596,7 @@ Tests MUST
 Tests MUST NOT
 
 * Require internet access. That includes DNS lookup of remote sites. It also included expecting lookups of non-resolvable hosts to fail —some ISPs return a search site in this situation, so an `nslookup invalid.example.org` does return an IP address.
-* Contain any assumptions about the ordering of previous tests —†such as expecting a prior test to have set up the system. Tests may run in different orders, or purely standalone.
+* Contain any assumptions about the ordering of previous tests — such as expecting a prior test to have set up the system. Tests may run in different orders, or purely standalone.
 * Rely on a specific log-level for generating output that is then analyzed. Some tests do this, and they are problematic. The preference is to move away from these and instrument the classes better.
 * Require specific timings of operations, including the execution performance or ordering of asynchronous operations.
 * Have hard-coded network ports. This causes problems in parallel runs, especially on the Apache Jenkins servers. Either use port 0, or scan for a free port. `ServerSocketUtil` has code to pick a free port: tests should use this.
@@ -604,7 +604,7 @@ Tests MUST NOT
 * Assume they are running on a Unix system, with `/unix/style/paths`.
 * Store data in `/tmp`, or the temp dir suggested by `java.io.createTempFile(String, String)`. All temporary data must be created under the directory `./target`. This will be cleaned up in test runs, and not interfere with parallel test runs.
 * Run up large bills against remote cloud storage infrastructures *by default*. The object store client test suites are automatically skipped for this reason.
-* Require cloud infrastructure keys be added into SCM-managed files for test runs. This makes it all to easy to accidentally commit AWS login credentials to public repositories, which can be an expensive mistake.
+* Require cloud infrastructure keys be added into SCM-managed files for test runs. This makes it all too easy to accidentally commit AWS login credentials to public repositories, which can be an expensive mistake.
 
 
 Tests MAY
@@ -821,7 +821,7 @@ Bad
     }
 
 
-This is way to brittle and doesn't help you find out what is going on on a failure.
+This is way too brittle and doesn't help you find out what is going on on a failure.
 
 Good
 
