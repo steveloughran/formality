@@ -103,23 +103,25 @@ For this reason, the `hadoop-annotations` module/JAR contains some java `@` attr
 
 The interface audience is defined in the `org.apache.hadoop.classification.InterfaceAudience`
 
-    public class InterfaceAudience {
-      /**
-       * Intended for use by any project or application.
-       */
-      public @interface Public {};
-        
-      /**
-       * Intended only for the project(s) specified in the annotation.
-       * For example, "Common", "HDFS", "MapReduce", "ZooKeeper", "HBase".
-       */
-      public @interface LimitedPrivate {
-        String[] value();
-      };
-      /**
-       * Intended for use only within Hadoop itself.
-       */
-      public @interface Private {};
+```java
+public class InterfaceAudience {
+  /**
+   * Intended for use by any project or application.
+   */
+  public @interface Public {};
+
+  /**
+   * Intended only for the project(s) specified in the annotation.
+   * For example, "Common", "HDFS", "MapReduce", "ZooKeeper", "HBase".
+   */
+  public @interface LimitedPrivate {
+    String[] value();
+  };
+  /**
+   * Intended for use only within Hadoop itself.
+   */
+  public @interface Private {};
+```
 
 The `@Private` and `@Public` annotations resemble those in the Java code. `@Private` means within the `hadoop` source tree ONLY. `@Public` means any application MAY use the class —though the stability annotation may be used as a warning about whether that interface is something the code may rely on.
 
@@ -134,24 +136,26 @@ What does that mean? Try to avoid this notion altogether.
 
 The stability of a class's public methods is declared via the `org.apache.hadoop.classification.InterfaceStability` annotation, which has three values, `Unstable`, `Stable` and `Evolving`.
 
-    public class InterfaceStability {
-      /**
-       * Can evolve while retaining compatibility for minor release boundaries.; 
-       * can break compatibility only at major release (ie. at m.0).
-       */
-      public @interface Stable {};  
-      
-      /**
-       * Evolving, but can break compatibility at minor release (i.e. m.x)
-       */
-      public @interface Evolving {};
-      
-      /**
-       * No guarantee is provided as to reliability or stability across any
-       * level of release granularity.
-       */
-      public @interface Unstable {};
-    }
+```java
+public class InterfaceStability {
+  /**
+   * Can evolve while retaining compatibility for minor release boundaries.;
+   * can break compatibility only at major release (ie. at m.0).
+   */
+  public @interface Stable {};
+
+  /**
+   * Evolving, but can break compatibility at minor release (i.e. m.x)
+   */
+  public @interface Evolving {};
+
+  /**
+   * No guarantee is provided as to reliability or stability across any
+   * level of release granularity.
+   */
+  public @interface Unstable {};
+}
+```
 
 It is a requirement that: **all public interfaces must have a stability annotation**
 
@@ -242,7 +246,7 @@ Java's `volatile` keyword indicates that a field may change in different threads
 
 1. read/write operations are not re-ordered above or below volatile access. That also applies to access of non-volatile data.
 1. values are not cached
-1. volatile accesses to `int`, `byte` `char`, `short`, `boolean`, `float` and all object references are guaranteed to be atomic. What is not guaranteed to be atomic are accesses to `long` and `double` fields. The atomicity of their accesses may depend upon the architecture of the CPU running the Java code, and possibly byte alignment of the data. You can be confident that volatile access to fields *wider* than the underlying CPU will not be atomic. Even on a 64-bit CPU, `long` and `double` accesses may not be atomic.
+1. volatile accesses to `int`, `byte` `char`, `short`, `boolean`, `float`, `double`, `long`  and all object references are guaranteed to be atomic. What is not guaranteed to be atomic are accesses to `long` and `double` fields. The atomicity of their accesses may depend upon the architecture of the CPU running the Java code, and possibly byte alignment of the data. You can be confident that volatile access to fields *wider* than the underlying CPU will not be atomic. Even on a 64-bit CPU, `long` and `double` accesses may not be atomic.
 1. operations such aa `++`, `--`, `+=`, `-=`, `&=`, `|=`, `^=` are not atomic.
 
 The fact that some types are atomic, and others are not is dangerous: even if the original code was written by people who knew that `volatile int` access was atomic, maintainers in future may need to expand that to a `volatile long` to handle scale -at which point atomicity of access is lost. Which means that a race condition which can lead to invalid data is entirely possible.
@@ -252,9 +256,9 @@ Because reads are not not cached, and because `volatile` accesses are "barrier" 
 Use Atomic classes instead
 
 
-*Bad*
+*Dangerous unless used with caution*
 
-```
+```java
 volatile int counter;
 volatile boolean finished;
 volatile float average;
@@ -263,35 +267,35 @@ volatile Object handle;
 
 Forbidden operations on volatile values
 
-```
+```java
 counter++;
 counter += 1;
 counter = counter + 1;
 finished &= updated;
 average /= 4;
+
+// has a race condition
+if (!finished) { finished=true; doSomething() }}
+
 ```
 
 All those operations are non-atomic. Essentially, `volatile` fields may only be used for simple get/set operations, not
 for any operation which uses the current value of the field as part of the operation.
 
-*Broken*
-
-Any volatile types wider than 32 bits is capable of being corrupted on some architectures/JVMs. 
-
-```
-volatile long counter2;
-volatile double average;
-```
-
 *Good*
 
-```
+```java
 final AtomicInteger counter = new AtomicInteger(0);
 final AtomicBoolean finished = new AtomicBoolean(false)
 final AtomicLong counter2 = new AtomicLong(0);
 final AtomicDouble average = new AtomicDouble(0);
 final AtomicReference<MyType> handle = new AtomicReference<>(null);
 ```
+
+Accessing the atomic types is more expensive than `volatiles`; there's a lot more code underneath,
+and potentially mutual exclusion operations.
+If you want to have a simple near-static datastructure that is shared across threads and
+guaranteed not to cause deadlock, use a volatile.
 
 ## Logging
 
@@ -300,7 +304,7 @@ There's a number of audiences for Hadoop logging:
 * People who are new to Hadoop and trying to get a single node cluster to work.
 * Hadoop sysadmins who don't want to have to become experts in reading Java stack traces to diagnose
 local cluster problems.
-* people who help other people's Hadoop clusters to work (that includes those companies that provide some form of Hadoop support).
+* People who help other people's Hadoop clusters to work (that includes those companies that provide some form of Hadoop support).
 * Hadoop JIRA bug reports.
 * Hadoop developers.
 * Programs that analyze the logs to extract information.
@@ -362,8 +366,8 @@ CPUs may be 32-bit or 64-bit, x86, PPC, ARM or other parts.
 
 JVMs may be: the classic "sun" JVM; OpenJDK, IBM JDK, or other JVMs based off the sun source tree. These tend to differ in
 
-* heap management.
-* non-standard libraries (`com.sun`, `com.ibm`, ...). Some parts of the code —in particularly the Kerberos support— has to use reflection to make use of these JVM-specific libraries.
+* Heap management.
+* Non-standard libraries (`com.sun`, `com.ibm`, ...). Some parts of the code —in particularly the Kerberos support— has to use reflection to make use of these JVM-specific libraries.
 * Garbage collection implementation, pauses and such like. 
 
 Operating Systems vary more, with key areas being:
@@ -371,11 +375,15 @@ Operating Systems vary more, with key areas being:
 * Case sensitivity and semantics of underlying native filesystem. Example, Windows NTFS does not support rename operations while a file in a path is open. 
 * Native paths. Again, windows with its drive letter `c:\path` structure stands out. Hadoop's `Path` class contains logic to handle these...sometimes test construct paths by going
 
-        File file = something();
-        Path p = new Path("file://" + file.toString())
+```java
+File file = something();
+Path p = new Path("file://" + file.toString())
+```
   use
-  
-        Path p = new Path(file.toURI());
+
+```java
+Path p = new Path(file.toURI());
+```
 
 * Process execution. Example: as OS/X does not support process groups, YARN containers do not automatically destroy all children when the container's parent (launcher) process terminates.
 * Process signalling
@@ -639,15 +647,19 @@ By default, `assertTrue()` utterly fails this test.
 
 *Bad*
 
-    assertTrue(client != null && client.connected() && client.remoteHost().equals("localhost"))
+```java
+assertTrue(client != null && client.connected() && client.remoteHost().equals("localhost"))
+```
 
 This is bad because if there is a failure, there's no clue as to what it was. Furthermore, it contains the assumption that when `client.connected()` is true, `client.remoteHost()` is never null. That may be something to check for explicitly.
 
 *Good*  
 
-    assertNotNull("null client", client)
-    assertTrue("Not connected: " + client, client.connected())
-    assertEquals("Wrong remote host:" + client, "localhost", client.remoteHost())
+```java
+assertNotNull("null client", client)
+assertTrue("Not connected: " + client, client.connected())
+assertEquals("Wrong remote host:" + client, "localhost", client.remoteHost())
+```
 
 This pulls out the three checks and orders them such that the successive assertions can rely on the predecessors being true.
 There is no need to add an `assertNotNull("no remote host: "+ client, client.remoteHost())` check, as the `assertEquals()` assertion
@@ -700,12 +712,14 @@ Because there's already a useful error message, adding a string is only a SHOULD
 
 `Assert.fail()` is the method to call when a test has failed in a way too complex for one of the existing assertions, or in any new assertions that you have written yourself. It should always be called with meaningful text
 
-    try {
-      String s = operationExpectedToFail(null);
-      fail("expected a failure -but got " + s)
-      } catch {IOException expected} {
-        // expected
-      }
+```java
+try {
+  String s = operationExpectedToFail(null);
+  Assert.fail("expected a failure -but got " + s)
+} catch {IOException expected} {
+    // expected
+}
+```
 
 
 
@@ -813,58 +827,63 @@ can look for the same text
 
 Bad
 
-    try {
-      doSomething("arg")
-      Assert.fail("should not have got here")
-    } catch(IOException e) {
-      Assert.assertEquals("failure on path /tmp", e.getMessage());
-    }
-
+```java
+try {
+  doSomething("arg")
+  Assert.fail("should not have got here")
+} catch(Exception e) {
+  Assert.assertEquals("failure on path /tmp", e.getMessage());
+}
+```
 
 This is way to brittle and doesn't help you find out what is going on on a failure.
 
 Good
 
-    @Test()
-    public void testSomething {
-      try {
-        doSomething("arg")
-        Assert.fail("should not have got here")
-      } catch(PathNotFoundException e) {
-        Assert.assertTrue(
-          "did not find " + Errors.FAILURE_ON_PATH + " in " + e,
-          e.toString().contains(Errors.FAILURE_ON_PATH);
-      }
-    }
-
+```java
+@Test()
+public void testSomething {
+  try {
+    doSomething("arg")
+    Assert.fail("should not have got here")
+  } catch(PathNotFoundException e) {
+    Assert.assertTrue(
+      "did not find " + Errors.FAILURE_ON_PATH + " in " + e,
+      e.toString().contains(Errors.FAILURE_ON_PATH);
+  }
+}
+```
 
 Here a constant is used to define what is looked for (obviously, one used in the exception's constructor). It also uses the `String.contains()` operator —so if extra details are added to the exception, the assertion still holds.
 
 *Good*
 
-    @Test(expected = PathNotFoundException.class)
-    public void testSomething {
-        doSomething("arg")
-    }
-
+```java
+@Test(expected = PathNotFoundException.class)
+public void testSomething {
+    doSomething("arg")
+}
+```
 
 This takes advantage of JUnit 4's ability to expect a specific exception class, and looks for it. This is nice and short. Where it is weak is that it doesn't let you check the contents of the exception. If the exception is sufficiently unique within the actions, that may be enough. 
 
 *Good*: examine the contents of the exception as well as the type. 
 Rethrow the exception if it doesn't match, after adding a log message explaining why it was rethrown:
 
-    @Test
-    public void testSomething {
-      try {
-        result = doSomething("arg")
-        Assert.fail("expected a failure, got: " + result)
-      } catch(PathNotFoundException e) {
-        if (!e.toString().contains(Errors.FAILURE_ON_PATH) {
-          LOG.error("No " + Errors.FAILURE_ON_PATH + " in {}" ,e, e)
-          throw e;
-        }
-      }
+```java
+@Test
+public void testSomething {
+  try {
+    result = doSomething("arg")
+    Assert.fail("expected a failure, got: " + result)
+  } catch(PathNotFoundException e) {
+    if (!e.toString().contains(Errors.FAILURE_ON_PATH) {
+      LOG.error("No " + Errors.FAILURE_ON_PATH + " in {}" ,e, e)
+      throw e;
     }
+  }
+}
+```
 
 This implementation ensures all exception information is propagated. If it doesn't fail, the return value of the 
 operation is included in the failure exception, to aid debugging. 
@@ -873,16 +892,17 @@ having a stack trace in the test results can be invaluable.
 
 Even better, rather than write your own handler (repeatedly), use the one in `org.apache.hadoop.test.GenericTestUtils`, which is bundled in `hadoop-common-test` JAR:
 
-    @Test
-    public void testSomething {
-      try {
-        result = doSomething("arg")
-        Assert.fail("expected a failure, got: " + result)
-      } catch(PathNotFoundException e) {
-        GenericTestUtils.assertExceptionContains(Errors.FAILURE_ON_PATH, e);
-      }
-    }
-
+```java
+@Test
+public void testSomething {
+  try {
+    result = doSomething("arg")
+    Assert.fail("expected a failure, got: " + result)
+  } catch(PathNotFoundException e) {
+    GenericTestUtils.assertExceptionContains(Errors.FAILURE_ON_PATH, e);
+  }
+}
+```
 
 In comparing the various options, the JUnit 4 {{expected}} will be less informative, but it makes for a much easier to understand test. For it to be a good test, some conditions must be met
 
@@ -894,6 +914,7 @@ In comparing the various options, the JUnit 4 {{expected}} will be less informat
 
 Not all tests work everywhere
 
+```java
     public static void skip(String message) {
       log.warn("Skipping test: {}", message)
       Assume.assumeTrue(message, false);
@@ -905,6 +926,7 @@ Not all tests work everywhere
         Assume.assumeTrue(message, false);
       }
     }
+```
 
 ### Testing Tips
 
