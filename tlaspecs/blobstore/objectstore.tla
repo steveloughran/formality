@@ -1,8 +1,10 @@
+
+
+
 ---------------------------- MODULE objectstore ----------------------------
 
 
-EXTENDS FiniteSets, Sequences, Nats, TLC
-
+EXTENDS FiniteSets, Sequences, Naturals, TLC
 
 (*
 ============================================================================
@@ -23,6 +25,15 @@ EXTENDS FiniteSets, Sequences, Nats, TLC
  * limitations under the License.
 ============================================================================
  *)
+
+---------------------------- MODULE Exception ----------------------------
+EXTENDS FiniteSets, Sequences, Naturals, TLC
+
+VARIABLES name, code
+
+TypeInvariant == name \in STRING /\ code \in Nat
+
+=============================================================================
 
 (*
 
@@ -54,6 +65,7 @@ CONSTANTS
     Data,          \* the non-finite set of all possible sequences of bytes
     MetadataKeys, \* the set of all possible metadata keys 
     MetadataValues, \* the non-finite set of all possible metadata values
+    Timestamp, \* A timestamp
     Exceptions \* The set of exceptions which may be raised.
     
     
@@ -70,16 +82,19 @@ ASSUME MetadataKeys \in STRING
 
 ASSUME MetadataValues \in STRING
 
-ASSUME Timestamp \in Nat
+\* Timestamps are positive integers since the epoch.
+ASSUME Timestamp \in Nat /\ Timestamp > 0
 
 ----------------------------------------------------------------------------------------
 
 
 (* 
 There is a predicate to validate a pathname.
-This is considered implementation-specific. It may be describable as a regular expression specific to each implementation,
-though constraints such as "no two adjacent '/' characters" may make for a complex regexp. Perhaps a each FS would have a 
-set of regexps which all must be valid for a path to be considered valid.*)
+This is considered implementation-specific.
+It may be describable as a regular expression specific to each implementation,
+though constraints such as "no two adjacent '/' characters" may make for a complex regexp. 
+Perhaps each FS would have a  set of regexps which all must be valid for
+ a path to be considered valid.*)
 
 CONSTANT is_valid_pathname(_)
 CONSTANT is_valid_metadata_key(_)
@@ -92,10 +107,15 @@ ASSUME \A p \in Paths: is_valid_pathname(p) \in BOOLEAN
 
 ASSUME \A e \in MetadataKeys: is_valid_metadata_key(e) \in BOOLEAN
 
+(* The patch matching algorithm used in the list operation *)
+
 CONSTANT path_matches(_, _, _)
 
-(* This should really be defined by looking inside the strings. It is: all paths starting with the prefix up to those ending in the suffix *)
-ASSUME \A p in Paths, prefix in STRING, suffix in STRING: path_matches(p, prefix, suffix) \in BOOLEAN
+(* This should really be defined by looking inside the strings. 
+It is: all paths starting with the prefix up to those ending in the suffix *)
+
+ASSUME \A p \in Paths, prefix, delimiter \in STRING: path_matches(p, prefix, delimiter) \in BOOLEAN
+
 
 ----------------------------------------------------------------------------------------
 
@@ -109,7 +129,11 @@ VARIABLES
 
 (* Exception logic *)
 
-Success == CHOOSE x: x \notin Exceptions
+NonEmptyString == STRING \ {}
+
+DefineException(code, name) == INSTANCE Exception
+BadRequest == DefineException(302, "BadRequest")
+NotFound == DefineException(404, "NotFound")
 
 
 MetadataEntry == [
@@ -147,44 +171,97 @@ InitialState ==
     /\ StoreTypeInvariant
     /\ DOMAIN store = {}
 
-PUT(path, data, result) ==
-    /\ path \in Paths
-    /\ data \in Data
-    /\ store' = [store EXCEPT ![path] = data]
-    /\ result = Success
+applyPut(path, data, result) ==
+    LET validArgs == path \in Paths /\ data \in Data
+    IN 
+        \/ /\ ~validArgs
+           /\ result' = BadRequest
+           /\ UNCHANGED store
+        \/ /\ validArgs
+           /\ result' = Success
+           /\ store' = [store EXCEPT ![path] = data]
+
  
 GET(path, data, result) ==
+    LET
+        validArgs == path \in Paths /\ data \in Data
+        exists == path \in DOMAIN store
+    IN     
+        \/  /\ ~validArgs
+            /\ result' = BadRequest
+            /\ UNCHANGED store
+        \/  /\ validArgs
+            /\ ~exists
+            /\ result' = NotFound
+            /\ UNCHANGED store
+        \/  /\ validArgs
+            /\ exists
+            /\ data' = store[path]
+            /\ result' = Success
+            /\ UNCHANGED store
+
     /\ path \in Paths 
     /\ path \in DOMAIN store
-    /\ data = store[path]
-    /\ UNCHANGED store
-    /\ result = Success
 
 HEAD(path, result) ==
     /\ path \in Paths 
     /\ path \in DOMAIN store
+    /\ result' = Success
     /\ UNCHANGED store
-    /\ result = Success
 
 (* The DELETE operation will succeed even if the entry is not found. *)
 
 DELETE(path, result) ==
     /\ path \in Paths 
     /\ store' = [p \in (DOMAIN store \ path) |-> store[p]]
-    /\ result = Success
+    /\ result' = Success
 
 COPY(source, dest, result) ==
     /\ source \in DOMAIN store
     /\ dest \in Paths 
     /\ dest \notin DOMAIN store 
     /\ store' = [store EXCEPT ![dest] = store[source]]
-    /\ result = Success
+    /\ result' = Success
     
 LIST(prefix, suffix, result) ==
     /\ prefix \in STRING
     /\ suffix \in STRING
-    /\ result = \A p \in DOMAIN store : path_matches(p, prefix, suffix)
+    /\ result' = \A p \in DOMAIN store : path_matches(p, prefix, suffix)
     /\ UNCHANGED store
+
+(* now define action messages which can be queued for processing; we consider them to processed in a serial order *)
+
+----------------------------------------------------------------------------------------
+
+(* Action Records *)
+
+putAction == [
+    verb: "PUT",
+    path: STRING,
+    data: STRING
+]
+
+deleteAction == [
+    verb: "DELETE",
+    path: STRING
+]
+
+getAction == [
+    verb: "GET",
+    path: STRING
+]
+
+headAction == [
+    verb: "HEAD",
+    path: STRING
+]
+
+listAction == [
+    verb: "LIST",
+    prefix: STRING,
+    delimiter: STRING
+]
+
 
 -----
 
@@ -220,7 +297,7 @@ A way to model this would be "updates to the index are serialized such that the 
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jul 20 22:37:57 BST 2016 by stevel
+\* Last modified Sat Jul 23 13:42:10 BST 2016 by stevel
 \* Created Sun Jun 19 18:07:44 BST 2016 by stevel
 
 
