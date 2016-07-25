@@ -142,8 +142,6 @@ MetadataEntry == [
     ]
 
 
-
-
 SystemMetadata == [
   size: Nat,
   created: Timestamp
@@ -298,18 +296,37 @@ doList(prefix, suffix, result, listing) ==
     /\ prefix \in STRING
     /\ suffix \in STRING
     /\ result' = Success
-    /\ listing' = \A path \in pathsMatchingPrefix(prefix, suffix) :
-       [path |-> path, created |-> store[path].created, length |-> Len(store[path].data)]
+    /\ listing' = [path \in pathsMatchingPrefix(prefix, suffix) |->
+       [path |-> path, created |-> store[path].created, length |-> Len(store[path].data)]]
     /\ UNCHANGED store
 
 
 ---------
 
-GetAndHeadConsistent ==
+(* The amount of data you get back is the amount of data you are told comes back. *)
+
+(*
+GetLengthInvariant ==
+  \A path \in DOMAIN store, sysMd \in SystemMetadata, data \in Data :
+    doGet(path, Success, data, sysMd) ==> Len(data) = sysMd.length
+*)
+
+(* The metadata that comes from a doHead() MUST match that from a doGet() *)
+(* See: HADOOP-11202 SequenceFile crashes with encrypted files that are shorter than FileSystem.getStatus(path) *)
+(*
+GetAndHeadInvariant ==
   \A path \in DOMAIN store, sysMd \in SystemMetadata, data \in Data :
     doGet(path, Success, data, sysMd) ==> doHead(path, Success, sysMd) 
+*)
+
+(* The details you get back in a listing match the details you get back from a doGet call on the specific path *)
+(* of course, on an eventually consistent object store, there may be lag *)
+
+(*
+  
+  ListAndGetInvariant == TODO 
     
-    
+*)
 
 
 
@@ -377,7 +394,7 @@ THEOREM InitialStoreState => []StoreStateInvariant
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jul 25 11:45:44 BST 2016 by stevel
+\* Last modified Mon Jul 25 14:12:50 BST 2016 by stevel
 \* Created Sun Jun 19 18:07:44 BST 2016 by stevel
 
 
