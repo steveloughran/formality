@@ -26,14 +26,6 @@ EXTENDS FiniteSets, Sequences, Naturals, TLC
 ============================================================================
  *)
 
----------------------------- MODULE Exception ----------------------------
-EXTENDS FiniteSets, Sequences, Naturals, TLC
-
-VARIABLES name, code
-
-TypeInvariant == name \in STRING /\ code \in Nat
-
-=============================================================================
 
 (*
 
@@ -60,13 +52,14 @@ itself. That is: what must an implementation do?
 *)
 
 CONSTANTS
-    PathChars,     \* the set of valid characters in a path; the alphabet
-    Paths,         \* the non-finite set of all possible valid paths
-    Data,          \* the non-finite set of all possible sequences of bytes
-    MetadataKeys, \* the set of all possible metadata keys 
-    MetadataValues, \* the non-finite set of all possible metadata values
-    Timestamp, \* A timestamp
-    Exceptions \* The set of exceptions which may be raised.
+  PathChars,     \* the set of valid characters in a path; the alphabet
+  Paths,         \* the non-finite set of all possible valid paths
+  Data,          \* the non-finite set of all possible sequences of bytes
+  MetadataKeys, \* the set of all possible metadata keys 
+  MetadataValues, \* the non-finite set of all possible metadata values
+  Timestamp, \* A timestamp
+  Exceptions, \* The set of exceptions which may be raised.
+  Byte
     
     
 
@@ -74,7 +67,6 @@ CONSTANTS
 ASSUME PathChars \in STRING
 ASSUME Paths \in STRING
 
-ASSUME Data \in STRING \* Really bytes, but it is irrelevant
 
 (* There are some metadata keys which are system MD entries. These may be queried but not explictly set. *)
 
@@ -84,6 +76,11 @@ ASSUME MetadataValues \in STRING
 
 \* Timestamps are positive integers since the epoch.
 ASSUME Timestamp \in Nat /\ Timestamp > 0
+
+ASSUME Byte \in Nat /\ Byte >= 0 /\ Byte < 256
+
+
+ASSUME Data \in Seq(Byte) 
 
 ----------------------------------------------------------------------------------------
 
@@ -116,6 +113,11 @@ It is: all paths starting with the prefix up to those ending in the suffix *)
 
 ASSUME \A p \in Paths, prefix, delimiter \in STRING: path_matches(p, prefix, delimiter) \in BOOLEAN
 
+(* Function to return the current time. *)
+(* TODO: specify this without the superflous argument. *)
+CONSTANT now(_)
+ASSUME \A t \in Nat: now(t) \in Timestamp
+
 
 ----------------------------------------------------------------------------------------
 
@@ -129,11 +131,9 @@ VARIABLES
 
 (* Exception logic *)
 
-NonEmptyString == STRING \ {}
-
-DefineException(code, name) == INSTANCE Exception
-BadRequest == DefineException(302, "BadRequest")
-NotFound == DefineException(404, "NotFound")
+BadRequest == "BadRequest"
+NotFound == "NotFound"
+Success == "Success"
 
 
 MetadataEntry == [
@@ -142,18 +142,12 @@ MetadataEntry == [
     ]
 
 
-Object == [
-    path: Paths,     \* The path to the entry
-    data: Data ,    \* the data in the entry
-    metadata: MetadataEntry \* it's a set
-    
-    \* implicits: create time, modifieed
-    ]
+
 
 SystemMetadata == [
-    size: Nat,
-    timestamp: Nat
-]
+  size: Nat,
+  created: Timestamp
+  ]
 
 (*
 
@@ -163,71 +157,161 @@ update: PUT, DELETE
 query: GET, HEAD, LIST(path) 
 *) 
 
-StoreTypeInvariant ==
-    /\ store \in [Paths -> Data]
+
+StoreEntry == [
+    data: Data ,            \* the data in the entry
+    created: Timestamp     \* timestamp    
+  ]
+
+ListingEntry == [
+    path: Paths,            \* The path to the entry
+    data: Data ,            \* the data in the entry
+    created: Timestamp,     \* timestamp    
+    metadata: MetadataEntry \* it's a set
+  ]
+  
+(* The check for a path having an entry is pulled out for declaring invariants *)
+has_entry(s, p) == p \in DOMAIN s
+
+
+(* The store state invariant not only declares the type of the store, it declares
+attributes of the has_entry operator which are superfluous given the definition
+of has_entry() as the path being in the domain of the store. It's explicit
+for those implementors planning to write tests *)
+
+StoreStateInvariant ==
+  /\ store \in [Paths -> StoreEntry]
+  /\ \A path \in Paths: has_entry(store, path)
+  /\ \A path \in Paths \ DOMAIN store: ~has_entry(store, path)
+  
  
-(* The initial state of the store is that it is empty *)
-InitialState ==
-    /\ StoreTypeInvariant
-    /\ DOMAIN store = {}
+(* The initial state of the store is that it is empty. *)
+(* Notice how this ignores the root entry, "". This is a special entry: object stores are not filesystems *)
+InitialStoreState ==
+  /\ StoreStateInvariant
+  /\ DOMAIN store = {}
 
-applyPut(path, data, result) ==
-    LET validArgs == path \in Paths /\ data \in Data
-    IN 
-        \/ /\ ~validArgs
-           /\ result' = BadRequest
-           /\ UNCHANGED store
-        \/ /\ validArgs
-           /\ result' = Success
-           /\ store' = [store EXCEPT ![path] = data]
+
+---- 
+
+(*
+Actions.
+Note how some post conditions are explicitly called out. They are superfluous, in the model, but they do declare
+final state for testability *)
+
+doPut(path, data, result) ==
+  LET validArgs == path \in Paths /\ data \in Data
+  IN 
+    \/ /\ ~validArgs
+       /\ result' = BadRequest
+       /\ UNCHANGED store
+    \/ /\ validArgs
+       /\ result' = Success
+       /\ store' = [store EXCEPT ![path] = [data |-> data, created |-> now(0)]]
+       /\ has_entry(store', path)
 
  
-GET(path, data, result) ==
-    LET
-        validArgs == path \in Paths /\ data \in Data
-        exists == path \in DOMAIN store
-    IN     
-        \/  /\ ~validArgs
-            /\ result' = BadRequest
-            /\ UNCHANGED store
-        \/  /\ validArgs
-            /\ ~exists
-            /\ result' = NotFound
-            /\ UNCHANGED store
-        \/  /\ validArgs
-            /\ exists
-            /\ data' = store[path]
-            /\ result' = Success
-            /\ UNCHANGED store
+doGet(path, result, metadata, data) ==
+  LET
+    validArgs == path \in Paths /\ data \in Data
+    exists == has_entry(store, path)
+  IN     
+    \/  /\ ~validArgs
+        /\ result' = BadRequest
+        /\ UNCHANGED store
+    \/  /\ validArgs
+        /\ ~exists
+        /\ result' = NotFound
+        /\ UNCHANGED store
+    \/  /\ validArgs
+        /\ exists
+        /\ result' = Success
+        /\ data' = store[path].data
+        /\ metadata' = [created |-> store[path].created, length |-> Len(store[path].data)]
+        /\ UNCHANGED store
 
-    /\ path \in Paths 
-    /\ path \in DOMAIN store
+doHead(path, result, metadata) ==
+  LET
+    validArgs == path \in Paths
+    exists == has_entry(store, path)
+  IN     
+    \/  /\ ~validArgs
+        /\ result' = BadRequest
+        /\ UNCHANGED store
+    \/  /\ validArgs
+        /\ ~exists
+        /\ result' = NotFound
+        /\ UNCHANGED store
+    \/  /\ validArgs
+        /\ exists
+        /\ result' = Success
+        /\ metadata' = [created |-> store[path].created, length |-> Len(store[path].data)]
+        /\ UNCHANGED store
 
-HEAD(path, result) ==
-    /\ path \in Paths 
-    /\ path \in DOMAIN store
-    /\ result' = Success
-    /\ UNCHANGED store
 
-(* The DELETE operation will succeed even if the entry is not found. *)
+doDelete(path, result) ==
+  LET
+    validArgs == path \in Paths
+    exists == has_entry(store, path)
+  IN     
+    \/  /\ ~validArgs
+        /\ result' = BadRequest
+        /\ UNCHANGED store
+    \/  /\ validArgs
+        /\ ~exists
+        /\ result' = NotFound
+        /\ UNCHANGED store
+    \/  /\ validArgs
+        /\ exists
+        /\ result' = Success
+        /\ store' = [p \in (DOMAIN store \ path) |-> store[p]]
+        /\ ~has_entry(store', path)
+        
 
-DELETE(path, result) ==
-    /\ path \in Paths 
-    /\ store' = [p \in (DOMAIN store \ path) |-> store[p]]
-    /\ result' = Success
+\* DeleteInvariant == \A p in Paths: doDelete(p, Success) ==> ~has_entry(store', p)
 
-COPY(source, dest, result) ==
-    /\ source \in DOMAIN store
-    /\ dest \in Paths 
-    /\ dest \notin DOMAIN store 
-    /\ store' = [store EXCEPT ![dest] = store[source]]
-    /\ result' = Success
-    
-LIST(prefix, suffix, result) ==
+doCopy(source, dest, result) ==
+  LET
+      validArgs == source \in Paths /\ dest \in Paths
+      exists == has_entry(store, source)
+  IN     
+    \/  /\ ~validArgs
+        /\ result' = BadRequest
+        /\ UNCHANGED store
+    \/  /\ validArgs
+        /\ ~exists
+        /\ result' = NotFound
+        /\ UNCHANGED store
+    \/  /\ validArgs
+        /\ exists
+        /\ result' = Success
+        /\ store' = [store EXCEPT ![dest] = store[source]]
+        /\ has_entry(store', source)
+        /\ has_entry(store', dest)
+
+(* The list operation returns the metadata of all entries in the object store whose path matches the prefix/suffix pattern.
+S3 also returns a string sequence of common subpath underneath, essential "what look like directories" *)
+
+pathsMatchingPrefix(prefix, suffix) == \A path \in DOMAIN store : path_matches(path, prefix, suffix)
+
+doList(prefix, suffix, result, listing) ==
     /\ prefix \in STRING
     /\ suffix \in STRING
-    /\ result' = \A p \in DOMAIN store : path_matches(p, prefix, suffix)
+    /\ result' = Success
+    /\ listing' = \A path \in pathsMatchingPrefix(prefix, suffix) :
+       [path |-> path, created |-> store[path].created, length |-> Len(store[path].data)]
     /\ UNCHANGED store
+
+
+---------
+
+GetAndHeadConsistent ==
+  \A path \in DOMAIN store, sysMd \in SystemMetadata, data \in Data :
+    doGet(path, Success, data, sysMd) ==> doHead(path, Success, sysMd) 
+    
+    
+
+
 
 (* now define action messages which can be queued for processing; we consider them to processed in a serial order *)
 
@@ -236,68 +320,64 @@ LIST(prefix, suffix, result) ==
 (* Action Records *)
 
 putAction == [
-    verb: "PUT",
-    path: STRING,
-    data: STRING
+  verb: "PUT",
+  path: STRING,
+  data: [Nat -> Nat]
 ]
 
 deleteAction == [
-    verb: "DELETE",
-    path: STRING
+  verb: "DELETE",
+  path: STRING
 ]
 
 getAction == [
-    verb: "GET",
-    path: STRING
+  verb: "GET",
+  path: STRING,
+  data: STRING
 ]
 
 headAction == [
-    verb: "HEAD",
-    path: STRING
+  verb: "HEAD",
+  path: STRING
+]
+
+copyAction == [
+  verb: "COPY",
+  source: STRING,
+  dest: STRING
 ]
 
 listAction == [
-    verb: "LIST",
-    prefix: STRING,
-    delimiter: STRING
+  verb: "LIST",
+  prefix: STRING,
+  delimiter: STRING
 ]
+
+(* Process a request, generate a result. *)
+(* TODO: merge GET data into result *)
+(*
+process(request, result) == 
+  LET verb == request.verb
+  IN
+    \/ verb = "PUT"    /\ doPut(request.path, request.data, result)
+    \/ verb = "GET"    /\ doGet(request.path, request.data, result)
+    \/ verb = "HEAD"   /\ doHead(request.path, result)
+    \/ verb = "DELETE" /\ doDelete(request.path, result)
+    \/ verb = "LIST"   /\ doList(request.prefix, request.suffix, result)
+    
+*)
 
 
 -----
 
-THEOREM InitialState => []StoreTypeInvariant
+THEOREM InitialStoreState => []StoreStateInvariant
 
 
 
-(*
-
-Invariants
-
-PUT is atomic
-
-Eventually updates to the store are reflected in the index.
-
-There may be a delay from a PUT/UPDATE/DELETE occuring and it being visible. 
-
-How to model? One or more cached views?
-
-
-
-
-Eventually, the state of the index matches that of the data in the store. That is: it will eventually become consistent.
-A way to model this would be "updates to the index are serialized such that the index is updated in the same order which changes to the store take place".
-
-
-1. All operations on an endpoint complete.
-2. the exact order of arrival/queue may vary. That is: things may return before the side effects have taken place.
-3. List -> directory
-4.
-
-*)
 
 =============================================================================
 \* Modification History
-\* Last modified Sat Jul 23 13:42:10 BST 2016 by stevel
+\* Last modified Mon Jul 25 11:45:44 BST 2016 by stevel
 \* Created Sun Jun 19 18:07:44 BST 2016 by stevel
 
 
