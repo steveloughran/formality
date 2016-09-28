@@ -14,6 +14,10 @@
     See the License for the specific language governing permissions and
     limitations under the License. See accompanying LICENSE file.
 
+
+(This is a WiP, with a goal of getting it in to the Hadoop docs. As it is, I'm still tuning it, especially the
+section on testing).
+
 ## Introduction
 
 Apache Hadoop is one of the most complicated open source projects being developed. Its code is nothing compared to the scale of the Linux Kernel and device drivers, yet it has some of the same characteristics: a filesystem API and implementations(s) (HDFS), a scheduler for executing work along with a means of submitting work to it (YARN), programs to process data on it (MAPREDUCE, Apache Tez), databases (Apache HBase, Apache Accumulo) and management and monitoring tools, both open source and closed). 
@@ -165,24 +169,35 @@ It is a requirement that: **all public interfaces must have a stability annotati
  
  What does that mean?
  
- 1. The `interface` of a class is, according to the *Hadoop Compatibility Guidelines*, defined as the API level binding, **the signature**, and the actual behavior of the methods, **the semantics**. A stable interface not only has to be compatible at the source and binary level, it has to work the same.
- 1. During development of a new feature, tag the public APIs as `Unstable` or `Evolving`. Declaring that something new is `Stable` is unrealistic. There will be changes, so not constrain yourself by declaring that it isn't going to change.
- 1. There's also an implicit assumption that any class or interface that does not have any scope attribute is private. Even so, there is no harm in explicitly stating this.
+   1. The `interface` of a class is, according to the *Hadoop Compatibility Guidelines*, defined as the API level binding, 
+     **the signature**, and the actual behavior of the methods, **the semantics**. 
+     A stable interface not only has to be compatible at the source and binary level, it has to work the same.
+   1. During development of a new feature, tag the public APIs as `Unstable` or `Evolving`. 
+      Declaring that something new is `Stable` is unrealistic. There will be changes, so not constrain yourself by declaring
+      that it isn't going to change.
+   1. There's also an implicit assumption that any class or interface that does not have any scope attribute
+      is private. Even so, there is no harm in explicitly stating this.
+
+`LimitedPrivate` is falling out of favor, as it is unclear what it means. It originally usually marked internal APIs (MapReduce, YARN),
+ but many APIs turn out to be necessary for all YARN applications. New `LimitedPrivate` APIs SHOULD NOT be added, or if are, MUST come
+with justification. New patches SHOULD remove this attribute if broader access is required, rather than just add new applications to the list.
 
 Submitted patches which provide new APIs for use within the Hadoop stack MUST have scope attributes for all public APIs.
  
 
-
 ## Concurrency
 
-Hadoop services are highly concurrent. This codebase is not a place to learn about Java concurrency —developers are expected to have acquired knowledge and experience of Java threading and concurrency before getting involved in Hadoop internals.
+Hadoop services are highly concurrent. This codebase is not a place to learn about Java concurrency
+—developers are expected to have acquired knowledge and experience of Java threading and concurrency before getting involved in Hadoop internals.
 
 Background: the Java memory model:
 * [The Java Memory Model](http://www.cs.umd.edu/~pugh/java/memoryModel/), especially [this paper](http://dl.dropbox.com/u/1011627/journal.pdf).
 
 1. Use the `java.utils.concurrent` classes wherever possible.
-1. Use the `AtomicBoolean` and `AtomicInteger` classes in preference to shared simple datatypes.
-1. If simple datatypes are shared across threads, they MUST be marked `volatile`.
+1. If simple datatypes are shared across threads outside of `synchronized` blocks, they MUST be marked `volatile`.
+1. If you want atomic get/set or increment operations, use the `AtomicBoolean` and `AtomicInteger/AtomicLong` classes
+   Exception: you don't want the cost of these blocking operations and can tolerate a race condition in the increment operation. Some
+     of the metrics do this.
 
 Note that Java `volatile` types are more expensive than C/C++ (they are memory barriers),
 so should not be used for types which are not `synchronized`, or which are only accessed within
@@ -318,12 +333,18 @@ Hadoop is also (slowly) migrating from the apache commons-logging API to SLF4J. 
 1. SLF4J is the logging API to use for all new classes. It SHOULD be used.
 1. The main body of the code uses Commons Logging APIs. These can be migrated —though check for tests which access the logs, and grab the matching log4j appender by way of class casts. These uses cannot be migrated easily.
 1. With commons logging, all log calls must be guarded with a check for log level.
+1. Production code MUST NOT assume that log4J is the logger behind the log APIs.
+1. Test code MAY assume that Log4J is in use and can tune back log levels in certain circumstances. They MUST use the methods in
+  {{GenericTestUtils}} to do this, for ease of future maintenance.
 
 SLF4J specific issues:
 
-1. ERROR, WARN and INFO level events MAY be logged without guarding their invocation.
-1. DEBUG-level log calls MUST be guarded. This eliminates the need
-to construct string instances.
+1. ERROR, WARN and INFO level events SHOULD be logged without guarding their invocation.
+
+1. DEBUG-level log calls MAY be guarded. This eliminates the need to construct string instances.
+
+1. Logging which creates complex string output (e.g. iterates through a list to build the message) MUT be guarded.
+  
 1. Unguarded statements MUST NOT use string concatenation operations to build the log string, as these are called even if the logging does not take place. Use `{}` clauses in the log string.
   Bad:
   
@@ -334,8 +355,9 @@ to construct string instances.
 
 1. Classes SHOULD have lightweight `toString()` operators to aid logging. These MUST be robust
 against failures if some of the inner fields are null.
-1. Exceptions should be logged with the text and the exception included as a
- final argument, for the trace.
+1. Exceptions should be logged with exception included as a final argument, for the trace.
+1. Do not uprate debug level messages to `LOG.info()` level for your own debugging. Edit the log4J configuration files instead. It is what they are for.
+          
 1. `Exception.toString()` MUST be used instead of `Exception.getMessage()`,
 as some classes have a null message.
 
@@ -450,6 +472,7 @@ your learning off.
 
 Read these. You do need to know the details.
 
+1. [Hadoop and Kerberos: The Madness beyond the Gat](https://steveloughran.gitbooks.io/kerberos_and_hadoop/content/)
 1. [Adding Security to Apache Hadoop](http://hortonworks.com/wp-content/uploads/2011/10/security-design_withCover-1.pdf)
 1. [The Role of Delegation Tokens in Apache Hadoop Security](http://hortonworks.com/blog/the-role-of-delegation-tokens-in-apache-hadoop-security/)
 1. [Chapter 8. Secure Apache HBase](http://hbase.apache.org/book/security.html)
@@ -510,9 +533,11 @@ In general:
 1. Try to use Hadoop's existing exception classes where possible.
 1. Except for some special cases, exceptions MUST be derived from `IOException`
 1. Use specific exceptions in preference to the generic `IOException` 
-1. `IllegalArgumentException` may be used for some checking of input parameters,
-but only where consistent with other parts of the stack.
-1. If an exception is generated from another exception, the inner exception
+1. `IllegalArgumentException` SHOULD be used for some checking of input parameters,
+but only where consistent with other parts of the stack. 
+1. The Guava `Preconditions` methods MAY be used for argument checking, but MUST have meaningful messages on failure,
+ e.g. `Preconditions.checkArgument(readahead >= 0, "Negative readahead value")`
+   1. If an exception is generated from another exception, the inner exception
 must be included, either via the constructor or through `Exception.initCause()`.
 1. If an exception is wrapping another exception, the inner exception
 text MUST be included in the message of the outer exception.
@@ -527,8 +552,8 @@ the operation being attempted.
 
 
 The requirement to derive exceptions from `IOException` means that
-developers must not use Guava's `Preconditions.checkState()` check as
-these throw `IllegalStateException` instances. 
+developers SHOULD NOT use Guava's `Preconditions.checkState()` check as
+these throw `IllegalStateException` instances. That said: sometimes it is.
 
 
 ## Internationalization
@@ -583,7 +608,8 @@ The quality standard for tests is as high as for production itself. They must be
 
 Tests MUST be
 
-* Executable by anyone, on any of the supported development platforms (Linux, Windows and OS/X)
+* Executable by anyone, on any of the supported development platforms (Linux, Windows and OS/X).
+* Be automated. They MUST validate the correctness of the system through assertions and operations, not by relying on someone to read the logs.
 * Designed to show something *works as intended even in the face of failure*. That doesn't just mean "shows that given the right parameters, you get the right answers", it means "given the wrong args/state, it fails as expected". Good tests try to break the code under test.
 * Be fast to run. Slow tests hamper the entire build and waste people's time.
 * Be designed for failures to be diagnosed purely from the assertion failure text and generated logs. Everything needed to understand why a test failed should be determinable from the results of a remote Jenkins/CI tool-managed run, the generated test reports and any log data collected.
@@ -593,6 +619,8 @@ Tests MUST be
 
 Tests MUST
 
+* Have meaningful names, in both classname and test method.
+* Use the prefix `test` for test cases.  This avoids confusion about what is an entry point vs helper method.
 * Use directories under the property `test.dir` for temporary data. The way to get this dir dynamically is: 
 
         new File(System.getProperty("test.dir", "target"));
@@ -603,14 +631,19 @@ Tests MUST
 
 Tests MUST NOT
 
-* Require internet access. That includes DNS lookup of remote sites. It also included expecting lookups of non-resolvable hosts to fail —some ISPs return a search site in this situation, so an `nslookup invalid.example.org` does return an IP address.
-* Contain any assumptions about the ordering of previous tests —†such as expecting a prior test to have set up the system. Tests may run in different orders, or purely standalone.
+* Use the prefix `test` for any method other than test cases. This avoids confusion about what is an entry point vs helper method.
+* Contain any assumptions about the ordering of previous tests —such as expecting a prior test to have set up the system. Tests may run in different orders, or purely standalone.
+  (there is a special JUnit `@FixMethodOrder` attribute if ordering really is needed)
 * Rely on a specific log-level for generating output that is then analyzed. Some tests do this, and they are problematic. The preference is to move away from these and instrument the classes better.
 * Require specific timings of operations, including the execution performance or ordering of asynchronous operations.
 * Have hard-coded network ports. This causes problems in parallel runs, especially on the Apache Jenkins servers. Either use port 0, or scan for a free port. `ServerSocketUtil` has code to pick a free port: tests should use this.
+* Have hard coded sleep times. They may work for you, but will fail intermittently elsewhere. They also encourage people to address those
+    failures by extending the time, which makes for longer tests. Use `GenericTestUtils.waitFor()` to block for a condition being met.
 * Take long times to complete. There are some in the codebase which are slow; these do not begin with the word `Test` to stop them being run except when explicitly requested to do so.
 * Assume they are running on a Unix system, with `/unix/style/paths`.
+* Require human intervention to validate the test outcome.
 * Store data in `/tmp`, or the temp dir suggested by `java.io.createTempFile(String, String)`. All temporary data must be created under the directory `./target`. This will be cleaned up in test runs, and not interfere with parallel test runs.
+* Require internet access. That includes DNS lookup of remote sites. It also included expecting lookups of non-resolvable hosts to fail —some ISPs return a search site in this situation, so an `nslookup invalid.example.org` does return an IP address.
 * Run up large bills against remote cloud storage infrastructures *by default*. The object store client test suites are automatically skipped for this reason.
 * Require cloud infrastructure keys be added into SCM-managed files for test runs. This makes it all to easy to accidentally commit AWS login credentials to public repositories, which can be an expensive mistake.
 
@@ -618,9 +651,10 @@ Tests MUST NOT
 Tests MAY
 
 * Assume the test machine is well-configured. That is, the machine knows its own name, has adequate disk space.
-
+    
 Tests SHOULD 
 
+* Provide extra logging information for debugging failures.
 * Use loopback addresses `localhost` rather than hostnames, because the hostname to IP mapping may loop through the external network, where a firewall may then block network access.
 * Clean up after themselves.
 
@@ -634,7 +668,8 @@ Tests SHOULD
 1. Checks for equality should use `assertEquals(expected, actual)` and `assertNotEquals(expected, actual)`.
 1. Checks for equality of `double` and `float` MUST use `assertEquals(expected, actual, delta)` 
    and `assertNotEquals(expected, actual, delta)`.
- 1. Array Equality checks should use `assertArrayEquals(expected, actual)`.
+1. Array Equality checks should use `assertArrayEquals(expected, actual)`.
+     
 
 #### `assertTrue()` and `assertFalse()`
 
@@ -947,10 +982,11 @@ like by extracting the method name from JUnit:
 
 ### Code Style: Bash
 
-1. Bash lines may exceed the 80 character limit where necessary.
+1. Bash lines MAY exceed the 80 character limit where necessary.
 1. Try not to be too clever in use of the more obscure bash features —most Hadoop developers don't know them.
-1. Make sure your code recognises problems and fails with exit codes. That is, it MUST check for non-zero return codes on its operations and SHOULD then exit the script with an error.
-1. Use `bats` for your bash unit tests.
+1. MUST recognise problems and fail with exit codes.
+   That is, it MUST check for non-zero return codes on its operations and SHOULD then exit the script with an error.
+1. MUST use `bats` for your bash unit tests.
 
 The key thing to assume when writing Bash scripts is that the majority of the Hadoop project developers are not bash experts who know all the subtleties. If you are doing something
 reasonably complex, do add some comments explaining what you are doing.
@@ -964,32 +1000,53 @@ reasonably complex, do add some comments explaining what you are doing.
 1. C code following [Linux kernel style](https://www.kernel.org/doc/Documentation/CodingStyle) with one exception: indent by two spaces.
 1. Make no assumptions about ASCII/Unicode, 16 vs 32 bits: use `typedef` and `TSTR` definitions; `int32` and `int64` for explicit integer sizes.
 1. Use `CMake` for building.
-1. Assembly code must be optional; the code and algorithms around it must not be optimized for one specific CPU family.
+1. Assembly code MUST be optional; the code and algorithms around it  MUST NOT be optimized for one specific CPU family.
 1. While you can try optimising for memory models of modern systems, with NUMA storage, three levels of cache and the like, it does produce code that is brittle against CPU part evolution. Don't optimize prematurely here.
-1. MUST compile on Linux, OSX and Windows platforms. You should test this as well as you can. If others are expected to do the work, it is likely to languish in the patch-pending state.
+1. MUST compile on Linux, OSX and Windows platforms. You SHOULD test this as well as you can. If others are expected to do the work, it is likely to languish in the patch-pending state.
 1. MUST be accompanied by tests to verify the functionality.
 
 #### MUST NOT
-1. MUST NOT impact the performance of the x86 code. This is the primary CPU family used in production Hadoop. While the project is happy to accept patches for other CPUs (e.g. ARM, PPC, ...), it must not be at the expense of x86. 
+1. MUST NOT impact the performance of the x86 code. This is the primary CPU family used in production Hadoop.
+   While the project is happy to accept patches for other CPUs (e.g. ARM, PPC, ...), it must not be at the expense of x86. 
 1. MUST NOT remove or rename existing methods.
 
-### Code Style: Maven POM files
+###  Maven POM files
 
-* All declarations of dependencies with their versions must be the file `hadoop-project/pom.xml`. 
+* Patches containing changes to maven files only MUST be marked as against the component `build`.
+* All declarations of dependencies with their versions must be in the file `hadoop-project/pom.xml`. 
 * Version information must be included as a property, set in the `<properties>` section. This is to make it easy for people to switch versions of dependencies —be it experimentally or when making a unified release of a set of Hadoop-stack artifacts.
 * Be as restrictive as possible in your dependency scoping: use `<test>` for anything only needed in tests in particular.
 * If it is for an optional feature, set the scope to `<provided>`. That means it will be used at build time, but not forced onto downstream dependents.
 * Avoid adding anything else to the main projects. If it adds something to the `hadoop-client` transitive dependency set, there's a risk of causing version problems with downstream users.
 * Be very cautious when updating dependencies.
 
-Dependency updates (HADOOP-9991)
+#### Dependency updates 
+  
+[https://issues.apache.org/jira/browse/HADOOP-9991](HADOOP-9991) covers dependency updates.
 
- The ones most troublesome have proven to be: 
+Dependency updates are an eternal problem in Hadoop. While it seems simple and trivial to move up to later versions, it often
+turns out that something downstream breaks. Nobody likes this.
 
-# Patches to the code
+The ones most troublesome have proven to be: Guava, Jackson, and Protobuf;
+for a more detailed list see [Fear of Dependencies ](http://steveloughran.blogspot.co.uk/2016/05/fear-of-dependencies.html).
+
+1. Updates of versions of existing dependencies MUST be submitted as isolated patches, independent of other changes.
+1. All proposed dependency issues MUST declare themselves a dependency of HADOOP-9991. This makes tracking dependency update JIRAs easier.
+1. Patches SHOULD come with justifications, rather than just "a bit old".
+1. For patches against the high risk dependencies, SHOULD be accompanied with details about builds and tests of downstream applications, including
+  Apache HBase, Apache Hive, and other major projects.  
+1. Proposed patches which change to an pre-release version of any artifact SHALL NOT be accepted. Sorry.
+
+
+
+
+# Submitting patches
 
 Here are some things which scare the developers when they arrive in JIRA:
 
+* Vast changes which arrive without warning and are accompanied by press releases. Please, get on the developer list, create the JIRAs,
+  start collaboratively developing things. It's how we get confidence that the code is good —and that you can follow a collaborative development
+  process.
 * Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
 * Patches which delve into the internals of critical classes. The HDFS NameNode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users. 
 * Changes to the key public APIs of Hadoop. That includes the `FileSystem` and `FileContext` APIs, YARN submission protocols, MapReduce APIs, and the like.
@@ -1000,7 +1057,7 @@ Here are some things which scare the developers when they arrive in JIRA:
 
 Things that are appreciated:
 
-* Documentation, in javadocs and in the `main/site` packages. Markdown is accepted there, and easy to write.
+* Documentation, in javadocs and in the `main/site` packages.
 * Good tests.
 * For code that is delving into the internals of the concurrency/consensus logic, well argued explanations of how the code works in all possible circumstances. State machine models and even TLA+ specifications can be used here to argue your case.
 * Any description of what scale/workload your code was tested with. If it was a big test, that reassures people that this scales well. And if not, at least you are being open about it.
