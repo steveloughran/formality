@@ -58,10 +58,7 @@ CONSTANTS
   MetadataKeys, \* the set of all possible metadata keys 
   MetadataValues, \* the non-finite set of all possible metadata values
   Timestamp, \* A timestamp
-  Exceptions, \* The set of exceptions which may be raised.
   Byte
-    
-    
 
 
 ASSUME PathChars \in STRING
@@ -112,11 +109,6 @@ CONSTANT path_matches(_, _, _)
 It is: all paths starting with the prefix up to those ending in the suffix *)
 
 ASSUME \A p \in Paths, prefix, delimiter \in STRING: path_matches(p, prefix, delimiter) \in BOOLEAN
-
-(* Function to return the current time. *)
-(* TODO: specify this without the superflous argument. *)
-CONSTANT now(_)
-ASSUME \A t \in Nat: now(t) \in Timestamp
 
 
 ----------------------------------------------------------------------------------------
@@ -179,8 +171,8 @@ for those implementors planning to write tests *)
 
 StoreStateInvariant ==
   /\ store \in [Paths -> StoreEntry]
-  /\ \A path \in Paths: has_entry(store, path)
-  /\ \A path \in Paths \ DOMAIN store: ~has_entry(store, path)
+  /\ \A path \in DOMAIN store: has_entry(store, path)
+  /\ \A path \in (Paths \ DOMAIN store): ~has_entry(store, path)
   
  
 (* The initial state of the store is that it is empty. *)
@@ -197,15 +189,15 @@ Actions.
 Note how some post conditions are explicitly called out. They are superfluous, in the model, but they do declare
 final state for testability *)
 
-doPut(path, data, result) ==
-  LET validArgs == path \in Paths /\ data \in Data
+doPut(path, data, current_time, result) ==
+  LET validArgs == path \in Paths /\ data \in Data /\ current_time \in Timestamp
   IN 
     \/ /\ ~validArgs
        /\ result' = BadRequest
        /\ UNCHANGED store
     \/ /\ validArgs
        /\ result' = Success
-       /\ store' = [store EXCEPT ![path] = [data |-> data, created |-> now(0)]]
+       /\ store' = [store EXCEPT ![path] = [data |-> data, created |-> current_time]]
        /\ has_entry(store', path)
 
  
@@ -263,14 +255,11 @@ doDelete(path, result) ==
         /\ exists
         /\ result' = Success
         /\ store' = [p \in (DOMAIN store \ path) |-> store[p]]
-        /\ ~has_entry(store', path)
-        
 
-\* DeleteInvariant == \A p in Paths: doDelete(p, Success) ==> ~has_entry(store', p)
 
-doCopy(source, dest, result) ==
+doCopy(source, dest, current_time, result) ==
   LET
-      validArgs == source \in Paths /\ dest \in Paths
+      validArgs == source \in Paths /\ dest \in Paths /\ current_time \in Timestamp
       exists == has_entry(store, source)
   IN     
     \/  /\ ~validArgs
@@ -283,9 +272,7 @@ doCopy(source, dest, result) ==
     \/  /\ validArgs
         /\ exists
         /\ result' = Success
-        /\ store' = [store EXCEPT ![dest] = store[source]]
-        /\ has_entry(store', source)
-        /\ has_entry(store', dest)
+        /\ store' = [store EXCEPT ![dest] = [data |-> store[source].data, created |-> current_time]]
 
 (* The list operation returns the metadata of all entries in the object store whose path matches the prefix/suffix pattern.
 S3 also returns a string sequence of common subpath underneath, essential "what look like directories" *)
@@ -302,6 +289,12 @@ doList(prefix, suffix, result, listing) ==
 
 
 ---------
+
+
+\* PutInvariant  == \A p in Paths: doDelete(p, Success) => ~has_entry(store', p)
+       
+
+\* DeleteInvariant == \A p in Paths: doDelete(p, Success) => ~has_entry(store', p)
 
 (* The amount of data you get back is the amount of data you are told comes back. *)
 
@@ -373,13 +366,14 @@ listAction == [
 (* Process a request, generate a result. *)
 (* TODO: merge GET data into result *)
 (*
-process(request, result) == 
+process(request, result, current_time) == 
   LET verb == request.verb
   IN
-    \/ verb = "PUT"    /\ doPut(request.path, request.data, result)
+    \/ verb = "PUT"    /\ doPut(request.path, request.data, current_time, result)
     \/ verb = "GET"    /\ doGet(request.path, request.data, result)
     \/ verb = "HEAD"   /\ doHead(request.path, result)
     \/ verb = "DELETE" /\ doDelete(request.path, result)
+    \/ verb = "COPY"   /\ doCopy(request.source, request.dest, current_time, result)
     \/ verb = "LIST"   /\ doList(request.prefix, request.suffix, result)
     
 *)
@@ -394,7 +388,7 @@ THEOREM InitialStoreState => []StoreStateInvariant
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jul 25 14:12:50 BST 2016 by stevel
+\* Last modified Wed Jul 27 14:22:28 BST 2016 by stevel
 \* Created Sun Jun 19 18:07:44 BST 2016 by stevel
 
 
