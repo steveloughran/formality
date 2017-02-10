@@ -24,6 +24,12 @@ EXTENDS FiniteSets, Sequences, Naturals, TLC
  * See the License for the specific language governing permissions and
  * limitations under the License.
 ============================================================================
+
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+      NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
+      "OPTIONAL" in this document are to be interpreted as described in
+      RFC 2119.
+
  *)
 
 
@@ -33,18 +39,15 @@ EXTENDS FiniteSets, Sequences, Naturals, TLC
 
 This specification defines
 
-1. A model of an object store: an eventually consistent store of data and metadata,
-one without any notion of a "directory hierarchy". It is intended to model
-object stores such as Amazon S3 and OpenStack swift, while leaving scope for
-optional features which may only be available on other stores.
+1. A model of an object store: a  consistent store of data and metadata,
+   one without any notion of a "directory hierarchy". It is intended to model
+   object stores such as Amazon S3 and OpenStack swift, while leaving scope for
+   optional features which may only be available on other stores.
 
 2. An API for communicating with object stores from Hadoop filesystems. 
 
-
 3. How the Object Store API must translate into changes in the state of the Object Store
-itself. That is: what must an implementation do?
-
-
+   itself. That is: what MUST an implementation do?
 
 
 ============================================================================
@@ -52,7 +55,6 @@ itself. That is: what must an implementation do?
 *)
 
 CONSTANTS
-  PathChars,     \* the set of valid characters in a path; the alphabet
   Paths,         \* the non-finite set of all possible valid paths
   Data,          \* the non-finite set of all possible sequences of bytes
   MetadataKeys, \* the set of all possible metadata keys 
@@ -61,20 +63,19 @@ CONSTANTS
   Byte
 
 
-ASSUME PathChars \in STRING
-ASSUME Paths \in STRING
+ASSUME Paths \in (STRING \ "")
 
 
-(* There are some metadata keys which are system MD entries. These may be queried but not explictly set. *)
+(* There are some metadata keys which are system MD entries. Those MAY be queried but SHALL NOT be explictly set. *)
 
-ASSUME MetadataKeys \in STRING
+ASSUME MetadataKeys \in (STRING \ "")
 
-ASSUME MetadataValues \in STRING
+ASSUME MetadataValues \in (STRING \ "")
 
 \* Timestamps are positive integers since the epoch.
 ASSUME Timestamp \in Nat /\ Timestamp > 0
 
-ASSUME Byte \in Nat /\ Byte >= 0 /\ Byte < 256
+ASSUME Byte \in 0..256
 
 
 ASSUME Data \in Seq(Byte) 
@@ -83,12 +84,14 @@ ASSUME Data \in Seq(Byte)
 
 
 (* 
-There is a predicate to validate a pathname.
-This is considered implementation-specific.
-It may be describable as a regular expression specific to each implementation,
-though constraints such as "no two adjacent '/' characters" may make for a complex regexp. 
-Perhaps each FS would have a  set of regexps which all must be valid for
- a path to be considered valid.*)
+ There is a predicate to validate a pathname.
+ This is considered implementation-specific.
+
+ It could be describable as a regular expression specific to each implementation,
+ though constraints such as "no two adjacent '/' characters" might make for a complex regexp. 
+ Perhaps each FS would have a  set of regexps which all must be valid for
+ a path to be considered valid.
+ *)
 
 CONSTANT is_valid_pathname(_)
 CONSTANT is_valid_metadata_key(_)
@@ -108,7 +111,7 @@ CONSTANT path_matches(_, _, _)
 (* This should really be defined by looking inside the strings. 
 It is: all paths starting with the prefix up to those ending in the suffix *)
 
-ASSUME \A p \in Paths, prefix, delimiter \in STRING: path_matches(p, prefix, delimiter) \in BOOLEAN
+ASSUME \A p \in Paths, prefix, delimiter \in Paths: path_matches(p, prefix, delimiter) \in BOOLEAN
 
 
 ----------------------------------------------------------------------------------------
@@ -117,6 +120,7 @@ VARIABLES
     store  \* The object store
     
 ----------------------------------------------------------------------------------------
+
 
 
 ----------------------------------------------------------------------------------------
@@ -164,10 +168,14 @@ ListingEntry == [
 has_entry(s, p) == p \in DOMAIN s
 
 
-(* The store state invariant not only declares the type of the store, it declares
+
+
+(*
+The store state invariant not only declares the type of the store, it declares
 attributes of the has_entry operator which are superfluous given the definition
 of has_entry() as the path being in the domain of the store. It's explicit
-for those implementors planning to write tests *)
+for those implementors planning to write tests.
+*)
 
 StoreStateInvariant ==
   /\ store \in [Paths -> StoreEntry]
@@ -176,7 +184,8 @@ StoreStateInvariant ==
   
  
 (* The initial state of the store is that it is empty. *)
-(* Notice how this ignores the root entry, "". This is a special entry: object stores are not filesystems *)
+(* Notice how this ignores the root entry, "".
+ This is a special entry: object stores are not filesystems: there is no root node equivalent to "/" *)
 InitialStoreState ==
   /\ StoreStateInvariant
   /\ DOMAIN store = {}
@@ -187,7 +196,14 @@ InitialStoreState ==
 (*
 Actions.
 Note how some post conditions are explicitly called out. They are superfluous, in the model, but they do declare
-final state for testability *)
+final state for testability
+*)
+
+(*
+ PUT: update the store with the newly uploaded data.
+ This definition is consistent: the store changes are immediately visible, even if there was an existing
+ entry.
+*)
 
 doPut(path, data, current_time, result) ==
   LET validArgs == path \in Paths /\ data \in Data /\ current_time \in Timestamp
@@ -198,9 +214,11 @@ doPut(path, data, current_time, result) ==
     \/ /\ validArgs
        /\ result' = Success
        /\ store' = [store EXCEPT ![path] = [data |-> data, created |-> current_time]]
-       /\ has_entry(store', path)
 
- 
+
+(*
+GET: path -> data as well as summary metadata
+*) 
 doGet(path, result, metadata, data) ==
   LET
     validArgs == path \in Paths /\ data \in Data
@@ -219,6 +237,22 @@ doGet(path, result, metadata, data) ==
         /\ data' = store[path].data
         /\ metadata' = [created |-> store[path].created, length |-> Len(store[path].data)]
         /\ UNCHANGED store
+
+(*
+HEAD: the metadata without the data
+*)
+
+(*
+doHead2(path, result, metadata) ==
+ LET
+   data == d \in Data
+ IN
+  doGet(path, result', data, metadata') 
+*)
+
+(*
+HEAD: the metadata without the data
+*)
 
 doHead(path, result, metadata) ==
   LET
@@ -284,7 +318,7 @@ doList(prefix, suffix, result, listing) ==
     /\ suffix \in STRING
     /\ result' = Success
     /\ listing' = [path \in pathsMatchingPrefix(prefix, suffix) |->
-       [path |-> path, created |-> store[path].created, length |-> Len(store[path].data)]]
+        [path |-> path, created |-> store[path].created, length |-> Len(store[path].data)]]
     /\ UNCHANGED store
 
 
@@ -388,7 +422,7 @@ THEOREM InitialStoreState => []StoreStateInvariant
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jul 27 14:22:28 BST 2016 by stevel
+\* Last modified Thu Oct 06 15:30:47 BST 2016 by stevel
 \* Created Sun Jun 19 18:07:44 BST 2016 by stevel
 
 
