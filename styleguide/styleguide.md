@@ -931,7 +931,7 @@ Even better, rather than write your own handler (repeatedly), use the one in `or
 @Test
 public void testSomething {
   try {
-    result = doSomething("arg")
+    Object result = doSomething("arg")
     Assert.fail("expected a failure, got: " + result)
   } catch(PathNotFoundException e) {
     GenericTestUtils.assertExceptionContains(Errors.FAILURE_ON_PATH, e);
@@ -943,6 +943,56 @@ In comparing the various options, the JUnit 4 {{expected}} will be less informat
 
 1. There's only one place in the test case where raising the expected exception can happen. If the exception could get raised before or after the core operation being tested, then the test could be failing in the wrong place —with the test runner not picking it up.
 1. The type of the exception is sufficient to verify that the failure was as expected. A high level `Exception` or `IOException` is unlikely to be adequate. Otherwise, go for the `GenericTestUtils` one.
+
+### Testing with Java 8 closures through `LambdaTestUtils`
+
+An evolving class in the hadoop common test JAR is `org.apache.hadoop.test.LambdaTestUtils`. This contains a set of static methods
+intended to make it easy to test with Java 8 closures. It is based on concepts in Scalatest, to the extent of using the same method names.
+
+A key method is `intercept()`, which takes the class of an exception, an optional piece of text required to be in the exception, and, finally,
+a closure:
+
+```java
+intercept(IllegalArgumentException.class, "Wrong FS",
+  () -> Paths.getLocalTaskAttemptTempDir(conf, jobUUID,
+      tac.getTaskAttemptID()));
+````
+
+The closure MUST throw the exception of the specified type, and, if specified, the containing text.
+Any other exception is rethrown; if the text is missing an assertion is raised. And, if the closure does not
+fail, the assertion raised includes the output of the operation in the error text. The overall goal is
+to make it easy to make assertions without try/catch clauses, and including as much diagnostics as it can:
+including the stack traces.
+
+As with the Scalatest `intercept()` method, if the desired exception is raised, then Hadoop's `intercept()` returns it for further checks. So far our tests haven't made use of that feature. 
+
+A more complex call is `eventually()`; again based on its Scalatest namesake, mixing in experience using a Groovy test mechanism in Apache Slider (incubating). Its aim is to support retrying for a condition to be met in a more structured way than today.
+
+```java
+public static <T> T eventually(int timeoutMillis,
+    Callable<T> eval,
+    Callable<Integer> retry) throws Exception;
+```
+
+This will repeated invoke the closure until it *stops* throwing any exception, at which point the result is returned. The retry policy defines how to react to a failure: simple sleep, exponential backoff, etc.
+
+If the timeout is reached, and the closure has not yet succeeded, the last exception the closure threw is rethrown. There are also two ways to exit the closure with a failure ahead of the timeout: by throwing `InterruptedException` or a `org.apache.hadoop.test.LambdaTestUtils.FailFastException` instance. The latter is useful to raise if the closure concludes that the condition it is waiting for is never going to be reached.
+
+The aim of `eventually()` is to support retrying for a condition to be met in a more structured way than today.
+
+
+Here is an example in which an eventually consistent object store is polled for thirty seconds, awaiting the length property of a path
+to catch up with the state of the last write.
+
+```java
+eventually(30 * 1000, 1000,
+  () -> assertEquals(shortLen, fs.getFileStatus(testpath).getLen()));
+```
+
+There are more operations in the `LambdaTestUtils` module, with it evolving as more Java 8 code is adopted across Hadoop. In particular, the `await()` method extends `eventually()` with the ability to control what is thrown on a timeout. This can be used to generate complex diagnostics for logging and/or inclusion in the exception test, helping to understand why a closure never succeeded. It's equivalent proved invaluable in Slider groovy-lang
+integration tests; it can now be used for similar benefit in Hadoop.
+
+The test code has been a key place for us to learn this, and, because intercept and eventually closures can be replaced with anonymous classes extending `Callable` and `VoidCallable` (an easy way to return voids), backported to Java-7 Hadoop with minor effort.
 
 
 ### Skipping tests that aren't available on the test system

@@ -560,19 +560,19 @@ listAction == [
 ]
 
 (* Process a request, generate a result. *)
-(* TODO: merge GET data into result *)
-(*
-process(request, result, current_time) ==
+
+
+process(request, result, metadata, body, current_time) ==
   LET verb == request.verb
   IN
     \/ verb = "PUT"    /\ doPut(request.path, request.data, current_time, result)
-    \/ verb = "GET"    /\ doGet(request.path, request.data, result)
-    \/ verb = "HEAD"   /\ doHead(request.path, result)
+    \/ verb = "GET"    /\ doGet(request.path, result, metadata, body)
+    \/ verb = "HEAD"   /\ doHead(request.path, result, metadata)
     \/ verb = "DELETE" /\ doDelete(request.path, result)
     \/ verb = "COPY"   /\ doCopy(request.source, request.dest, current_time, result)
-    \/ verb = "LIST"   /\ doList(request.prefix, request.suffix, result)
+    \/ verb = "LIST"   /\ doList(request.prefix, request.suffix, result, body)
 
-*)
+
 
 
 -----
@@ -582,9 +582,10 @@ THEOREM InitialStoreState => []StoreStateInvariant
 
 
 
+
 =============================================================================
 \* Modification History
-\* Last modified Sun Feb 19 22:19:11 GMT 2017 by stevel
+\* Last modified Mon Feb 20 10:32:37 GMT 2017 by stevel
 \* Created Sun Jun 19 18:07:44 BST 2016 by stevel
 
 
