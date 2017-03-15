@@ -985,7 +985,7 @@ Here is an example in which an eventually consistent object store is polled for 
 to catch up with the state of the last write.
 
 ```java
-eventually(30 * 1000, 1000,
+long len = eventually(30 * 1000, 1000,
   () -> assertEquals(shortLen, fs.getFileStatus(testpath).getLen()));
 ```
 
