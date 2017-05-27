@@ -4,7 +4,7 @@
 ---------------------------- MODULE objectstore ----------------------------
 
 
-EXTENDS FiniteSets, Sequences, Naturals, TLC
+EXTENDS FiniteSets, Sequences, Naturals, TLC, Paths
 
 (*
 ============================================================================
@@ -53,22 +53,11 @@ with S3, such as the s3guard commit algorithm.
 *)
 
 CONSTANTS
-  Paths,          \* the non-finite set of all possible valid paths
-  PathsAndRoot,   \* Paths and the "root" path; the latter is read-only
-  Data,           \* the non-finite set of all possible sequences of bytes
   MetadataKeys,   \* the set of all possible metadata keys
   MetadataValues, \* the non-finite set of all possible metadata values
-  Timestamp,      \* A timestamp
-  Byte,
   Etag,
   MultipartPutId,
   PartId,
-  NonEmptyString
-
-ASSUME NonEmptyString \in (STRING \ "")
-
-ASSUME PathsAndRoot \in STRING
-ASSUME Paths \in (PathsAndRoot \ "")
 
 (* There are some metadata keys which are system metadata entries.
    Those MAY be queried but SHALL NOT be explictly set. (more specifically, they'll be ignored if you try. *)
@@ -76,15 +65,6 @@ ASSUME Paths \in (PathsAndRoot \ "")
 ASSUME MetadataKeys \in NonEmptyString
 
 ASSUME MetadataValues \in STRING
-
-\* Timestamps are positive integers since the epoch.
-ASSUME Timestamp \in Nat /\ Timestamp > 0
-
-\* Byte type
-ASSUME Byte \in 0..255
-
-(* Data is a sequence of bytes *)
-ASSUME Data \in Seq(Byte)
 
 ASSUME Etag \in NonEmptyString
 
@@ -95,23 +75,7 @@ ASSUME PartId \in 1..11000
 
 ----------------------------------------------------------------------------------------
 
-
-(*
- There is a predicate to validate a pathname.
- This is considered implementation-specific.
-
- It could be describable as a regular expression specific to each implementation,
- though constraints such as "no two adjacent '/' characters" might make for a complex regexp.
- Perhaps each FS would have a  set of regexps which all must be valid for
- a path to be considered valid.
- *)
-
-CONSTANT is_valid_pathname(_)
 CONSTANT is_valid_metadata_key(_)
-
-(* All paths can be evaluated to see if their pathname is valid *)
-
-ASSUME \A p \in Paths: is_valid_pathname(p) \in BOOLEAN
 
 (* All metadata keys can be evaluated for validity *)
 
