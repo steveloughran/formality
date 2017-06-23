@@ -4,7 +4,7 @@
 ---------------------------- MODULE objectstore ----------------------------
 
 
-EXTENDS FiniteSets, Sequences, Naturals, TLC, Paths
+EXTENDS FiniteSets, Sequences, Naturals, TLC
 
 (*
 ============================================================================
@@ -33,6 +33,79 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
  *)
 
 
+----------------------------------------------------------------------------------------
+
+(*
+============================================================================
+
+
+A Path is a list of Path elements which represents a path to a file, directory or symbolic link
+
+Path elements are non-empty strings. The exact set of valid strings MAY
+be specific to a particular FileSystem implementation.
+
+Path elements MUST NOT be in `{"", ".",  "..", "/"}`.
+
+Path elements MUST NOT contain the characters `{'/', ':'}`.
+
+Filesystems MAY have other strings that are not permitted in a path element.
+
+When validating path elements, the exception `InvalidPathException` SHOULD
+be raised when a path is invalid [HDFS]
+
+
+============================================================================
+
+*)
+
+CONSTANTS
+  Paths,          \* the non-finite set of all possible valid paths
+  PathsAndRoot,   \* Paths and the "root" path; the latter is read-only
+  Data,           \* the non-finite set of all possible sequences of bytes
+  Timestamp,      \* A timestamp
+  Byte,
+  NonEmptyString
+
+
+ASSUME NonEmptyString \in (STRING \ "")
+
+ASSUME PathsAndRoot \in STRING
+ASSUME Paths \in (PathsAndRoot \ "")
+
+
+\* Timestamps are positive integers since the epoch.
+ASSUME Timestamp \in Nat /\ Timestamp > 0
+
+\* Byte type
+ASSUME Byte \in 0..255
+
+(* Data is a sequence of bytes *)
+ASSUME Data \in Seq(Byte)
+
+
+(*
+ There is a predicate to validate a pathname.
+ This is considered implementation-specific.
+
+ It could be describable as a regular expression specific to each implementation,
+ though constraints such as "no two adjacent '/' characters" might make for a complex regexp.
+ Perhaps each FS would have a  set of regexps which all must be valid for
+ a path to be considered valid.
+ *)
+
+CONSTANT is_valid_pathname(_)
+
+
+
+(* All paths can be evaluated to see if their pathname is valid *)
+
+ASSUME \A p \in Paths: is_valid_pathname(p) \in BOOLEAN
+
+
+----------------------------------------------------------------------------------------
+
+
+
 (*
 
 ============================================================================
@@ -57,7 +130,7 @@ CONSTANTS
   MetadataValues, \* the non-finite set of all possible metadata values
   Etag,
   MultipartPutId,
-  PartId,
+  PartId
 
 (* There are some metadata keys which are system metadata entries.
    Those MAY be queried but SHALL NOT be explictly set. (more specifically, they'll be ignored if you try. *)
@@ -189,26 +262,6 @@ PendingMultipartOperation == [
 ]
 
 
-(*
-The store state invariant not only declares the type of the store, it declares
-attributes of the has_entry operator which are superfluous given the definition
-of has_entry() as the path being in the domain of the store. It's explicit
-for those implementors planning to write tests.
-*)
-
-StoreStateInvariant ==
-  /\ store \in [Paths -> StoreEntry]
-  /\ pending \in [MultipartPutId -> PendingMultipartOperation]
-
-
-(* The initial state of the store is that it is empty. *)
-(* Notice how this ignores the root entry, "".
- This is a special entry: object stores are not filesystems: there is no root node equivalent to "/" *)
-InitialStoreState ==
-  /\ StoreStateInvariant
-  /\ DOMAIN store = {}
-  /\ DOMAIN pending = {}
-
 
 ----
 
@@ -239,7 +292,7 @@ doPut(path, data, current_time, result) ==
 (*
 GET: path -> data as well as summary metadata
 *)
-doGet(path, result, metadata, data) ==
+doGet(path, metadata, data, current_time, result) ==
   LET
     validArgs == path \in PathsAndRoot
     exists == has_entry(store, path)
@@ -271,7 +324,7 @@ doGet(path, result, metadata, data) ==
 HEAD: the metadata without the data
 *)
 
-doHead(path, result, metadata) ==
+doHead(path, metadata, current_time, result) ==
   LET
     validArgs == path \in PathsAndRoot
     exists == has_entry(store, path)
@@ -299,7 +352,7 @@ doHead(path, result, metadata) ==
         /\ UNCHANGED <<store, pending>>
 
 
-doDelete(path, result) ==
+doDelete(path, current_time, result) ==
   LET
     validArgs == path \in Paths
     exists == has_entry(store, path)
@@ -345,7 +398,7 @@ S3 also returns a string sequence of common subpath underneath, essential "what 
 
 pathsMatchingPrefix(prefix, suffix) == \A path \in DOMAIN store : path_matches(path, prefix, suffix)
 
-doList(prefix, suffix, result, listing) ==
+doList(prefix, suffix, current_time, result, listing) ==
   LET
     validArgs == prefix \in STRING /\ suffix \in STRING
   IN
@@ -356,7 +409,10 @@ doList(prefix, suffix, result, listing) ==
     \/  /\ validArgs
         /\ result' = Success
         /\ listing' = [path \in pathsMatchingPrefix(prefix, suffix) |->
-            [path |-> path, created |-> store[path].created, length |-> Len(store[path].data), etag |-> store[path].etag]]
+            [path |-> path,
+             created |-> store[path].created,
+             length |-> Len(store[path].data),
+             etag |-> store[path].etag]]
         /\ UNCHANGED <<store, pending>>
 
 
@@ -381,12 +437,15 @@ doInitiateMultipartPut(dest, current_time, result, operationId) ==
        /\ result' = Success
        /\ UNCHANGED store
        /\ operationId' = newPartId 
-       /\ pending' = [pending EXCEPT ![newPartId] = [path |-> dest, created |-> current_time]]
+       /\ pending' = [pending EXCEPT ![newPartId] =
+           [path |-> dest, created |-> current_time]]
 
 (*
-PUT a single part for an operation
+PUT a single part for an operation.
+Result is an etag to be used for the ordered sequence
+
 *)
-doPutPart(operationId, partId, part_data, result, etagResult) ==
+doPutPart(operationId, partId, part_data, current_time, result, etagResult) ==
   LET
     validArgs == operationId \in DOMAIN pending /\ part_data \in Data /\ partId \in PartId
     etagVal == etag_of(part_data)
@@ -402,7 +461,8 @@ doPutPart(operationId, partId, part_data, result, etagResult) ==
        /\ pending' = [pending EXCEPT
            ![operationId] = [
             path |-> pending[operationId].dest,
-            parts  |-> [pending[operationId].parts EXCEPT ![partId] =  [data |-> part_data, etag |-> etagVal] ]
+            parts  |-> [pending[operationId].parts EXCEPT
+             ![partId] =  [data |-> part_data, etag |-> etagVal] ]
             ]
          ]
 
@@ -410,13 +470,15 @@ doPutPart(operationId, partId, part_data, result, etagResult) ==
   The commit operation is the most complex. The part list supplied defines the order in which the supplied parts
   are saved to the store.
 	TODO: work out how to declare that all data is the ordered appending of the data of the list of parts. Recurse?
+
+   \* alldata == \A [part \in (1...Len(parts) -1]) Append(upload[parts[part]], upload[parts[part + 1])
+
 *)
-doCommitMultipartPut(operationId, parts, result) ==
+doCommitMultipartPut(operationId, parts, current_time, result) ==
  LET 
    upload == pending[operationId]
    validArgs == (operationId \in DOMAIN pending) /\ (parts \in Seq(PartId)) 
      /\ (\A p \in parts: p \in DOMAIN upload.parts) /\ (\A p \in DOMAIN upload.parts: p \in parts)  
-	 \* alldata == \A [part \in (1...Len(parts) -1]) Append(upload[parts[part]], upload[parts[part + 1])
 	 alldata == parts
 	 etag == etag_of_multipart_operation(upload)
  IN
@@ -434,7 +496,7 @@ doCommitMultipartPut(operationId, parts, result) ==
   Abort the multipart put operation.
   All pending data is deleted; the pending operation record removed. 
  *)
-doAbortMultipartPut(operationId, result) ==
+doAbortMultipartPut(operationId, current_time, result) ==
 LET 
   validArgs == operationId \in DOMAIN pending 
 IN
@@ -456,30 +518,6 @@ IN
 
 \* DeleteInvariant == \A p in Paths: doDelete(p, Success) => ~has_entry(store', p)
 
-(* The amount of data you get back is the amount of data you are told comes back. *)
-
-(*
-GetLengthInvariant ==
-  \A path \in DOMAIN store, sysMd \in SystemMetadata, data \in Data :
-    doGet(path, Success, data, sysMd) ==> Len(data) = sysMd.length
-*)
-
-(* The metadata that comes from a doHead() MUST match that from a doGet() *)
-(* See: HADOOP-11202 SequenceFile crashes with encrypted files that are shorter than FileSystem.getStatus(path) *)
-(*
-GetAndHeadInvariant ==
-  \A path \in DOMAIN store, sysMd \in SystemMetadata, data \in Data :
-    doGet(path, Success, data, sysMd) ==> doHead(path, Success, sysMd)
-*)
-
-(* The details you get back in a listing match the details you get back from a doGet call on the specific path *)
-(* of course, on an eventually consistent object store, there may be lag *)
-
-(*
-
-  ListAndGetInvariant == TODO
-
-*)
 
 
 
@@ -530,13 +568,68 @@ process(request, result, metadata, body, current_time) ==
   LET verb == request.verb
   IN
     \/ verb = "PUT"    /\ doPut(request.path, request.data, current_time, result)
-    \/ verb = "GET"    /\ doGet(request.path, result, metadata, body)
-    \/ verb = "HEAD"   /\ doHead(request.path, result, metadata)
-    \/ verb = "DELETE" /\ doDelete(request.path, result)
+    \/ verb = "GET"    /\ doGet(request.path, metadata, body, current_time, result)
+    \/ verb = "HEAD"   /\ doHead(request.path, metadata, current_time, result)
+    \/ verb = "DELETE" /\ doDelete(request.path, current_time, result)
     \/ verb = "COPY"   /\ doCopy(request.source, request.dest, current_time, result)
-    \/ verb = "LIST"   /\ doList(request.prefix, request.suffix, result, body)
+    \/ verb = "LIST"   /\ doList(request.prefix, request.suffix, current_time, result, body)
 
 
+
+
+(*
+The store state invariant not only declares the type of the store, it declares
+attributes of the has_entry operator which are superfluous given the definition
+of has_entry() as the path being in the domain of the store. It's explicit
+for those implementors planning to write tests.
+*)
+
+StoreStateInvariant ==
+  /\ store \in [Paths -> StoreEntry]
+  /\ pending \in [MultipartPutId -> PendingMultipartOperation]
+
+
+(* The initial state of the store is that it is empty. *)
+(* Notice how this ignores the root entry, "".
+ This is a special entry: object stores are not filesystems: there is no root node equivalent to "/" *)
+InitialStoreState ==
+  /\ StoreStateInvariant
+  /\ DOMAIN store = {}
+  /\ DOMAIN pending = {}
+
+(*
+The amount of data you get back is the amount of data you are told comes back.
+*)
+(*
+GetLengthInvariant ==
+  \A path \in Paths, sysMd \in SystemMetadata, data \in Data, t \in Timestamp :
+    doGet(path, sysMd, data, t, Success) ==> Len(data) == sysMd.length
+*)
+
+THEOREM   \A path \in Paths, sysMd \in SystemMetadata, data \in Data, t \in Timestamp :
+    TRUE
+
+
+
+
+(*
+*)
+
+(* The metadata that comes from a doHead() MUST match that from a doGet() *)
+(* See: HADOOP-11202 SequenceFile crashes with encrypted files that are shorter than FileSystem.getStatus(path) *)
+(*
+THEOREM GetAndHeadInvariant =>
+  \A path \in Path, sysMd \in SystemMetadata, data \in Data, t \in Timestamp :
+    doGet(path, sysMd, data, t, Success) ==> doHead(path, sysMd, t, Success)
+*)
+(* The details you get back in a listing match the details you get back from a doGet call on the specific path *)
+(* of course, on an eventually consistent object store, there may be lag *)
+
+(*
+
+  ListAndGetInvariant == TODO
+
+*)
 
 
 -----
@@ -547,9 +640,10 @@ THEOREM InitialStoreState => []StoreStateInvariant
 
 
 
+
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 20 10:32:37 GMT 2017 by stevel
+\* Last modified Wed Jun 14 12:21:04 CEST 2017 by stevel
 \* Created Sun Jun 19 18:07:44 BST 2016 by stevel
 
 

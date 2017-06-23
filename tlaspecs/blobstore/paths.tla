@@ -1,5 +1,5 @@
 
----------------------------- MODULE Paths ----------------------------
+---------------------------- MODULE paths ----------------------------
 
 
 EXTENDS FiniteSets, Sequences, Naturals, TLC
@@ -85,3 +85,5 @@ CONSTANT is_valid_pathname(_)
 (* All paths can be evaluated to see if their pathname is valid *)
 
 ASSUME \A p \in Paths: is_valid_pathname(p) \in BOOLEAN
+
+===========================
