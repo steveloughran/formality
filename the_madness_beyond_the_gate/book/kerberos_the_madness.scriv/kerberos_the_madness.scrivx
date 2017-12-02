@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<ScrivenerProject Version="1.0" Creator="SCRMAC-2.6-25480" Modified="2015-11-18 15:25:57 +0000">
+<?xml version="1.0" encoding="UTF-8"?>
+<ScrivenerProject Version="1.0" Creator="SCRMAC-2.6-25480" Modified="2016-11-15 15:46:50 +0100">
     <Binder>
-        <BinderItem ID="0" Type="DraftFolder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+        <BinderItem ID="0" Type="DraftFolder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
             <Title>Draft</Title>
             <MetaData>
                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -14,7 +14,7 @@
                 </OutlinerExpandedState>
             </CorkboardAndOutliner>
             <Children>
-                <BinderItem ID="3" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-19 19:39:38 +0100">
+                <BinderItem ID="3" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-19 20:39:38 +0200">
                     <Title>Front page</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -26,7 +26,7 @@
                         <TextSelection>16,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="5" Type="Folder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="5" Type="Folder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Main content</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -37,7 +37,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                     <Children>
-                        <BinderItem ID="33" Type="Text" Created="2015-06-17 18:49:46 +0100" Modified="2015-06-30 20:17:49 +0100">
+                        <BinderItem ID="33" Type="Text" Created="2015-06-17 19:49:46 +0200" Modified="2015-06-30 21:17:49 +0200">
                             <Title>Introduction</Title>
                             <MetaData>
                                 <StatusID>5</StatusID>
@@ -48,7 +48,7 @@
                                 <TextSelection>206,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="40" Type="Text" Created="2015-06-19 18:11:39 +0100" Modified="2015-06-24 11:27:44 +0100">
+                        <BinderItem ID="40" Type="Text" Created="2015-06-19 19:11:39 +0200" Modified="2015-06-24 12:27:44 +0200">
                             <Title>Foundational Concepts</Title>
                             <MetaData>
                                 <StatusID>5</StatusID>
@@ -59,7 +59,7 @@
                                 <TextSelection>4,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="41" Type="Text" Created="2015-06-19 19:18:18 +0100" Modified="2015-06-24 11:27:44 +0100">
+                        <BinderItem ID="41" Type="Text" Created="2015-06-19 20:18:18 +0200" Modified="2015-06-24 12:27:44 +0200">
                             <Title>The Limits of Hadoop Security</Title>
                             <MetaData>
                                 <StatusID>5</StatusID>
@@ -70,7 +70,7 @@
                                 <TextSelection>3203,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="37" Type="Text" Created="2015-06-19 18:01:46 +0100" Modified="2015-06-30 20:17:10 +0100">
+                        <BinderItem ID="37" Type="Text" Created="2015-06-19 19:01:46 +0200" Modified="2015-06-30 21:17:10 +0200">
                             <Title>Hadoop IPC Security</Title>
                             <MetaData>
                                 <StatusID>5</StatusID>
@@ -81,7 +81,7 @@
                                 <TextSelection>646,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="50" Type="Text" Created="2015-06-24 13:06:04 +0100" Modified="2015-06-29 17:43:15 +0100">
+                        <BinderItem ID="50" Type="Text" Created="2015-06-24 14:06:04 +0200" Modified="2015-06-29 18:43:15 +0200">
                             <Title>UGI</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -91,7 +91,7 @@
                                 <TextSelection>2,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="35" Type="Text" Created="2015-06-19 17:42:24 +0100" Modified="2015-06-24 16:52:17 +0100">
+                        <BinderItem ID="35" Type="Text" Created="2015-06-19 18:42:24 +0200" Modified="2015-06-24 17:52:17 +0200">
                             <Title>SPNEGO</Title>
                             <MetaData>
                                 <StatusID>5</StatusID>
@@ -102,7 +102,7 @@
                                 <TextSelection>1239,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="36" Type="Text" Created="2015-06-19 18:00:55 +0100" Modified="2015-06-20 11:42:29 +0100">
+                        <BinderItem ID="36" Type="Text" Created="2015-06-19 19:00:55 +0200" Modified="2015-06-20 12:42:29 +0200">
                             <Title>ZOOKEEPER and SASL</Title>
                             <MetaData>
                                 <StatusID>5</StatusID>
@@ -113,7 +113,7 @@
                                 <TextSelection>833,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="42" Type="Text" Created="2015-06-20 11:42:27 +0100" Modified="2015-06-30 20:18:07 +0100">
+                        <BinderItem ID="42" Type="Text" Created="2015-06-20 12:42:27 +0200" Modified="2015-06-30 21:18:07 +0200">
                             <Title>java.security.krb5.conf</Title>
                             <MetaData>
                                 <StatusID>5</StatusID>
@@ -124,7 +124,7 @@
                                 <TextSelection>1143,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="52" Type="Text" Created="2015-06-26 16:23:12 +0100" Modified="2015-06-29 17:43:15 +0100">
+                        <BinderItem ID="52" Type="Text" Created="2015-06-26 17:23:12 +0200" Modified="2015-06-29 18:43:15 +0200">
                             <Title>JAAS Configuration</Title>
                             <MetaData>
                                 <StatusID>5</StatusID>
@@ -135,7 +135,7 @@
                                 <TextSelection>2,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="51" Type="Text" Created="2015-06-26 16:09:00 +0100" Modified="2015-06-30 20:16:36 +0100">
+                        <BinderItem ID="51" Type="Text" Created="2015-06-26 17:09:00 +0200" Modified="2015-06-30 21:16:36 +0200">
                             <Title>Logging</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -145,7 +145,7 @@
                                 <TextSelection>13,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="44" Type="Text" Created="2015-06-24 11:14:23 +0100" Modified="2015-06-30 20:18:57 +0100">
+                        <BinderItem ID="44" Type="Text" Created="2015-06-24 12:14:23 +0200" Modified="2015-06-30 21:18:57 +0200">
                             <Title>Error Messages to Fear</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -155,7 +155,7 @@
                                 <TextSelection>2437,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="47" Type="Text" Created="2015-06-24 11:20:51 +0100" Modified="2015-06-29 17:42:37 +0100">
+                        <BinderItem ID="47" Type="Text" Created="2015-06-24 12:20:51 +0200" Modified="2015-06-29 18:42:37 +0200">
                             <Title>Kerberos Tests with MiniKDC</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -165,7 +165,7 @@
                                 <TextSelection>2,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="48" Type="Text" Created="2015-06-24 11:28:33 +0100" Modified="2015-06-29 17:24:19 +0100">
+                        <BinderItem ID="48" Type="Text" Created="2015-06-24 12:28:33 +0200" Modified="2015-06-29 18:24:19 +0200">
                             <Title>Testing against Kerberized Hadoop clusters</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -175,7 +175,7 @@
                                 <TextSelection>140,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="53" Type="Text" Created="2015-06-28 15:24:41 +0100" Modified="2015-06-29 17:42:37 +0100">
+                        <BinderItem ID="53" Type="Text" Created="2015-06-28 16:24:41 +0200" Modified="2015-06-29 18:42:37 +0200">
                             <Title>Low-level secrets</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -185,7 +185,7 @@
                                 <TextSelection>2,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="57" Type="Text" Created="2015-06-29 10:39:40 +0100" Modified="2015-06-30 20:16:11 +0100">
+                        <BinderItem ID="57" Type="Text" Created="2015-06-29 11:39:40 +0200" Modified="2015-06-30 21:16:11 +0200">
                             <Title>Checklists</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -197,7 +197,7 @@
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="15" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-29 17:47:37 +0100">
+                <BinderItem ID="15" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-29 18:47:37 +0200">
                     <Title>Acknowledgements</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -208,7 +208,7 @@
                         <TextSelection>510,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="19" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-29 17:41:51 +0100">
+                <BinderItem ID="19" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-29 18:41:51 +0200">
                     <Title>References</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -219,7 +219,7 @@
                         <TextSelection>205,36</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="16" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-19 19:20:58 +0100">
+                <BinderItem ID="16" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-19 20:20:58 +0200">
                     <Title>Figure legends</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -229,7 +229,7 @@
                         <TextSelection>0,72</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="18" Type="Folder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="18" Type="Folder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Tables</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -240,7 +240,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                     <Children>
-                        <BinderItem ID="21" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-19 19:21:10 +0100">
+                        <BinderItem ID="21" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-19 20:21:10 +0200">
                             <Title>Table 1</Title>
                             <MetaData>
                                 <PageBreakBefore>Yes</PageBreakBefore>
@@ -253,7 +253,7 @@
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="17" Type="Folder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="17" Type="Folder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Figures</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -265,7 +265,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                     <Children>
-                        <BinderItem ID="20" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-19 17:21:32 +0100">
+                        <BinderItem ID="20" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-19 18:21:32 +0200">
                             <Title>Configuring Firefox for SPNEGO</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -280,7 +280,7 @@
                 </BinderItem>
             </Children>
         </BinderItem>
-        <BinderItem ID="22" Type="Folder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+        <BinderItem ID="22" Type="Folder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
             <Title>Templates</Title>
             <MetaData>
                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -290,7 +290,7 @@
                 <TextSelection>0,0</TextSelection>
             </TextSettings>
             <Children>
-                <BinderItem ID="30" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="30" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Table X</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -302,7 +302,7 @@
                         <TextSelection>47,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="23" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="23" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Cover letter</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -313,7 +313,7 @@
                         <TextSelection>414,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="24" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="24" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Response to Reviewers' Comments</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -324,7 +324,7 @@
                         <TextSelection>94,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="34" Type="Folder" Created="2015-06-19 17:21:51 +0100" Modified="2015-06-19 17:21:54 +0100">
+                <BinderItem ID="34" Type="Folder" Created="2015-06-19 18:21:51 +0200" Modified="2015-06-19 18:21:54 +0200">
                     <Title>Gists</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -334,7 +334,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                     <Children>
-                        <BinderItem ID="39" Type="Text" Created="2015-06-19 18:04:49 +0100" Modified="2015-06-19 18:05:57 +0100">
+                        <BinderItem ID="39" Type="Text" Created="2015-06-19 19:04:49 +0200" Modified="2015-06-19 19:05:57 +0200">
                             <Title>META-INF/services/org.apache.hadoop.security.SecurityInfo</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -346,7 +346,7 @@
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="46" Type="Text" Created="2015-06-24 11:20:17 +0100" Modified="2015-06-24 11:20:38 +0100">
+                <BinderItem ID="46" Type="Text" Created="2015-06-24 12:20:17 +0200" Modified="2015-06-24 12:20:38 +0200">
                     <Title>Chapter</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -358,13 +358,13 @@
                 </BinderItem>
             </Children>
         </BinderItem>
-        <BinderItem ID="1" Type="ResearchFolder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+        <BinderItem ID="1" Type="ResearchFolder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
             <Title>Research</Title>
             <MetaData>
                 <IncludeInCompile>Yes</IncludeInCompile>
             </MetaData>
             <Children>
-                <BinderItem ID="4" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="4" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Abstract &amp; keywords</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -375,7 +375,7 @@
                         <TextSelection>111,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="43" Type="Text" Created="2015-06-23 17:00:09 +0100" Modified="2015-06-23 17:00:19 +0100">
+                <BinderItem ID="43" Type="Text" Created="2015-06-23 18:00:09 +0200" Modified="2015-06-23 18:00:19 +0200">
                     <Title>Kerberos setup commands</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -385,7 +385,7 @@
                         <TextSelection>5814,83</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="58" Type="Text" Created="2015-07-03 21:13:27 +0100" Modified="2015-07-03 22:15:56 +0100">
+                <BinderItem ID="58" Type="Text" Created="2015-07-03 22:13:27 +0200" Modified="2015-07-03 23:15:56 +0200">
                     <Title>Hadoop and Kerberos</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -397,7 +397,7 @@
                 </BinderItem>
             </Children>
         </BinderItem>
-        <BinderItem ID="25" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+        <BinderItem ID="25" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
             <Title>Ideas</Title>
             <MetaData>
                 <NotesTextSelection>0,0</NotesTextSelection>
@@ -407,7 +407,7 @@
                 <TextSelection>0,0</TextSelection>
             </TextSettings>
         </BinderItem>
-        <BinderItem ID="26" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+        <BinderItem ID="26" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
             <Title>To-Do List</Title>
             <MetaData>
                 <NotesTextSelection>0,0</NotesTextSelection>
@@ -417,13 +417,13 @@
                 <TextSelection>39,0</TextSelection>
             </TextSettings>
         </BinderItem>
-        <BinderItem ID="2" Type="TrashFolder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+        <BinderItem ID="2" Type="TrashFolder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
             <Title>Trash</Title>
             <MetaData>
                 <IncludeInCompile>Yes</IncludeInCompile>
             </MetaData>
             <Children>
-                <BinderItem ID="10" Type="Folder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="10" Type="Folder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Methods</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -433,7 +433,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                     <Children>
-                        <BinderItem ID="11" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                        <BinderItem ID="11" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                             <Title>Patients</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -444,7 +444,7 @@
                                 <TextSelection>35,0</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="12" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                        <BinderItem ID="12" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                             <Title>Methods/interventions</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -455,7 +455,7 @@
                                 <TextSelection>8,18</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="14" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                        <BinderItem ID="14" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                             <Title>Outcome measurements</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -466,7 +466,7 @@
                                 <TextSelection>21,18</TextSelection>
                             </TextSettings>
                         </BinderItem>
-                        <BinderItem ID="13" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                        <BinderItem ID="13" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                             <Title>Statistical analysis</Title>
                             <MetaData>
                                 <IncludeInCompile>Yes</IncludeInCompile>
@@ -479,7 +479,7 @@
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="27" Type="Folder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="27" Type="Folder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Past copies</Title>
                     <MetaData>
                         <NotesTextSelection>0,0</NotesTextSelection>
@@ -488,7 +488,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                     <Children>
-                        <BinderItem ID="28" Type="Folder" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                        <BinderItem ID="28" Type="Folder" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                             <Title>20062014 Submitted to [journal]</Title>
                             <MetaData>
                                 <StatusID>1</StatusID>
@@ -501,7 +501,7 @@
                         </BinderItem>
                     </Children>
                 </BinderItem>
-                <BinderItem ID="38" Type="Text" Created="2015-06-19 18:04:05 +0100" Modified="2015-06-19 18:04:40 +0100">
+                <BinderItem ID="38" Type="Text" Created="2015-06-19 19:04:05 +0200" Modified="2015-06-19 19:04:40 +0200">
                     <Title># Licensed to the Apache Software Foundation (ASF) under</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -511,7 +511,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="31" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="31" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Methods</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -522,7 +522,7 @@
                         <TextSelection>0,27</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="8" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="8" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Results</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -533,7 +533,7 @@
                         <TextSelection>7,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="9" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="9" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Discussion</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -544,7 +544,7 @@
                         <TextSelection>10,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="6" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="6" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Background and Significance</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -555,7 +555,7 @@
                         <TextSelection>47,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="32" Type="Text" Created="2015-06-17 18:41:14 +0100" Modified="2015-06-17 18:41:14 +0100">
+                <BinderItem ID="32" Type="Text" Created="2015-06-17 19:41:14 +0200" Modified="2015-06-17 19:41:14 +0200">
                     <Title>Conclusion</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -565,7 +565,7 @@
                         <TextSelection>10,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="45" Type="Text" Created="2015-06-24 11:20:06 +0100" Modified="2015-06-24 11:20:06 +0100">
+                <BinderItem ID="45" Type="Text" Created="2015-06-24 12:20:06 +0200" Modified="2015-06-24 12:20:06 +0200">
                     <Title>Untitled</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -575,7 +575,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="49" Type="Text" Created="2015-06-24 13:05:49 +0100" Modified="2015-06-24 13:06:04 +0100">
+                <BinderItem ID="49" Type="Text" Created="2015-06-24 14:05:49 +0200" Modified="2015-06-24 14:06:04 +0200">
                     <Title>Untitled</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -585,7 +585,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="54" Type="Text" Created="2015-06-29 08:50:16 +0100" Modified="2015-06-29 08:50:16 +0100">
+                <BinderItem ID="54" Type="Text" Created="2015-06-29 09:50:16 +0200" Modified="2015-06-29 09:50:16 +0200">
                     <Title>Untitled</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -595,7 +595,7 @@
                         <TextSelection>0,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="55" Type="Text" Created="2015-06-29 08:50:28 +0100" Modified="2015-06-29 17:24:56 +0100">
+                <BinderItem ID="55" Type="Text" Created="2015-06-29 09:50:28 +0200" Modified="2015-06-29 18:24:56 +0200">
                     <Title>Notes of Obscurity</Title>
                     <MetaData>
                         <IncludeInCompile>Yes</IncludeInCompile>
@@ -605,7 +605,7 @@
                         <TextSelection>20,0</TextSelection>
                     </TextSettings>
                 </BinderItem>
-                <BinderItem ID="56" Type="Text" Created="2015-06-29 10:37:01 +0100" Modified="2015-06-29 10:37:23 +0100">
+                <BinderItem ID="56" Type="Text" Created="2015-06-29 11:37:01 +0200" Modified="2015-06-29 11:37:23 +0200">
                     <Title>References-1</Title>
                     <MetaData>
                         <PageBreakBefore>Yes</PageBreakBefore>
@@ -657,9 +657,9 @@
         <FirstName>Loughran</FirstName>
     </ProjectProperties>
     <ProjectTargets Notify="No">
-        <DraftTarget Type="Words" CountIncludedOnly="Yes" CurrentCompileGroupOnly="No" Deadline="2014-06-19 13:28:32 +0100" IgnoreDeadline="Yes">0</DraftTarget>
+        <DraftTarget Type="Words" CountIncludedOnly="Yes" CurrentCompileGroupOnly="No" Deadline="2014-06-19 14:28:32 +0200" IgnoreDeadline="Yes">0</DraftTarget>
         <SessionTarget Type="Words" CountDraftOnly="Yes" AllowNegatives="Yes" ResetType="Midnight" DeterminedFromDeadline="No" WritingDays="" CanWriteOnDeadlineDate="No">0</SessionTarget>
-        <PreviousSession Words="0" Characters="0" Date="2015-11-18 15:25:18 +0000"></PreviousSession>
+        <PreviousSession Words="0" Characters="0" Date="2016-11-15 12:28:06 +0100"></PreviousSession>
     </ProjectTargets>
     <TemplateFolderID>22</TemplateFolderID>
     <PrintSettings PaperSize="595.289978,841.890015" LeftMargin="72.0" RightMargin="72.0" TopMargin="90.0" BottomMargin="90.0" PaperType="iso-a4" Orientation="Portrait" HorizontalPagination="Clip" VerticalPagination="Auto" ScaleFactor="1.0" HorizontallyCentered="Yes" VerticallyCentered="Yes" Collates="Yes" PagesAcross="1" PagesDown="1"></PrintSettings>
