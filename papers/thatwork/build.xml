@@ -1,0 +1,60 @@
+<?xml version="1.0" ?>
+<project name="paper" default="default" >
+<description>
+  creates a pdf or dvi copy of our paper 
+</description>
+
+  <property file="build.properties"/>
+  <property environment="env"/>
+  <property name="doc.dir" location="build"/>
+  <property name="server" value="" />
+
+  <property name="title"
+    value="web_services_that_work"/>
+    
+  <target name="init">
+    <mkdir dir="${doc.dir}"/>
+  </target>
+  
+  <target name="clean">
+  </target>
+
+
+  <target name="default" depends="docs"
+      description="default build" />
+
+  <target name="docs" depends="dvi,bibtex,pdf" description="do all"/>
+
+    <!-- call latex tp pdf -->
+  <target name="pdf" depends="init" description="PDF">
+    <exec executable="pdflatex" 
+        failonerror="true">
+      <arg value="-silent"/>
+      <arg value="-c-style-errors"/>
+      <arg value="-interaction" />
+      <arg value="nonstopmode"/>
+      <arg file="${title}.tex" />
+    </exec>
+
+  </target>
+
+    <!-- call latex to dvi -->
+  <target name="dvi" depends="init" description="dvi">
+    <exec executable="latex" 
+        failonerror="true">
+      <arg value="-silent"/>
+      <arg value="-c-style-errors"/>
+      <arg value="-interaction" />
+      <arg value="nonstopmode"/>
+      <arg file="${title}.tex" />
+    </exec>
+  </target>
+
+  <target name="bibtex" description="bibliography">
+    <exec executable="bibtex" 
+        failonerror="true">
+      <arg file="${title}" />
+    </exec>
+  </target>    
+  
+</project>
