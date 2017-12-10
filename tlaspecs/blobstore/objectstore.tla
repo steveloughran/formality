@@ -6,6 +6,14 @@
 
 EXTENDS FiniteSets, Sequences, Naturals, TLC
 
+
+(*
+============================================================================
+Model of a Consistent S3 Object Store.
+Author: Steve Loughran
+============================================================================
+*)
+
 (*
 ============================================================================
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -31,6 +39,8 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
       RFC 2119.
 
  *)
+
+
 
 
 ----------------------------------------------------------------------------------------
@@ -627,7 +637,11 @@ THEOREM GetAndHeadInvariant =>
 
 (*
 
-  ListAndGetInvariant == TODO
+  TODO: ListAndGetInvariant
+  The subset of metadata returned from a listing matches that of the individual records
+  returned in HEAD and GET.  
+  
+  
 
 *)
 
@@ -643,7 +657,7 @@ THEOREM InitialStoreState => []StoreStateInvariant
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jun 14 12:21:04 CEST 2017 by stevel
+\* Last modified Sun Dec 10 21:53:18 GMT 2017 by stevel
 \* Created Sun Jun 19 18:07:44 BST 2016 by stevel
 
 
