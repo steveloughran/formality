@@ -20,9 +20,9 @@ section on testing).
 
 ## Introduction
 
-Apache Hadoop is one of the most complicated open source projects being developed. Its code is nothing compared to the scale of the Linux Kernel and device drivers, yet it has some of the same characteristics: a filesystem API and implementations(s) (HDFS), a scheduler for executing work along with a means of submitting work to it (YARN), programs to process data on it (MAPREDUCE, Apache Tez), databases (Apache HBase, Apache Accumulo) and management and monitoring tools, both open source and closed). 
+Apache Hadoop is one of the most complicated open source projects being developed. Its code is nothing compared to the scale of the Linux Kernel and device drivers, yet it has some of the same characteristics: a filesystem API and implementations(s) (HDFS), a scheduler for executing work along with a means of submitting work to it (YARN), programs to process data on it (MAPREDUCE, Apache Tez), databases (Apache HBase, Apache Accumulo) and management and monitoring tools, both open source and closed).
 
-Where it is complicated is that it is designed to run across hundreds to thousands of individual servers, to store tens of petabytes of data, and to execute those scheduled programs in the face of failures of those servers. 
+Where it is complicated is that it is designed to run across hundreds to thousands of individual servers, to store tens of petabytes of data, and to execute those scheduled programs in the face of failures of those servers.
 
 It is both a distributed system, and a filesystem and OS for data & datacenter-scale applications. It is possibly the most ambitious "unified" distributed computing projects ever attempted. (HTTP servers and browsers atop the network stack are significantly larger, but developed in a loosely couple way that reflects their layering and distribution). The core of Hadoop is a single system; the key apps that run atop it and developed alongside it, very tightly coupled to that underlying Hadoop application.
 
@@ -49,7 +49,7 @@ Datasets may be measured in tens or hundreds of Terabytes.
 1. Algorithms to work with these datasets must be designed to scale across the cluster: no single node will suffice.
 1. In-memory storage is too expensive for data of this scale. While the cost will fall over time, the dataset size is likely to grow at a similar rate. Design algorithms to work efficiently when data is stored on a (slower) persistent storage, be it Hard disk or, in future, SSD.
 1. Hadoop is moving towards heterogenous data storage; data may be stored at different levels in the hierarchy, with these details being potentially transparent to the application. Consider using this rather than trying to implement your own memory caches —the HDFS system is designed to support administrator-managed quotas, and distribute the cached layers around the cluster so as to make more efficient use of the storage tiers.
-1. Applications need to be careful not to accidentally overload other parts of the infrastructure. Making too many simultaneous requests to the Hadoop Namenode (i.e directory listing and file status queries) can impact HDFS. Even something as "harmless" as a DNS lookup can be disruptive if a single DNS server is used to service the requests of a large cluster. 
+1. Applications need to be careful not to accidentally overload other parts of the infrastructure. Making too many simultaneous requests to the Hadoop Namenode (i.e directory listing and file status queries) can impact HDFS. Even something as "harmless" as a DNS lookup can be disruptive if a single DNS server is used to service the requests of a large cluster.
 1. A sensible size of number for storing things like counts is `long` rather than `int`.
 
 ### Failure
@@ -79,10 +79,10 @@ For Java code, start with the original "Sun" guidelines.
 
 1. SHOULD use javadoc above methods, class, and field declarations.
 1. SHOULD Avoid explaining how a method works: it will only become obsolete in time and just confuse people. Write down what the method is expected to do.
-1. SHOULD use `// ` within methods. On their own lines, indented to match the source. Not: at end of line. Not: 
+1. SHOULD use `// ` within methods. On their own lines, indented to match the source. Not: at end of line. Not:
 1. MUST NOT: mix `//` comments within multiline code
 
-        String bad = evaluate() 
+        String bad = evaluate()
                     //  update interval
                     + conf.getUpdateInterval()
 1. MUST NOT: use comments to turn `log` commands on or off. Downgrade them or delete them; do not just comment them out.
@@ -129,9 +129,9 @@ public class InterfaceAudience {
 
 The `@Private` and `@Public` annotations resemble those in the Java code. `@Private` means within the `hadoop` source tree ONLY. `@Public` means any application MAY use the class —though the stability annotation may be used as a warning about whether that interface is something the code may rely on.
 
-The unusual one is `@LimitedPrivate`. This is used to declare that a class or interface is intended for use by specific modules and applications. 
+The unusual one is `@LimitedPrivate`. This is used to declare that a class or interface is intended for use by specific modules and applications.
 
-The `@LimitedPrivate` attribute is a troublesome one. It implies that the Hadoop core codebase is not only aware of applications downstream, but that it is explicitly adding features purely for those applications and nothing else. As well as showing favoritism to those applications, it's potentially dangerous. Those special features created for  specific applications are effectively commitments to maintain the special feature indefinitely. In which case: why the special scope? Why not add a public API and make it a good one? This is not a hypothetical question, because special support was added into HDFS for HBase support -an append operation, and an atomic create-a-directory-but-not-its-parent method. The append operation eventually evolved into a public method, with HBase then needing to transition from its back-door operation to the public API. And [HADOOP-10995](https://issues.apache.org/jira/browse/HADOOP-10995) showed where some operations thought to be unused/deprecated were pulled —only to discover that HBase stopped compiling. 
+The `@LimitedPrivate` attribute is a troublesome one. It implies that the Hadoop core codebase is not only aware of applications downstream, but that it is explicitly adding features purely for those applications and nothing else. As well as showing favoritism to those applications, it's potentially dangerous. Those special features created for  specific applications are effectively commitments to maintain the special feature indefinitely. In which case: why the special scope? Why not add a public API and make it a good one? This is not a hypothetical question, because special support was added into HDFS for HBase support -an append operation, and an atomic create-a-directory-but-not-its-parent method. The append operation eventually evolved into a public method, with HBase then needing to transition from its back-door operation to the public API. And [HADOOP-10995](https://issues.apache.org/jira/browse/HADOOP-10995) showed where some operations thought to be unused/deprecated were pulled —only to discover that HBase stopped compiling.
 
 What does that mean? Try to avoid this notion altogether.
 
@@ -166,13 +166,13 @@ It is a requirement that: **all public interfaces must have a stability annotati
  1. All classes that are annotated with `Public` or`LimitedPrivate` MUST have an `InterfaceStability` annotation.
  1. Classes that are `Private` MUST be considered unstable unless a different `InterfaceStability` annotation states otherwise.
  1. Incompatible changes MUST NOT be made to classes marked as stable.
- 
+
  What does that mean?
- 
-   1. The `interface` of a class is, according to the *Hadoop Compatibility Guidelines*, defined as the API level binding, 
-     **the signature**, and the actual behavior of the methods, **the semantics**. 
+
+   1. The `interface` of a class is, according to the *Hadoop Compatibility Guidelines*, defined as the API level binding,
+     **the signature**, and the actual behavior of the methods, **the semantics**.
      A stable interface not only has to be compatible at the source and binary level, it has to work the same.
-   1. During development of a new feature, tag the public APIs as `Unstable` or `Evolving`. 
+   1. During development of a new feature, tag the public APIs as `Unstable` or `Evolving`.
       Declaring that something new is `Stable` is unrealistic. There will be changes, so not constrain yourself by declaring
       that it isn't going to change.
    1. There's also an implicit assumption that any class or interface that does not have any scope attribute
@@ -183,7 +183,7 @@ It is a requirement that: **all public interfaces must have a stability annotati
 with justification. New patches SHOULD remove this attribute if broader access is required, rather than just add new applications to the list.
 
 Submitted patches which provide new APIs for use within the Hadoop stack MUST have scope attributes for all public APIs.
- 
+
 
 ## Concurrency
 
@@ -232,7 +232,7 @@ Warning signs of dated code
 
 1. Subclassing `Thread`.
 1. Spawning off threads, rather than using thread pools via executors.
-1. Using `volatile` fields rather than `Atomic*` classes. 
+1. Using `volatile` fields rather than `Atomic*` classes.
 1. Using `Object.notify()` and `Object.wait()` to signal a thread. If the notification signal is lost, there is a risk that the waiting thread may miss things. Much better: have a concurrent queue with the sending thread posting something to the queue; the receiver fetching it blocking with `take()`  or via a time limited `poll()`.
 
 
@@ -291,7 +291,6 @@ average /= 4;
 
 // has a race condition
 if (!finished) { finished=true; doSomething() }}
-
 ```
 
 All those operations are non-atomic. Essentially, `volatile` fields may only be used for simple get/set operations, not
@@ -326,7 +325,7 @@ local cluster problems.
 
 Hadoop's logging could be improved —there's a bias towards logging for Hadoop developers than for other people, because it's the developers who add the logs they need to get things to work.
 
-Areas for improvement include: including some links to diagnostics pages on the wiki, including more URLs for the hadoop services just brought up, and printing out some basic statistics. 
+Areas for improvement include: including some links to diagnostics pages on the wiki, including more URLs for the hadoop services just brought up, and printing out some basic statistics.
 
 Hadoop is also (slowly) migrating from the apache commons-logging API to SLF4J. This style guide covers SLF4J only:
 
@@ -344,10 +343,10 @@ SLF4J specific issues:
 1. DEBUG-level log calls MAY be guarded. This eliminates the need to construct string instances.
 
 1. Logging which creates complex string output (e.g. iterates through a list to build the message) MUT be guarded.
-  
+
 1. Unguarded statements MUST NOT use string concatenation operations to build the log string, as these are called even if the logging does not take place. Use `{}` clauses in the log string.
   Bad:
-  
+
         LOG.info("Operation "+ action + " outcome: " +outcome)
   Good:
 
@@ -357,7 +356,7 @@ SLF4J specific issues:
 against failures if some of the inner fields are null.
 1. Exceptions should be logged with exception included as a final argument, for the trace.
 1. Do not uprate debug level messages to `LOG.info()` level for your own debugging. Edit the log4J configuration files instead. It is what they are for.
-          
+
 1. `Exception.toString()` MUST be used instead of `Exception.getMessage()`,
 as some classes have a null message.
 
@@ -378,30 +377,30 @@ Contributions in this area are welcome. Any component which performs work for ca
 
 ## Cross-Platform Support
 
-Hadoop is used in Production server-side on Linux and Windows, with some Solaris and AIX deployments. Code needs to work on all of these. 
+Hadoop is used in Production server-side on Linux and Windows, with some Solaris and AIX deployments. Code needs to work on all of these.
 
-Java 6 is unsupported from Hadoop 2.7+, with Java 7 and 8 being the target platforms. Java 9 is expected to remove some of the operations. The old Apple Java 6 JVMs are obsolete and not relevant, even for development. 
+Java 6 is unsupported from Hadoop 2.7+, with Java 7 and 8 being the target platforms. Java 9 is expected to remove some of the operations. The old Apple Java 6 JVMs are obsolete and not relevant, even for development.
 
 Hadoop is used client-side on Linux, Windows, OS/X and other systems.
 
-CPUs may be 32-bit or 64-bit, x86, PPC, ARM or other parts. 
+CPUs may be 32-bit or 64-bit, x86, PPC, ARM or other parts.
 
 JVMs may be: the classic "sun" JVM; OpenJDK, IBM JDK, or other JVMs based off the sun source tree. These tend to differ in
 
 * Heap management.
 * Non-standard libraries (`com.sun`, `com.ibm`, ...). Some parts of the code —in particularly the Kerberos support— has to use reflection to make use of these JVM-specific libraries.
-* Garbage collection implementation, pauses and such like. 
+* Garbage collection implementation, pauses and such like.
 
 Operating Systems vary more, with key areas being:
 
-* Case sensitivity and semantics of underlying native filesystem. Example, Windows NTFS does not support rename operations while a file in a path is open. 
+* Case sensitivity and semantics of underlying native filesystem. Example, Windows NTFS does not support rename operations while a file in a path is open.
 * Native paths. Again, windows with its drive letter `c:\path` structure stands out. Hadoop's `Path` class contains logic to handle these...sometimes test construct paths by going
 
 ```java
 File file = something();
 Path p = new Path("file://" + file.toString())
 ```
-  use
+use
 
 ```java
 Path p = new Path(file.toURI());
@@ -425,7 +424,7 @@ That said, Hadoop is designed to scale to tens of thousands of machines. Algorit
 
 ## Security
 
-Hadoop supports insecure clusters and secure "Kerberized" clusters. 
+Hadoop supports insecure clusters and secure "Kerberized" clusters.
 The latter uses Kerberos to authenticate services as well as users.
 This means it is **critical** that Hadoop code works in secure environments.
 
@@ -434,15 +433,15 @@ a secure Hadoop cluster and (b) how to write code that works in a
 secure Hadoop cluster.
 
 Set up a machine/VM as a Kerberos Domain Controller (KDC) and use this
-to create the keytabs needed for Hadoop run in in secure mode. 
+to create the keytabs needed for Hadoop run in in secure mode.
 This can take a couple of hours, hours in which you will learn the basics of Kerberos.
 
 Insecure clusters run in-cluster code in different accounts
 from the users submitting work. Access to HDFS propagates by passing
 the `HADOOP_USER` environment variable around. This variable is picked up
 by programs which use the Hadoop HDFS client libraries and used
- to impersonate that user (in an unsecured cluster, obviously). 
- 
+ to impersonate that user (in an unsecured cluster, obviously).
+
 YARN applications MUST set this environment variable when launching an application in an insecure cluster.
 
 Secure clusters use Kerberos and require each user submitting work to have an account of the same name in the cluster.
@@ -488,7 +487,7 @@ Read these. You do need to know the details.
 1. Use the `UserGroupInformation` class to manage user identities; it's `doAs()` operation to perform actions
 as a specific user.
 1. Test against both secure and insecure clusters. The `MiniKDC` server provides a basic in-JVM
-Kerberos controller for tests. 
+Kerberos controller for tests.
 1. Some parts of the Hadoop stack (e.g. Zookeeper) are also controlled by JVM properties. Be careful when setting
 up such applications to set the properties before.
 
@@ -516,7 +515,7 @@ or operations teams need —and in some cases can be misleading. As an example,
 the java network stack returns errors such as `java.net.ConnectionRefusedException`
 which returns none of the specifics about what connection was being refused,
 especially the destination host and port, and can be misinterpreted by people unfamiliar with
-Java exceptions or the sockets API as a Java-side problem. 
+Java exceptions or the sockets API as a Java-side problem.
 
 This is why Hadoop wraps the standard socket exceptions in `NetUtils.wrapException()`
 
@@ -532,9 +531,9 @@ In general:
 
 1. Try to use Hadoop's existing exception classes where possible.
 1. Except for some special cases, exceptions MUST be derived from `IOException`
-1. Use specific exceptions in preference to the generic `IOException` 
+1. Use specific exceptions in preference to the generic `IOException`
 1. `IllegalArgumentException` SHOULD be used for some checking of input parameters,
-but only where consistent with other parts of the stack. 
+but only where consistent with other parts of the stack.
 1. The Guava `Preconditions` methods MAY be used for argument checking, but MUST have meaningful messages on failure,
  e.g. `Preconditions.checkArgument(readahead >= 0, "Negative readahead value")`
    1. If an exception is generated from another exception, the inner exception
@@ -545,7 +544,7 @@ text MUST be included in the message of the outer exception.
 1. `Exception.getMessage()` MUST NOT be used. For some exceptions this returns null.
 1. Where Hadoop adds support for extra exception diagnostics (such as with
 `NetUtils.wrapException()`) —use it.
-1. Exceptions should provide any extra information to aid diagnostics, 
+1. Exceptions should provide any extra information to aid diagnostics,
 including —but not limited to— paths, remote hosts, and any details about
 the operation being attempted.
 1. Where Hadoop doesn't add support for extra diagnostics —try implementing it.
@@ -580,7 +579,7 @@ other environment variables consistently.
 Hadoop uses its `ToolRunner` class as the entry point to code —both
 client and server.
 
-This provides a standard set of configuration parameters, including 
+This provides a standard set of configuration parameters, including
 adding the ability to define and  extend the Hadoop XML configuration to
 use.
 
@@ -599,7 +598,7 @@ Tests are a critical part of the Hadoop codebase.
 
 What are those tests for? More fundamentally: what is any test for?
 
-Tests are there to show that a feature works, that it recognises and reacts to invalid/illegal conditions, and fails acceptably in the face of problems. 
+Tests are there to show that a feature works, that it recognises and reacts to invalid/illegal conditions, and fails acceptably in the face of problems.
 
 That is: some tests verify that a feature behaves as expected given valid inputs and starting state of the system. Other tests should be designed to break that behaviour, to create invalid states, generate failure conditions, pass in invalid values —and then verify that the component under test is robust to such states.
 
@@ -621,7 +620,7 @@ Tests MUST
 
 * Have meaningful names, in both classname and test method.
 * Use the prefix `test` for test cases.  This avoids confusion about what is an entry point vs helper method.
-* Use directories under the property `test.dir` for temporary data. The way to get this dir dynamically is: 
+* Use directories under the property `test.dir` for temporary data. The way to get this dir dynamically is:
 
         new File(System.getProperty("test.dir", "target"));
 * Shut down services after the test run.
@@ -651,8 +650,8 @@ Tests MUST NOT
 Tests MAY
 
 * Assume the test machine is well-configured. That is, the machine knows its own name, has adequate disk space.
-    
-Tests SHOULD 
+
+Tests SHOULD
 
 * Provide extra logging information for debugging failures.
 * Use loopback addresses `localhost` rather than hostnames, because the hostname to IP mapping may loop through the external network, where a firewall may then block network access.
@@ -666,10 +665,10 @@ Tests SHOULD
 1. Uses of `assertTrue()` and `assertFalse()` MUST include an error message which provides information on what has failed and why -a message which itself must be robust against null pointers.
 1. Other assertions SHOULD provide an error message for extra diagnostics.
 1. Checks for equality should use `assertEquals(expected, actual)` and `assertNotEquals(expected, actual)`.
-1. Checks for equality of `double` and `float` MUST use `assertEquals(expected, actual, delta)` 
+1. Checks for equality of `double` and `float` MUST use `assertEquals(expected, actual, delta)`
    and `assertNotEquals(expected, actual, delta)`.
 1. Array Equality checks should use `assertArrayEquals(expected, actual)`.
-     
+
 
 #### `assertTrue()` and `assertFalse()`
 
@@ -788,13 +787,17 @@ Test MUST have timeouts. The test runner will kill tests that take too long -but
 
 Add a timeout to the test method
 
-      @Test(timeout = 90000)
+```java
+@Test(timeout = 90000)
+```
 
 Better: declare a test rule which is picked by all test methods
 
-      @Rule
-      public final Timeout testTimeout = new Timeout(90000);
 
+```java
+@Rule
+public final Timeout testTimeout = new Timeout(90000);
+```
 
 *Important*: make it a long enough timeout that only failing tests fail. The target machine
 here is not your own, it is an underpowered Linux VM spun up by Jenkins somewhere.
@@ -805,16 +808,16 @@ Slow tests don't get run. A big cause of delay in Hadoop's current test suite is
 
 ### Exposing class methods for testing
 
-Sometimes classes in Hadoop expose internal methods for use in testing. 
+Sometimes classes in Hadoop expose internal methods for use in testing.
 
 There are three ways of exporting private methods in a production class for this
 
 1. Make `public` and mark `@VisibleForTesting`. Easiest, but risks implicitly becoming part of the API.
-1. Mark `@VisibleForTesting`, but make package scoped. This allows tests in the same package to use the method, 
+1. Mark `@VisibleForTesting`, but make package scoped. This allows tests in the same package to use the method,
 so is unlikely to become part of the API. It does require all tests to be in the same package, which
 can be a constraint.
 1. Mark `@VisibleForTesting`, but make `protected`, then subclass in the test source tree
- with a class that exposes the methods. This adds a new risk: that it is subclassed 
+ with a class that exposes the methods. This adds a new risk: that it is subclassed
  in production. It may also add more maintenance costs.
 
 
@@ -829,11 +832,11 @@ it's a sign that the API is limited. People will end up using your test methods,
 either because they needed to, or just because they copied your code as a starting
 point —and it was using those methods.
 
-For any class which is designed for external invocation, this implies 
+For any class which is designed for external invocation, this implies
 you should think about improving that public API for testability,
-rather than sneaking into the internals. 
+rather than sneaking into the internals.
 
-If your class isn't designed for direct public consultation, but instead 
+If your class isn't designed for direct public consultation, but instead
 a small part of a service remotely accessible over the network
 —then yes, exposing the internals may be justifiable. Just bear in mind that you are
 increasing the costs of maintaining the code: someone will need to update all
@@ -847,7 +850,7 @@ the tests as changes are made to the internals of a class.
 
 ### Testing with Exceptions
 
-Catching and validating exceptions are an essential 
+Catching and validating exceptions are an essential
 aspect of testing failure modes. However, it is dangerously
 easy to write brittle tests which fail the moment anyone changes the exception
 text.
@@ -900,9 +903,9 @@ public void testSomething {
 }
 ```
 
-This takes advantage of JUnit 4's ability to expect a specific exception class, and looks for it. This is nice and short. Where it is weak is that it doesn't let you check the contents of the exception. If the exception is sufficiently unique within the actions, that may be enough. 
+This takes advantage of JUnit 4's ability to expect a specific exception class, and looks for it. This is nice and short. Where it is weak is that it doesn't let you check the contents of the exception. If the exception is sufficiently unique within the actions, that may be enough.
 
-*Good*: examine the contents of the exception as well as the type. 
+*Good*: examine the contents of the exception as well as the type.
 Rethrow the exception if it doesn't match, after adding a log message explaining why it was rethrown:
 
 ```java
@@ -920,10 +923,10 @@ public void testSomething {
 }
 ```
 
-This implementation ensures all exception information is propagated. If it doesn't fail, the return value of the 
-operation is included in the failure exception, to aid debugging. 
-As the test is failing because the code in question is not behaving as expected, 
-having a stack trace in the test results can be invaluable. 
+This implementation ensures all exception information is propagated. If it does not fail, the return value of the
+operation is included in the failure exception, to aid debugging.
+As the test is failing because the code in question is not behaving as expected,
+having a stack trace in the test results can be invaluable.
 
 Even better, rather than write your own handler (repeatedly), use the one in `org.apache.hadoop.test.GenericTestUtils`, which is bundled in `hadoop-common-test` JAR:
 
@@ -939,7 +942,7 @@ public void testSomething {
 }
 ```
 
-In comparing the various options, the JUnit 4 {{expected}} will be less informative, but it makes for a much easier to understand test. For it to be a good test, some conditions must be met
+In comparing the various options, the JUnit 4 `expected` will be less informative, but it makes for a much easier to understand test. For it to be a good test, some conditions must be met
 
 1. There's only one place in the test case where raising the expected exception can happen. If the exception could get raised before or after the core operation being tested, then the test could be failing in the wrong place —with the test runner not picking it up.
 1. The type of the exception is sufficient to verify that the failure was as expected. A high level `Exception` or `IOException` is unlikely to be adequate. Otherwise, go for the `GenericTestUtils` one.
@@ -964,7 +967,7 @@ fail, the assertion raised includes the output of the operation in the error tex
 to make it easy to make assertions without try/catch clauses, and including as much diagnostics as it can:
 including the stack traces.
 
-As with the Scalatest `intercept()` method, if the desired exception is raised, then Hadoop's `intercept()` returns it for further checks. So far our tests haven't made use of that feature. 
+As with the Scalatest `intercept()` method, if the desired exception is raised, then Hadoop's `intercept()` returns it for further checks. So far our tests haven't made use of that feature.
 
 A more complex call is `eventually()`; again based on its Scalatest namesake, mixing in experience using a Groovy test mechanism in Apache Slider (incubating). Its aim is to support retrying for a condition to be met in a more structured way than today.
 
@@ -1000,17 +1003,17 @@ The test code has been a key place for us to learn this, and, because intercept 
 Not all tests work everywhere
 
 ```java
-    public static void skip(String message) {
-      log.warn("Skipping test: {}", message)
-      Assume.assumeTrue(message, false);
-    }
+public static void skip(String message) {
+  log.warn("Skipping test: {}", message)
+  Assume.assumeTrue(message, false);
+}
 
-    public static void assume(boolean condition, String message) {
-      if (!condition) {
-        log.warn("Skipping test: {}",  message)
-        Assume.assumeTrue(message, false);
-      }
-    }
+public static void assume(boolean condition, String message) {
+  if (!condition) {
+    log.warn("Skipping test: {}",  message)
+    Assume.assumeTrue(message, false);
+  }
+}
 ```
 
 ### Testing Tips
@@ -1019,8 +1022,10 @@ Not all tests work everywhere
 You can automatically pick the name to use for instances of mini clusters and the
 like by extracting the method name from JUnit:
 
-      @Rule
-      public TestName methodName = new TestName();
+```java
+@Rule
+public TestName methodName = new TestName();```
+```
 
 # Hadoop Coding Standards: Other Languages
 
@@ -1057,21 +1062,21 @@ reasonably complex, do add some comments explaining what you are doing.
 
 #### MUST NOT
 1. MUST NOT impact the performance of the x86 code. This is the primary CPU family used in production Hadoop.
-   While the project is happy to accept patches for other CPUs (e.g. ARM, PPC, ...), it must not be at the expense of x86. 
+   While the project is happy to accept patches for other CPUs (e.g. ARM, PPC, ...), it must not be at the expense of x86.
 1. MUST NOT remove or rename existing methods.
 
 ###  Maven POM files
 
 * Patches containing changes to maven files only MUST be marked as against the component `build`.
-* All declarations of dependencies with their versions must be in the file `hadoop-project/pom.xml`. 
+* All declarations of dependencies with their versions must be in the file `hadoop-project/pom.xml`.
 * Version information must be included as a property, set in the `<properties>` section. This is to make it easy for people to switch versions of dependencies —be it experimentally or when making a unified release of a set of Hadoop-stack artifacts.
 * Be as restrictive as possible in your dependency scoping: use `<test>` for anything only needed in tests in particular.
 * If it is for an optional feature, set the scope to `<provided>`. That means it will be used at build time, but not forced onto downstream dependents.
 * Avoid adding anything else to the main projects. If it adds something to the `hadoop-client` transitive dependency set, there's a risk of causing version problems with downstream users.
 * Be very cautious when updating dependencies.
 
-#### Dependency updates 
-  
+#### Dependency updates
+
 [https://issues.apache.org/jira/browse/HADOOP-9991](HADOOP-9991) covers dependency updates.
 
 Dependency updates are an eternal problem in Hadoop. While it seems simple and trivial to move up to later versions, it often
@@ -1094,11 +1099,12 @@ for a more detailed list see [Fear of Dependencies ](http://steveloughran.blogsp
 
 Here are some things which scare the developers when they arrive in JIRA:
 
-* Vast changes which arrive without warning and are accompanied by press releases. Please, get on the developer list, create the JIRAs,
-  start collaboratively developing things. It's how we get confidence that the code is good —and that you can follow a collaborative development
-  process.
+* Vast changes which arrive without warning and are accompanied by press releases.
+  Please, get on the developer list, create the JIRAs,
+  start collaboratively developing things.
+  It's how we get confidence that the code is good —and that you can follow a collaborative development process.
 * Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
-* Patches which delve into the internals of critical classes. The HDFS NameNode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users. 
+* Patches which delve into the internals of critical classes. The HDFS NameNode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users.
 * Changes to the key public APIs of Hadoop. That includes the `FileSystem` and `FileContext` APIs, YARN submission protocols, MapReduce APIs, and the like.
 * Patches that reorganise the code as part of the diff. That includes imports. They make the patch bigger (hence harder to review) and may make it harder to merge in other patches.
 * Big patches without tests.
@@ -1111,5 +1117,3 @@ Things that are appreciated:
 * Good tests.
 * For code that is delving into the internals of the concurrency/consensus logic, well argued explanations of how the code works in all possible circumstances. State machine models and even TLA+ specifications can be used here to argue your case.
 * Any description of what scale/workload your code was tested with. If it was a big test, that reassures people that this scales well. And if not, at least you are being open about it.
-
-
