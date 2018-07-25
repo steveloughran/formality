@@ -207,7 +207,8 @@ synchronization blocks.
 1. Consider operation-specific locks through having (`final`) fields which can be locked for access to specific areas.
 1. If-and-only-if-absolutely-necessary, lock on the `.class` object. This is justifiable if the operation would affect all instances of a class.
 1. Avoid calling native code in locked regions.
-1. Avoid calling expensive operations (including `System.currentTimeMillis()`) in a locked region. If these operations do not need to be synchronized, consider calling them in advance and cache the results
+1. Avoid calling expensive operations (including `System.currentTimeMillis()`) in a locked region. If these operations do not need to be synchronized, consider calling them in advance and cache the results.
+1. Be aware: `System.getProperty()` uses a synchronized `HashTable`, so if done in a synchronized block will block other threads. Pull up to be outside the block.
 1. Code MUST NOT ignore an `InterruptedException` —it is a sign that part of the
 system wishes to stop that thread, often on a process shutdown.
 Wrap it in an `InterruptedIOException` if you need to convert to an `IOException`.
