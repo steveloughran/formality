@@ -127,7 +127,8 @@ public class InterfaceAudience {
   public @interface Private {};
 ```
 
-The `@Private` and `@Public` annotations resemble those in the Java code. `@Private` means within the `hadoop` source tree ONLY. `@Public` means any application MAY use the class —though the stability annotation may be used as a warning about whether that interface is something the code may rely on.
+
+  The `@Private` and `@Public` annotations resemble those in the Java code. `@Private` means within the `hadoop` source tree ONLY. `@Public` means any application MAY use the class —though the stability annotation may be used as a warning about whether that interface is something the code may rely on.
 
 The unusual one is `@LimitedPrivate`. This is used to declare that a class or interface is intended for use by specific modules and applications.
 
@@ -593,7 +594,7 @@ as `JCommander`. If an alternative CLI parser library is used, the `main()`
 routine SHOULD support the standard command line options, especially the
 `-D name=value` syntax.
 
-## Tests
+## <a name="tests"></a> Tests
 
 Tests are a critical part of the Hadoop codebase.
 
@@ -658,7 +659,7 @@ Tests SHOULD
 * Use loopback addresses `localhost` rather than hostnames, because the hostname to IP mapping may loop through the external network, where a firewall may then block network access.
 * Clean up after themselves.
 
-### Assertions
+### <a name="assertions"></a>Assertions
 
 
 1. Complex assertions should be broken into smaller ones, so that failure causes can be more easily determined.
@@ -717,36 +718,59 @@ are misleading.
 
 *Bad*
 
-    assertEquals(counter.get(), 7);
-
+```java
+assertEquals(counter.get(), 7);
+```
+  
 If the counter was only "3", the error text would be
 
-    expected:<3> but was:<7>
-
+```
+expected:<3> but was:<7>
+```
 *Good*
 
-    assertEquals(7, counter.get());
-
+```java
+assertEquals(7, counter.get());
+```
+  
 For the counter==3 error condition, the text would now be
 
-    expected:<7> but was:<3>
-
+```
+expected:<7> but was:<3>
+```
+      
 Which correctly describes the problem.
 
 *Best*
 
-    assertEquals("current counter", 7, counter.get());
+```java
+assertEquals("current counter", 7, counter.get());
+```  
 
 This would give an error message
 
-    current counter expected:<7> but was:<3>
+```
+current counter expected:<7> but was:<3>
+```  
 
-Because there's already a useful error message, adding a string is only a SHOULD or a MAY, not a MUST. Its purpose is to provide some more information on the test report, rather than actually show the values of the arguments.
+Because there assertion already has a useful error message, adding a string is only a SHOULD or a MAY, not a MUST. Its purpose is to provide some more information on the test report, rather than actually show the values of the arguments.
+      
+Extra text is critical if the assertion is only on a fraction of the actual data structure being compared, and on a failure you will need the whole structure to debug things
+      
+```java
+Assert.assertNotEquals("Modification time of raw matches that of guarded"
+       +"\nraw=" + rawFileStatus
+      + " guarded=" + guardedFileStatus,
+        rawFileStatus.getModificationTime(),
+        guardedFileStatus.getModificationTime());
+````
 
 ### `fail()`
 
-`Assert.fail()` is the method to call when a test has failed in a way too complex for one of the existing assertions, or in any new assertions that you have written yourself. It should always be called with meaningful text
+`Assert.fail()` can be called to explicitly fail something. It should always be called with meaningful text
 
+old example
+      
 ```java
 try {
   String s = operationExpectedToFail(null);
@@ -756,6 +780,13 @@ try {
 }
 ```
 
+That specific use has generally been superceded in new code by  `LambdaTestUtils.intercept` which handles the generation of the assertion and returns
+the caught exception for further analysis.
+
+```java
+intercept(IOException.class, 
+  () -> operationExpectedToFail());
+```
 
 
 #### Assertion Text
@@ -766,21 +797,29 @@ That means adding meaningful text to assertions, along with any diagnostics info
 
 *Bad*
 
-    assertTrue(target.exec());
-
+```java
+assertTrue(target.exec());
+```
+This is utterly meaningless on a failure
+  
 *Good*
 
-    assertTrue("exec() failed on " + target, target.exec());
-
+```java
+assertTrue("exec() failed on " + target, target.exec());
+```
 *Bad*
 
-    assertTrue(target.update() == 0);
-
+```java
+assertTrue(target.update() == 0);
+```
 *Good*
 
-    assertEquals("update() failed on " + target, 0, target.update());
-
+```java
+assertEquals("update() failed on " + target, 0, target.update());
+```
 Such assertions are aided by having the classes under test having meaningful `toString()` operators —which is why these should be implemented.
+  
+*Sidenote*: this is als why toString() values must not throw exceptions of their own.  
 
 ### Timeouts
 
@@ -948,7 +987,7 @@ In comparing the various options, the JUnit 4 `expected` will be less informativ
 1. There's only one place in the test case where raising the expected exception can happen. If the exception could get raised before or after the core operation being tested, then the test could be failing in the wrong place —with the test runner not picking it up.
 1. The type of the exception is sufficient to verify that the failure was as expected. A high level `Exception` or `IOException` is unlikely to be adequate. Otherwise, go for the `GenericTestUtils` one.
 
-### Testing with Java 8 closures through `LambdaTestUtils`
+### <a name="intercept"></a> Testing with Java 8 closures through `LambdaTestUtils`
 
 An evolving class in the hadoop common test JAR is `org.apache.hadoop.test.LambdaTestUtils`. This contains a set of static methods
 intended to make it easy to test with Java 8 closures. It is based on concepts in Scalatest, to the extent of using the same method names.
@@ -957,9 +996,9 @@ A key method is `intercept()`, which takes the class of an exception, an optiona
 a closure:
 
 ```java
-intercept(IllegalArgumentException.class, "Wrong FS",
-  () -> Paths.getLocalTaskAttemptTempDir(conf, jobUUID,
-      tac.getTaskAttemptID()));
+intercept(IllegalArgumentException.class, 
+  Errors.FAILURE_ON_PATH,
+  () -> Paths.getLocalTaskAttemptTempDir(conf, jobUUID, tac.getTaskAttemptID()));
 ````
 
 The closure MUST throw the exception of the specified type, and, if specified, the containing text.
@@ -998,6 +1037,33 @@ integration tests; it can now be used for similar benefit in Hadoop.
 
 The test code has been a key place for us to learn this, and, because intercept and eventually closures can be replaced with anonymous classes extending `Callable` and `VoidCallable` (an easy way to return voids), backported to Java-7 Hadoop with minor effort.
 
+###<a name=""></a> Using `AssertionError` to include an inner exception
+  
+Take an operation which returns an exception  
+```java
+PathIOException pathIOE = intercept(PathIOException.class, ()-> testfs.openFile("").build());
+```  
+Now imagine you want to examine it some more -and if it doesn't match your expectations, rethrow it.
+  
+*Bad*
+  
+```java
+assertNotNull(pathIOE.getPath())
+````  
+  
+This is bad as if the exception isn't what expected, while the JUnit assertion will fail, *the stack trace is lost*  
+
+Better to explicitly throw an AssertionError, using the caught exception as the cause:
+
+*Good*
+```java
+if (pathIOE.getPath() != null) {
+  throw new AssertionError("no path", pathIOE);
+}
+````  
+
+This will fail the test, and the test report will contain the underlying exception.
+  
 
 ### Skipping tests that aren't available on the test system
 
@@ -1096,7 +1162,7 @@ for a more detailed list see [Fear of Dependencies ](http://steveloughran.blogsp
 
 
 
-# Submitting patches
+# <a name="patches"></a>Submitting patches
 
 Here are some things which scare the developers when they arrive in JIRA:
 
