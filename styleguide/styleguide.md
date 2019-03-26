@@ -128,7 +128,7 @@ public class InterfaceAudience {
 ```
 
 
-  The `@Private` and `@Public` annotations resemble those in the Java code. `@Private` means within the `hadoop` source tree ONLY. `@Public` means any application MAY use the class —though the stability annotation may be used as a warning about whether that interface is something the code may rely on.
+The `@Private` and `@Public` annotations resemble those in the Java code. `@Private` means within the `hadoop` source tree ONLY. `@Public` means any application MAY use the class —though the stability annotation may be used as a warning about whether that interface is something the code may rely on.
 
 The unusual one is `@LimitedPrivate`. This is used to declare that a class or interface is intended for use by specific modules and applications.
 
@@ -500,6 +500,37 @@ Avoid this by putting in the effort early.
 
 
 
+## Imports
+  
+The ordering of imports in hadoop was somehow agreed on a long time ago.
+  
+```java
+import java.*
+
+import javax.*
+
+import non.org.apache.*
+
+import org.apache.*
+
+import static *
+```
+
+* No wildcards for non-static imports
+* Wildcards may be used in static imports.
+  
+Imports are where false-positive patch merge conflict arises: Patch A adds one import; patch B adds another nearby:
+the patches refuse to coexist. Trying to cherry-pick patches across branches is equally painful.
+  
+1. Please do not reorder imports, especially in the IDE "clean up imports" feature. It only complicates all of this.
+1. Similarly: if your IDE automatically creates .* package imports at a certain threshold, set that threshold to be "999".
+1. If you are patching some code and the imports are complete mess of randomness, do at least try to add new imports adjacent to their
+  existing packages.
+1. And add new static imports at the bottom.      
+
+It's interesting to see how Spark's commit checker reviews all its patches and enforces the ordering.
+It'd be good to know if that reduces merge and backport confict.
+    
 ## Exceptions
 
 Exceptions are a critical form of diagnostics on system failures.
