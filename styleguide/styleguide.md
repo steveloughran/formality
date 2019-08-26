@@ -30,6 +30,40 @@ For that reason, the project has high expectations and standards of changes to t
 
 It is also intended to provide guidelines for anyone writing applications on top of Hadoop, including YARN applications.
 
+
+# <a name="patches"></a>Submitting Pull Requests
+    
+Github is now where Hadoop patches are reviewed.
+    
+1. Submit changes as a pull request against [apache/hadoop](https://github.com/apache/hadoop).
+1. You MUST have an existing Apache JIRA for the PR: Github PRs without JIRAs tend to get lost.
+1. You MUST use the JIRA ID in the title. This is used to automatically cross-link the PR.
+1. Object Store patches: you MUST run all integration tests and declare the store endpoint you ran against.
+1. You MUST NOT assign other people as reviewers without asking them first. It's too impersonal a way to seek assistance and just alienates the assignee.
+  
+Here are some things which scare the developers when they arrive in JIRA:
+
+* Vast changes which arrive without warning and are accompanied by press releases.
+  Please, get on the developer list, create the JIRAs,
+  start collaboratively developing things.
+  It's how we get confidence that the code is good —and that you can follow a collaborative development process.
+* Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
+* Patches which delve into the internals of critical classes. The HDFS NameNode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users.
+* Changes to the key public APIs of Hadoop. That includes the `FileSystem` and `FileContext` APIs, YARN submission protocols, MapReduce APIs, and the like.
+* Patches that reorganise the code as part of the diff. That includes imports. They make the patch bigger (hence harder to review) and may make it harder to merge in other patches.
+* Big patches without tests.
+* Medium sized patches without tests.
+* Small patches without tests unless they are simple things like spelling corrections in strings or comments.
+
+Things that are appreciated:
+
+* Documentation, in javadocs and in the `main/site` packages.
+* Good tests.
+* For code that is delving into the internals of the concurrency/consensus logic, well argued explanations of how the code works in all possible circumstances. State machine models and even TLA+ specifications can be used here to argue your case.
+* Any description of what scale/workload your code was tested with. If it was a big test, that reassures people that this scales well. And if not, at least you are being open about it.
+
+
+
 ## Designing for Scale; Designing for Fail
 
 Hadoop is designed to work at the scale of thousands of machines. Some of them will fail on large jobs or jobs that take time. Code needs to be designed for both the scale and the failure modes.
@@ -193,6 +227,7 @@ Hadoop services are highly concurrent. This codebase is not a place to learn abo
 
 Background: the Java memory model:
 * [The Java Memory Model](http://www.cs.umd.edu/~pugh/java/memoryModel/), especially [this paper](http://dl.dropbox.com/u/1011627/journal.pdf).
+* [The Java Tutorials: Atomic Access](https://docs.oracle.com/javase/tutorial/essential/concurrency/atomic.html)].
 
 1. Use the `java.utils.concurrent` classes wherever possible.
 1. If simple datatypes are shared across threads outside of `synchronized` blocks, they MUST be marked `volatile`.
@@ -381,8 +416,7 @@ Contributions in this area are welcome. Any component which performs work for ca
 
 Hadoop is used in Production server-side on Linux and Windows, with some Solaris and AIX deployments. Code needs to work on all of these.
 
-Java 6 is unsupported from Hadoop 2.7+, with Java 7 and 8 being the target platforms. Java 9 is expected to remove some of the operations. The old Apple Java 6 JVMs are obsolete and not relevant, even for development.
-
+Java 8 is the minmum version branch-2 and branch-3 target.
 Hadoop is used client-side on Linux, Windows, OS/X and other systems.
 
 CPUs may be 32-bit or 64-bit, x86, PPC, ARM or other parts.
@@ -392,6 +426,7 @@ JVMs may be: the classic "sun" JVM; OpenJDK, IBM JDK, or other JVMs based off th
 * Heap management.
 * Non-standard libraries (`com.sun`, `com.ibm`, ...). Some parts of the code —in particularly the Kerberos support— has to use reflection to make use of these JVM-specific libraries.
 * Garbage collection implementation, pauses and such like.
+* Error Messagesa
 
 Operating Systems vary more, with key areas being:
 
@@ -502,7 +537,7 @@ Avoid this by putting in the effort early.
 
 ## Imports
   
-The ordering of imports in hadoop was somehow agreed on a long time ago.
+The ordering of imports in hadoop was somehow agreed on a long time ago and and never formally documented.
   
 ```java
 import java.*
@@ -516,8 +551,8 @@ import org.apache.*
 import static *
 ```
 
-* No wildcards for non-static imports
-* Wildcards may be used in static imports.
+* Non-static imports MUST NOT use wildcards
+* Wildcards MAY be used in static imports.
   
 Imports are where false-positive patch merge conflict arises: Patch A adds one import; patch B adds another nearby:
 the patches refuse to coexist. Trying to cherry-pick patches across branches is equally painful.
@@ -526,7 +561,7 @@ the patches refuse to coexist. Trying to cherry-pick patches across branches is 
 1. Similarly: if your IDE automatically creates .* package imports at a certain threshold, set that threshold to be "999".
 1. If you are patching some code and the imports are complete mess of randomness, do at least try to add new imports adjacent to their
   existing packages.
-1. And add new static imports at the bottom.      
+1. And always new static imports at the bottom.      
 
 It's interesting to see how Spark's commit checker reviews all its patches and enforces the ordering.
 It'd be good to know if that reduces merge and backport confict.
@@ -675,6 +710,7 @@ Tests MUST NOT
 * Assume they are running on a Unix system, with `/unix/style/paths`.
 * Require human intervention to validate the test outcome.
 * Store data in `/tmp`, or the temp dir suggested by `java.io.createTempFile(String, String)`. All temporary data must be created under the directory `./target`. This will be cleaned up in test runs, and not interfere with parallel test runs.
+* Use the user's home directory or assume write access to it.
 * Require internet access. That includes DNS lookup of remote sites. It also included expecting lookups of non-resolvable hosts to fail —some ISPs return a search site in this situation, so an `nslookup invalid.example.org` does return an IP address.
 * Run up large bills against remote cloud storage infrastructures *by default*. The object store client test suites are automatically skipped for this reason.
 * Require cloud infrastructure keys be added into SCM-managed files for test runs. This makes it all to easy to accidentally commit AWS login credentials to public repositories, which can be an expensive mistake.
@@ -692,6 +728,7 @@ Tests SHOULD
 
 ### <a name="assertions"></a>Assertions
 
+Here are the best-practice requirements of JUnit assertions. We are now adopting AssertJ, but haven't used them enough to have any best practices there.
 
 1. Complex assertions should be broken into smaller ones, so that failure causes can be more easily determined.
 1. Assertions should use the more specific `assertXXX` checks over `assertTrue()` and `assertFalse()`.
@@ -974,7 +1011,7 @@ public void testSomething {
 }
 ```
 
-This takes advantage of JUnit 4's ability to expect a specific exception class, and looks for it. This is nice and short. Where it is weak is that it doesn't let you check the contents of the exception. If the exception is sufficiently unique within the actions, that may be enough.
+This takes advantage of JUnit's ability to expect a specific exception class, and looks for it. This is nice and short. Where it is weak is that it doesn't let you check the contents of the exception. If the exception is sufficiently unique within the actions, that may be enough.
 
 *Good*: examine the contents of the exception as well as the type.
 Rethrow the exception if it doesn't match, after adding a log message explaining why it was rethrown:
@@ -1130,7 +1167,7 @@ public TestName methodName = new TestName();```
 ### Code Style: Python
 
 1. The indentation should be two spaces.
-1. Code for Windows as well as Unix
+1. Code for Windows as well as Unix.
 
 
 ### Code Style: Bash
@@ -1161,7 +1198,7 @@ reasonably complex, do add some comments explaining what you are doing.
 #### MUST NOT
 1. MUST NOT impact the performance of the x86 code. This is the primary CPU family used in production Hadoop.
    While the project is happy to accept patches for other CPUs (e.g. ARM, PPC, ...), it must not be at the expense of x86.
-1. MUST NOT remove or rename existing methods.
+1. MUST NOT remove or rename existing methods. This has creasted hard-to-debug version compatibility problems in the past. 
 
 ###  Maven POM files
 
@@ -1188,30 +1225,6 @@ for a more detailed list see [Fear of Dependencies ](http://steveloughran.blogsp
 1. Patches SHOULD come with justifications, rather than just "a bit old".
 1. For patches against the high risk dependencies, SHOULD be accompanied with details about builds and tests of downstream applications, including
   Apache HBase, Apache Hive, and other major projects.  
-1. Proposed patches which change to an pre-release version of any artifact SHALL NOT be accepted. Sorry.
+1. Proposed patches which change to an pre-release version of any artifact SHALL NOT be accepted unless its a critical CVE fix. Sorry.
 
 
-
-
-# <a name="patches"></a>Submitting patches
-
-Here are some things which scare the developers when they arrive in JIRA:
-
-* Vast changes which arrive without warning and are accompanied by press releases.
-  Please, get on the developer list, create the JIRAs,
-  start collaboratively developing things.
-  It's how we get confidence that the code is good —and that you can follow a collaborative development process.
-* Large patches which span the project. They are a nightmare to review and can change the source tree enough to stop other patches applying.
-* Patches which delve into the internals of critical classes. The HDFS NameNode, Edit log and YARN schedulers stand out here. Any mistake here can cost data (HDFS) or so much CPU time (the schedulers) that it has tangible performance impact of the big Hadoop users.
-* Changes to the key public APIs of Hadoop. That includes the `FileSystem` and `FileContext` APIs, YARN submission protocols, MapReduce APIs, and the like.
-* Patches that reorganise the code as part of the diff. That includes imports. They make the patch bigger (hence harder to review) and may make it harder to merge in other patches.
-* Big patches without tests.
-* Medium sized patches without tests.
-* Small patches without tests unless they are simple things like spelling corrections in strings or comments.
-
-Things that are appreciated:
-
-* Documentation, in javadocs and in the `main/site` packages.
-* Good tests.
-* For code that is delving into the internals of the concurrency/consensus logic, well argued explanations of how the code works in all possible circumstances. State machine models and even TLA+ specifications can be used here to argue your case.
-* Any description of what scale/workload your code was tested with. If it was a big test, that reassures people that this scales well. And if not, at least you are being open about it.
