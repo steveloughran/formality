@@ -343,7 +343,7 @@ final AtomicDouble average = new AtomicDouble(0);
 final AtomicReference<MyType> handle = new AtomicReference<>(null);
 ```
 
-Accessing the atomic types is more expensive than `volatiles`; there's a lot more code underneath,
+Accessing the atomic types is more expensive than `volatile`; there's a lot more code underneath,
 and potentially mutual exclusion operations.
 If you want to have a simple near-static datastructure that is shared across threads and
 guaranteed not to cause deadlock, use a volatile.
@@ -371,7 +371,7 @@ Hadoop is also (slowly) migrating from the apache commons-logging API to SLF4J. 
 1. With commons logging, all log calls must be guarded with a check for log level.
 1. Production code MUST NOT assume that log4J is the logger behind the log APIs.
 1. Test code MAY assume that Log4J is in use and can tune back log levels in certain circumstances. They MUST use the methods in
-  {{GenericTestUtils}} to do this, for ease of future maintenance.
+  `GenericTestUtils` to do this, for ease of future maintenance.
 
 SLF4J specific issues:
 
@@ -728,7 +728,7 @@ Tests SHOULD
 
 ### <a name="assertions"></a>Assertions
 
-Here are the best-practice requirements of JUnit assertions. We are now adopting AssertJ, but haven't used them enough to have any best practices there.
+*Here are the best-practice requirements of JUnit assertions. We are now adopting AssertJ*
 
 1. Complex assertions should be broken into smaller ones, so that failure causes can be more easily determined.
 1. Assertions should use the more specific `assertXXX` checks over `assertTrue()` and `assertFalse()`.
@@ -801,7 +801,7 @@ expected:<3> but was:<7>
 assertEquals(7, counter.get());
 ```
   
-For the counter==3 error condition, the text would now be
+For the `counter==3` error condition, the text would now be
 
 ```
 expected:<7> but was:<3>
@@ -856,6 +856,9 @@ intercept(IOException.class,
   () -> operationExpectedToFail());
 ```
 
+If the operation did not fail, the error string includes the stringified return value of the operation.
+If done well, this aids debugging -and is why we prefer using intercept over the equivalent provided
+by JUnit and AssertJ.
 
 #### Assertion Text
 
@@ -1211,8 +1214,6 @@ reasonably complex, do add some comments explaining what you are doing.
 * Be very cautious when updating dependencies.
 
 #### Dependency updates
-
-[https://issues.apache.org/jira/browse/HADOOP-9991](HADOOP-9991) covers dependency updates.
 
 Dependency updates are an eternal problem in Hadoop. While it seems simple and trivial to move up to later versions, it often
 turns out that something downstream breaks. Nobody likes this.
