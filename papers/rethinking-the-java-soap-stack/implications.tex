@@ -1,0 +1,82 @@
+\section{Implications}
+\label{implications}
+
+We believe that only two categories of web service developer exist:
+those who are comfortable with XML and want to work with it, and those
+who aren't but end up doing so anyway. JAX-RPC provides a sugar coated
+wrapping that encourages developers who are relatively unfamiliar with
+XML to bite. Yet, as anyone who has written a web service of any
+complexity knows, the XML must be faced and understood eventually. In
+practise, the task of creating a real web service is made more
+difficult, not less, by the huge volume of code JAX-RPC introduces
+into a project.
+
+JAX-RPC only superficially benefits developers who do not want to work
+with XML: by hiding all the details, and giving developers a model of
+remote method calls via serialised Java graphs, JAX-RPC makes it
+harder to write true, interoperable SOAP services. Not only that, but
+it introduces the O/X mapping problem, while retaining an invocation
+model that is inappropriate for long-distance networks and slow
+communications.
+
+We argue that JAX-RPC greatly complicates users' software by
+introducing a complex and fickle serialisation system. The generation
+of WSDL from Java code, which JAX-RPC encourages, makes it very
+difficult to maintain version consistency of an interface, and
+creates significant interoperability problems.
+
+On top of all of this, for users who do want to work with the XML
+(typically those whose first project did not!) JAX-RPC is
+inappropriate because it hides everything. Trying to integrate custom
+XML documents with JAX-RPC serialisations is possible, but very hard
+work. In Apache Axis, DOM trees get recreated when assigning or
+extracting them from {\tt SoapMessageElement} implementations.
+
+
+\subsection{The Future}
+\label{implications:future}
+
+JAX-RPC has become a cornerstone of Enterprise Java
+\cite{spec:J2EE-14}, alongside RMI and RMI-over-CORBA. That is not by
+itself a bad thing, but we believe that it creates the misconception
+that developers can trivially migrate from RMI to SOAP. If they
+attempt to do, they will fall into the traps that JAX-RPC creates for
+them.
+
+The 2.0 revision of the JAX-RPC specification promises to correct some
+of these flaws, but we believe many problems remain. It uses a new O/X
+mapping, the Java Architecture for XML Binding 2.0 (JAXB
+2.0)\cite{spec:JAX-B-20}. This is a sophisticated framework for
+mapping XML into Java, having broad support for the generation of
+classes from XML Schema, and of XML Schema from annotated classes. 
+Despite many improvements over its predecessors, we believe JAXB is
+simply a more comprehensive approach to a problem that is
+fundamentally ill-posed.
+  
+JAX-RPC 2.0 continues the attempt to provide a metaphor of
+method-invocation on object instances across SOAP transport. 
+This fundamentally unmaintainable metaphor, coupled with the
+automated generation of WSDL from Java source code, means that in our
+opinion JAX-RPC has not outgrown its limitations. 
+
+It is easy to understand the rationale behind the decisions made in
+designs JAX-RPC and JAXB 2.0. Working with raw XML is hard. Writing
+good XML Schema documents is hard. WSDL is exceedingly painful to work
+with. Asynchronous messaging is more complex than blocking
+RPC. Nevertheless, we believe that all these things will be part of
+any solution enabling developers to realise the promised
+interoperability and loose coupling of SOAP-based systems.
+
+WSDL itself is also evolving, with the 2.0 revision of the
+specification nearing completion \cite{spec:WSDL-20}. It is to be
+hoped that a new WSDL syntax will make it easier to specify service
+contracts, and some new features of the language (for example the {\tt
+interface} construct) promise to increase the opportunities for reuse
+and extension of service interfaces. Unfortunately, the sheer breadth
+of the WSDL goal set makes it exceedingly complex, and this, coupled
+with the needless verbosity that it enforces, is likely to make it a
+difficult language to work with for some time\footnote{As any SOAP
+stack developer will attest, bug reports involving handwritten WSDL
+are the ones they fear.}.
+
+

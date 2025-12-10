@@ -1,0 +1,96 @@
+\subsection{WSDL: an extra complication}
+\label{objections:wsdl-gen}
+
+The role of an interface definition language (IDL) has always been
+twofold:
+
+\begin{enumerate}
+\item Firstly, an IDL allows the creation of a definition of \emph{the
+interface} of the remote system, independent of any particular
+implementation, programming language or environment. This is
+``interface'' in the sense of \emph{the implementation independent
+signature of the service}, and does not imply that an implementation
+language needs an explicit notion of interfaces. The interface is
+inherently implementation independent, and can be frozen or carefully
+managed with respect to versioning.
+
+\item Secondly, the act of writing an IDL description forces the author to
+define the system in terms of the portable datatypes and operations available in
+the restricted language of the IDL. This can effectively guarantee portability,
+and is a significant improvement over interfaces defined in the implementation
+languages themselves, which invariably contain constructs which are not
+portable.
+
+\end{enumerate}
+
+IDLs have many advantages for creating interoperable systems, yet the
+generally accepted practice for working with JAX-RPC discards all
+these notions. Instead of generating implementation classes from WSDL,
+the WSDL description is usually generated from the implementation
+classes using tools leveraging Java's Reflection API. We shall term
+this process \emph{contract-last development}.
+
+This has the following consequences.
+
+\begin{itemize}
+
+\item
+    
+There is no way to ensure that a service's published interface remains constant
+over time. Every redeployment of the service or may change the classes, and
+hence the contract.
+
+\item
+
+Some aspects of the interface a service provides are not amenable to
+extraction simply from signatures of its constituent classes and
+methods. A given method might, for example, choose to extract
+attachments from messages programmatically, without declaring that
+attachment in the signature.
+
+\item
+
+No warnings about portability issues are available before deployment
+occurs. When defining a service using an IDL, the author typically
+knows when there are problems as the IDL will not compile. Yet with
+contract-last development, everything may well seem to work until the
+service goes live and a customer using a different language attempts
+to import the WSDL and invoke the service.
+    
+\end{itemize}
+
+The alternative to contract-last development is clearly \emph{contract-first
+development}. Although this is the better approach from the perspective
+of portability and interface stability, web service developers are not
+pushed in this direction.
+
+One of the underlying causes of this has to be the sheer complexity of
+XML Schema and WSDL. The XSD type system bears minimal resemblance to
+that of current object oriented languages, and WSDL itself is
+over-verbose and under-readable. As evidence of this, consider the
+broad variety of products that aim to make authoring XSD and WSDL
+documents easier, and recall that such products were never necessary
+in the IDL-era of distributed systems programming.
+
+%We note in passing that that REST systems \cite{fielding:rest} tend not to
+%make use of WSDL, even though it is theoretically possible. Instead
+%they resort to their XML type language of choice and quality
+%human-readable documentation. This would appear to be sub-optimal, yet
+%REST is growing in popularity, despite (or perhaps because of) the
+%lack of WSDL integration.
+
+Returning to the desiderata for SOAP, following a contract-last process
+sacrifices interoperability for ease of service development. Perhaps
+WSDL is not the appropriate language for describing SOAP services (we
+are certainly not enthused about it), yet the sole solution being
+advocated is not a major undertaking to fix WSDL's core flaws, it is
+to continue to encourage developers to hand over to their SOAP stacks
+the challenge of deriving a stable and portable service interface from
+the inherently unstable and unportable service implementation.
+
+We are not proposing any changes to WSDL, merely mourning the fact
+that its over-complexity discourages contract-driven
+development more aggressively than any previous IDL ever did. We do
+observe that once the type declarations of a service have been moved
+into their own document, WSDL becomes much more manageable and this is
+a pattern of service definition which we strongly encourage.

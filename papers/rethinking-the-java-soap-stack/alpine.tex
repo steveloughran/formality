@@ -1,0 +1,149 @@
+\section{Alpine: a proposed alternative}
+\label{alpine}
+
+We are in the preliminary stages of designing an alternative SOAP
+stack for Java, which we are calling \emph{Alpine}\footnote{Its inspiration
+being derived in part from nimble, lightweight Alpine-style mountaineering
+approaches.}. 
+
+\subsection{Manifesto}
+\label{alpine:manifesto}
+
+Our goal is to create a SOAP stack that is easy to use, robust, and
+maintainable. In order to do this, we are adopting an XML centric
+approach. Alpine will make no attempt to map between XML and custom
+Java classes, instead providing access to the SOAP messages using
+modern XML support libraries, which make it easy to navigate an XML
+document. By avoiding O/X mapping we greatly decrease the volume and
+complexity of our code. Some may argue this will make Alpine more
+difficult to use, but experience shows us that simpler systems are
+typically more straightforward to work with, as they react in more
+predictable ways.
+
+If a WSDL/XSD description of an Alpine-hosted service is required, the
+user will be required to write it: as we concluded in section
+\ref{objections:wsdl-gen} generating these from Java introduces
+unwanted implementation dependencies and hampers interoperability.
+
+With so much stripped out, Alpine will be a SOAP stack reduced to its
+essentials: a system for managing the flow of messages through a set
+of handlers, and libraries to handle transport across supported the
+protocols. Core compliance with the SOAP protocol will be provided,
+namely envelope validation and \verb|mustUnderstand| processing of
+headers. Developers will be expected to use XPath specifications to
+work with contents of the message; we are considering basing our
+design upon the ``XOM'' XML framework \cite{harold:xom}.
+
+This will not be a SOAP stack that attempts to make SOAP look like
+Java RMI, nor will it prevent developers from being aware of the
+format of the messages sent over the wire. Instead, Alpine will just
+provide the basic housekeeping and handler chain management to make
+simplify web service development, leaving the interpretation and
+mapping of the XML messages to the applications themselves.
+
+\subsection{Design Goals}
+\label{alpine:design}
+
+The full design goals are as follows:
+
+\begin{enumerate}
+
+\item Stay in the XML space as much as possible.
+\item Take advantage of as much leading edge infrastructure as we can.
+\item Adopt the the handler chain pattern of Axis/JAX-RPC.
+\item Target SOAP 1.2 (POST) only, WS-I Basic Profile 1.1 \cite{spec:WSI-11}.
+\item Document/literal mssages only, not RPC/encoded.
+\item Support XSD and Relax NG schemas.
+\item Run server-side, client-side, and as an intermediary. 
+\item No support for JAX-RPC or JAX-M/SAAJ APIs.
+\item Configurable procedurally, through the Java Management API (JMX).
+\item Permit dynamic handler chain configuration during message processing.
+\item One supported parser. %: Xerces
+\item Run on Java 1.5 and later.
+
+\item No provision of side features such as a built in HTTP server, or
+a declarative configuration mechanism. These are delegated to other products.
+\end{enumerate}
+
+We believe the core of this design is likely to resemble JAX-M/SAAJ in
+in terms of classes, integrated with a handler chain based on the
+JAX-RPC/Axis model.
+
+\subsection{XSD validation}
+\label{alpine:validation}
+
+Although we are still unsure as to how complete our WSDL support will be, we
+note that document/literal SOAP messages can be validated simply by comparing
+the incoming messages to the XML Schema that describes them. Mainstream SOAP
+stacks do not do this at present, usually for performance reasons, but this 
+means that the set of XML documents an endpoint might receive is significantly 
+larger than the set of those considered valid by its XML schema. With no automatic
+validation, developers must either write both validation logic and corresponding
+tests themselves, or choose to ignore the problem. Given that there is no warning 
+of potential problems before deployment, we suspect that many developers remain 
+unaware of the problems they face.
+
+Errors caused by the absence of logic to detect and reject illegal
+documents are unlikely to show up in development, especially if a
+test-centric process is not followed, but become inevitable once a
+service goes live, and callers using other languages invoke the
+service. Such insidious defects, defects that only show up in
+production, are always unwelcome.
+
+There is a trivial solution to this problem, one that is common to
+other XML stacks. It is: validate incoming messages against the XML
+schema of the service.  We aim to implement a handler which will do
+this, which, if included on a handler chain, will reject invalid
+messages. It will also be able to validate outbound messages, which
+should be useful during development. 
+
+\subsection{A Community SOAP Stack}
+\label{alpine:community}
+
+
+An open source project, by its very nature, is written by its users, and so it 
+is critical to such a project's success that as many users as possible are
+able to contribute to its implementation. The split between
+XML in JAX-RPC's internal API, and mapped object instances in the external API,
+creates a gulf between the implementation of the stack, and that of end user
+applications. This creates a significant barrier between external and internal 
+developers, making it much more difficult for users to contribute to the system's
+development. With Alpine, we hope to avoid such a split, because the XML emphasis, 
+and hence the terms of reference, are consistent between user applications and
+the SOAP stack itself.
+
+
+\subsection{The Implications of Alpine}
+\label{alpine:implications}
+
+If Alpine succeeds, it will be a SOAP stack that requires an
+understanding of XML before it can be used. This might appear to be a
+barrier to the widespread adoption of the tool, and perhaps it will
+prove so. Unlike commercial SOAP vendors, we have no financial incentive
+to make our product broadly usable. We will, however, have a SOAP
+implementation which all its users should be able to understand and
+maintain.  Furthermore, we believe that a good understanding of XML is
+needed to develop any robust web service, and that by forcing developers to
+acquire that skill early on in the development process, we help them avoid
+being forced to learn it just before their shipping deadlines are missed.
+
+This may seem somewhat ruthless: to deny the right to write web
+services to developers who are and wish to remain ignorant of XML.
+However, we have to ask: \emph{if they do not want to know XML, why are
+they writing web services?} If the developers want to use a less portable,
+more brittle, remote method invocation system, they would be better off
+using a stable technology such as Java RMI or CORBA.
+
+If Alpine is not adopted, then either the design was flawed,
+or it did not appeal to a sufficiently large developer community to survive. At
+present it seems the design problem is the most pressing one. We have argued that JAX-RPC is the
+wrong API for working with SOAP in Java. If an XML-centric design were to prove
+equally unworkable, this might well mean that the promised flexibility of
+XML messaging infrastructures is not easily accessible to languages of the ``Java 
+generation'' (in which we include C\# and VB.NET), all of which share a similar
+static type system and object model. Should these languages not prove flexible enough
+to exploit the full potential of XML, then it may be that the promise of XML messaging 
+systems, both REST and SOAP, will only be realised by the next generation of platforms, be they
+extensions of existing languages, such as C$\omega$, or XML runtimes such as
+Apache Cocoon and NetKernel by 1060 Research
+\cite{MSFT:TransitionsInProgrammingModels,pjr:NKonXml}.

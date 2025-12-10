@@ -1,0 +1,17 @@
+Biographies
+
+
+Steve Loughran, HP Laboratories       
+steve_loughran@hpl.hp.com
+
+Steve Loughran is a researcher at HP Laboratories, Bristol, where he
+works on the problems of deployment in the SmartFrog project. In his 
+spare time, he is a committer on the Apache Ant and Apache Axis projects, and the 
+co-author of the book "Java Development with Ant". 
+
+Edmund Smith, University of Edinburgh. 
+esmith4@inf.ed.ac.uk
+
+Edmund Smith is a researcher at the University of Edinburgh where he
+works on dynamic reconfiguration techniques for grid fabrics, and
+system configuration in general.
