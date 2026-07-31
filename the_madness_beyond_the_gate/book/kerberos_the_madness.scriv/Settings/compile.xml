@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CompileSettings>
+    <ProjectSettings>
+        <Content Scope="Included" IncludeGroupText="Yes">
+            <CompileGroup Type="BinderItem">FAA3E93F-98E3-4945-80AA-2F81B42027BC</CompileGroup>
+            <Filter State="Off" Exclude="No" Type="Label">
+                <CollectionID>986B37A1-27EC-47A7-95FB-672617407BFD</CollectionID>
+                <Label>-1</Label>
+                <Status>-1</Status>
+            </Filter>
+        </Content>
+        <Options>
+            <RemoveAnnotations>Yes</RemoveAnnotations>
+            <ResampleImages DPI="72">No</ResampleImages>
+            <ConvertTablesAndListToMMD>Yes</ConvertTablesAndListToMMD>
+            <Links>
+                <ConvertDocumentLinksToHTML>Yes</ConvertDocumentLinksToHTML>
+            </Links>
+            <PDF>
+                <Cover Bleed="9.0" BleedUnits="pt"/>
+                <Compression Enabled="No">
+                    <ImageResolutionCompressionType>Set</ImageResolutionCompressionType>
+                    <ImageResolution>150</ImageResolution>
+                    <CompressionQuality>0.5</CompressionQuality>
+                </Compression>
+            </PDF>
+            <Scriptwriting>
+                <IncludeTitles>Yes</IncludeTitles>
+                <IncludeSynopses>Yes</IncludeSynopses>
+                <FootnotesAsScriptNotes>Yes</FootnotesAsScriptNotes>
+                <CommentsAsScriptNotes>Yes</CommentsAsScriptNotes>
+            </Scriptwriting>
+            <Ebook>
+                <StartAfterFrontMatter>Yes</StartAfterFrontMatter>
+                <Cover>
+                    <ImageDocument Source="FrontMatter"/>
+                    <Title>Cover</Title>
+                    <SVG Width="600" Height="800"><![CDATA[]]></SVG>
+                </Cover>
+                <TOC PandocDepth="3">
+                    <HTML Generate="Yes">
+                        <Title>Contents</Title>
+                    </HTML>
+                </TOC>
+            </Ebook>
+        </Options>
+        <MetaData>
+            <ProjectTitle>Hadoop and Kerberos: The madness beyond the gate</ProjectTitle>
+            <ProjectAbbreviatedTitle>H&amp;K</ProjectAbbreviatedTitle>
+            <Surname>Steve</Surname>
+            <Forename>Loughran</Forename>
+            <Subjects>
+                <Subject></Subject>
+            </Subjects>
+            <EbookLanguage>en</EbookLanguage>
+            <FountainTitlePageMetaData>
+                <Value Key="Title"><![CDATA[<$projecttitle>]]></Value>
+                <Value Key="Author"><![CDATA[<$author>]]></Value>
+            </FountainTitlePageMetaData>
+            <MMDMetaData>
+                <Value Key="Title"><![CDATA[<$projecttitle>]]></Value>
+                <Value Key="Author"><![CDATA[<$author>]]></Value>
+            </MMDMetaData>
+        </MetaData>
+    </ProjectSettings>
+    <CurrentFileType>Print</CurrentFileType>
+    <FormatSettings>
+        <Format ID="DEFAULT">
+            <SectionLayouts>
+                <Type ID="01865033-5E1C-402A-9215-04068D8C1038">NEW-PAGE-HEADER-WITH-TEXT</Type>
+                <Type ID="6C404E83-43CB-4B85-9DFA-E1D03BD038F5">TEXT-SECTION</Type>
+                <Type ID="E35D5574-848C-4679-87DB-4482B2B6DC81">NEW-PAGE</Type>
+                <Type ID="9A974D02-72C6-47A9-937E-9E6BA05A9655">AS-IS</Type>
+            </SectionLayouts>
+        </Format>
+    </FormatSettings>
+    <LastUsedFormats/>
+</CompileSettings>

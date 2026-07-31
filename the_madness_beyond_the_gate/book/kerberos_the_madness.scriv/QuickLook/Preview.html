@@ -1,19 +1,69 @@
 <html>
 
 <head>
-<title>kerberos_the_madness</title>
+<title>Hadoop and Kerberos: The madness beyond the gate</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<!-- NOTE: margin property = top-right-bottom-left -->
 <style type="text/css">
-	body {background-color: #bac0c7}
-    p.binderItem {margin: 10.0px 0.0px 0.0px 05.0px; font-family:Constantia, Cochin, Times, Courier, Arial, serif; font-size:12.0px;}
-    .page {border: 1px solid #727272; background: #fff}
+
+	body {background-color: #e2e2e2}
+    
+    p.topLevelItemTitle {
+    	margin: 30px 0px 5px 0px;
+    	font-family: Times, Times New Roman, Palatino, Cochin, Serif;
+    	font-size: 30px;
+    	}
+    	
+    p.folderTitle {
+    	margin: 30px 0px 5px 0px;
+    	font-family: Times, Times New Roman, Palatino, Cochin, Serif;
+    	font-size: 18px;
+    	}
+    
+    p.itemTitle {
+    	margin: 30px 0px 5px 0px;
+    	font-family: Helvetica, Arial, Sans-Serif;
+    	font-size: 12px;
+    	font-weight: bold;
+    	}
+    	
+    p.itemText {
+    	margin: 0px 0px 10px 0px;
+    	font-family: Helvetica, Arial, Sans-Serif;
+    	font-size: 12px;
+    	}
+    	
+    p.itemTextStart {
+    	margin: 30px 0px 10px 0px;
+    	font-family: Helvetica, Arial, Sans-Serif;
+    	font-size: 12px;
+    	}
+    
+    .page {border: 1px solid #c0c0c0; background: #fff}
+    
     hr {
-      border-top: 1px dashed #000;
-      border-bottom: 0px solid #fff;
-      color: #fff;
-      background-color: #fff;
-      height: 0px;
-  </style>
+        border: none;
+        height: 1px;
+        color: #d4d4d4;
+        background-color: #d4d4d4;
+      	}
+      	
+    hr.afterTitle {
+    	margin-top: -3px;
+    }
+      	
+    hr.afterText {
+    	margin-top: 30px;
+    }
+      	
+    ul {
+      	list-style-type: none;
+      	padding-left: 30px;
+      	}
+      	
+</style>
+
 </head>
 
 <body>
@@ -23,206 +73,242 @@
 <td>
 
 <table class="page" width="100%" cellspacing="10" cellpadding="2">
+
+<!-- Top margin -->
+<!-- Not needed, because of the padding above titles. -->
+<!--<tr><td height="15px"></td></tr>-->
+
 <tr>
+
+<!-- 42 + 30 of list indent = 72 - one inch. -->
+<!-- Actually that ends up too much, so we do 25 + 30 = 55px. -->
+<td width="25px">
+
 <td valign="top">
 
 <ul>
 <li>
-<p class="binderItem"><strong>Front page</strong><br/><$Projecttitle><br/>
-<br/>
-<br/>
-Authors:<br/>
-<br/>
-S.A.Loughran<br/>
-<br/>
-Word count: <$wc></p>
+<p class="topLevelItemTitle">Front page</p>
+<p class="itemText">&lt;$Projecttitle&gt;</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Authors:</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">S.A.Loughran</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Word count: &lt;$wc&gt;</p>
 </li>
 <li>
-<p class="binderItem"><strong>Main content</strong></p>
+<p class="topLevelItemTitle">Main content</p>
 </li>
-<hr/>
+<hr class="afterTitle"/>
 <ul>
 <li>
-<p class="binderItem"><strong>Introduction</strong><br/># Introduction<br/>
-<br/>
-When HP Lovecraft wrote his books about forbidden knowledge which would reduce the reader to insanity, of "Elder Gods" to whom all of humanity were a passing inconvenience, most people assumed that he was making up a fantasy world.<br/>
-In fact he was documenting Kerberos.<br/>
-What is remarkable is that he did this fifty years before kerberos was developed. This makes him less of an author, instead: a prophet.<br/>
-What he wrote was true: there are some things humanity was not meant to know. M...</p>
+<p class="itemTitle">Introduction</p>
+<p class="itemText"># Introduction</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">When HP Lovecraft wrote his books about forbidden knowledge which would reduce the reader to insanity, of "Elder Gods" to whom all of humanity were a passing inconvenience, most people assumed that he was making up a fantasy world.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">In fact he was documenting Kerberos.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">What is remarkable is that he did this fifty years before kerberos was developed. This makes him less of an author, instead: a prophet.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">What he wrote was true: there are some things humanity was not meant to know. M...</p>
 </li>
 <li>
-<p class="binderItem"><strong>Foundational Concepts</strong><br/># Foundational Concepts<br/>
-<br/>
-What is the problem that Hadoop security is trying to address?<br/>
-Apache Hadoop is "an OS for data". A Hadoop cluster can rapidly become the largest stores of data in an organisation. That data can explicitly include sensitive information: financial, personal, business, and can often implicitly contain data which needs to be sensitive about the privacy of individuals (for example, log data of web accesses alone). Much of this data is protected by laws of different countries...</p>
+<p class="itemTitle">Foundational Concepts</p>
+<p class="itemText"># Foundational Concepts</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">What is the problem that Hadoop security is trying to address?</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Apache Hadoop is "an OS for data". A Hadoop cluster can rapidly become the largest stores of data in an organisation. That data can explicitly include sensitive information: financial, personal, business, and can often implicitly contain data which needs to be sensitive about the privacy of individuals (for example, log data of web accesses alone). Much of this data is protected by laws of different countries...</p>
 </li>
 <li>
-<p class="binderItem"><strong>The Limits of Hadoop Security</strong><br/># The Limits of Hadoop Security<br/>
-What are the limits of Hadoop security? Even with Kerberos enabled, what vulnerabilities exist?<br/>
-## Unpatched and 0-day holes in the layers underneath.<br/>
-The underlying OS in a Hadoop cluster may have known or 0-day security holes, allowing a malicious (YARN?) application to gain root access to a host in the cluster. Once this is done it would have direct access to blocks stored by the datanode, and to secrets held in the various processes, including keytabs in the l...</p>
+<p class="itemTitle">The Limits of Hadoop Security</p>
+<p class="itemText"># The Limits of Hadoop Security</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">What are the limits of Hadoop security? Even with Kerberos enabled, what vulnerabilities exist?</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">## Unpatched and 0-day holes in the layers underneath.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">The underlying OS in a Hadoop cluster may have known or 0-day security holes, allowing a malicious (YARN?) application to gain root access to a host in the cluster. Once this is done it would have direct access to blocks stored by the datanode, and to secrets held in the various processes, including keytabs in the l...</p>
 </li>
 <li>
-<p class="binderItem"><strong>Hadoop IPC Security</strong><br/># Hadoop IPC Security<br/>
-<br/>
-## Adding a new IPC interface to a Hadoop Service/Application<br/>
-This is "fiddly". It's not impossible, it just involves effort. In its favour: it's a lot easier than SPNEGO.<br/>
-<br/>
-### SecurityInfo<br/>
-Every exported RPC service will need its own extension of the SecurityInfo class, to provide two things<br/>
-1. The name of the principal to use in this communication<br/>
-1. The token used to authenticate ongoing communications.<br/>
-<br/>
-### PolicyProvider<br/>
-A PolicyProvider subclass. This is used to info...</p>
+<p class="itemTitle">Hadoop IPC Security</p>
+<p class="itemText"># Hadoop IPC Security</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">## Adding a new IPC interface to a Hadoop Service/Application</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">This is "fiddly". It's not impossible, it just involves effort. In its favour: it's a lot easier than SPNEGO.</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">### SecurityInfo</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Every exported RPC service will need its own extension of the SecurityInfo class, to provide two things</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">1. The name of the principal to use in this communication</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">1. The token used to authenticate ongoing communications.</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">### PolicyProvider</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">A PolicyProvider subclass. This is used to info...</p>
 </li>
 <li>
-<p class="binderItem"><strong>UGI</strong><br/># UGI<br/>
-<br/>
-If there is one class guaranteed to strike fear into anyone with experience in Hadoop+Kerberos code it is UserGroupInformation, abbreviated to "UGI"<br/>
-UGI troublespots<br/>
-* It's a singleton. Don't expect to have one "real user" per process. This sort of makes sense when you think about it.<br/>
-* Once initialized, it stays initialized *and cannot be reset*. This makes it critical to load in your configuration information including keytabs and principals, before that first initialization of the UGI....</p>
+<p class="itemTitle">UGI</p>
+<p class="itemText"># UGI</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">If there is one class guaranteed to strike fear into anyone with experience in Hadoop+Kerberos code it is UserGroupInformation, abbreviated to "UGI"</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">UGI troublespots</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">* It's a singleton. Don't expect to have one "real user" per process. This sort of makes sense when you think about it.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">* Once initialized, it stays initialized *and cannot be reset*. This makes it critical to load in your configuration information including keytabs and principals, before that first initialization of the UGI....</p>
 </li>
 <li>
-<p class="binderItem"><strong>SPNEGO</strong><br/># SPNEGO<br/>
-SPNEGO is the acronym of the protocol by which HTTP clients can authenticate with a web site using Kerberos. This allows the client to identify and authenticate itself to a web site or a web service.<br/>
-SPNEGO is supported by<br/>
-* the standard browsers, to different levels of pain of use<br/>
-* `curl` on the command line<br/>
-* `java.net.URL` in Java7+<br/>
-The final point is key: it can be used programmatically in Java, so used by REST client applications to authenticate with a remote Web Service.<br/>
-### CAUT...</p>
+<p class="itemTitle">SPNEGO</p>
+<p class="itemText"># SPNEGO</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">SPNEGO is the acronym of the protocol by which HTTP clients can authenticate with a web site using Kerberos. This allows the client to identify and authenticate itself to a web site or a web service.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">SPNEGO is supported by</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">* the standard browsers, to different levels of pain of use</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">* `curl` on the command line</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">* `java.net.URL` in Java7+</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">The final point is key: it can be used programmatically in Java, so used by REST client applications to authenticate with a remote Web Service.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">### CAUT...</p>
 </li>
 <li>
-<p class="binderItem"><strong>ZOOKEEPER and SASL</strong><br/># ZOOKEEPER and SASL<br/>
-<br/>
-Apache Zookeeper uses SASL to authenticate callers. <br/>
-Other than SASL, its access control is all based around secrets which are shared between client and server, and sent over the (unencrypted) channel. This means they cannot be relied upon to securely identify callers.<br/>
-## Enabling SASL in ZK<br/>
-SASL is enabled in ZK by setting a system property. While adequate for a server, it's less than convenient when using ZK in an application as it means something very important: you cann...</p>
+<p class="itemTitle">ZOOKEEPER and SASL</p>
+<p class="itemText"># ZOOKEEPER and SASL</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Apache Zookeeper uses SASL to authenticate callers.<span class="Apple-converted-space"> </span></span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Other than SASL, its access control is all based around secrets which are shared between client and server, and sent over the (unencrypted) channel. This means they cannot be relied upon to securely identify callers.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">## Enabling SASL in ZK</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">SASL is enabled in ZK by setting a system property. While adequate for a server, it's less than convenient when using ZK in an application as it means something very important: you cann...</p>
 </li>
 <li>
-<p class="binderItem"><strong>java.security.krb5.conf</strong><br/># JVM kerberos config customisation<br/>
-<br/>
-java.security.krb5.conf<br/>
-The JVM kerberos operations are configured via krb5.conf file specified in the JVM option "java.security.krb5.conf", which can be done on the JVM command line, or inside the JVM<br/>
-System.setProperty("java.security.krb5.conf", krbfilepath);<br/>
-<br/>
-Notes<br/>
-* use double backslash to escape paths on Windows platforms, e.g. C:\\keys\\key1, or \\\\server4\\shared\\tokens<br/>
-* Different JVMs (e.g. IBM JVM) want different fields in their krb5.conf file. Ho...</p>
+<p class="itemTitle">java.security.krb5.conf</p>
+<p class="itemText"># JVM kerberos config customisation</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">java.security.krb5.conf</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">The JVM kerberos operations are configured via krb5.conf file specified in the JVM option "java.security.krb5.conf", which can be done on the JVM command line, or inside the JVM</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">System.setProperty("java.security.krb5.conf", krbfilepath);</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Notes</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">* use double backslash to escape paths on Windows platforms, e.g. C:\\keys\\key1, or \\\\server4\\shared\\tokens</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">* Different JVMs (e.g. IBM JVM) want different fields in their krb5.conf file. Ho...</p>
 </li>
 <li>
-<p class="binderItem"><strong>JAAS Configuration</strong><br/># JAAS Configuration</p>
+<p class="itemTitle">JAAS Configuration</p>
+<p class="itemText"># JAAS Configuration</p>
 </li>
 <li>
-<p class="binderItem"><strong>Logging</strong><br/># Logging<br/>
-## Hadoop Logging<br/>
-JVM Kerberos Library logging<br/>
-You can turn Kerberos low-level logging on<br/>
--Dsun.security.krb5.debug=true<br/>
-<br/>
-This doesn't come out via Log4J, or java.util logging; it just comes out on the console. Which is somewhat inconvenient —but bear in mind they are logging at a very low level part of the system. And it does at least log.<br/>
-If you find yourself down at this level you are in trouble. Bear that in mind.</p>
+<p class="itemTitle">Logging</p>
+<p class="itemText"># Logging</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">## Hadoop Logging</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">JVM Kerberos Library logging</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">You can turn Kerberos low-level logging on</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">-Dsun.security.krb5.debug=true</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">This doesn't come out via Log4J, or java.util logging; it just comes out on the console. Which is somewhat inconvenient —but bear in mind they are logging at a very low level part of the system. And it does at least log.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">If you find yourself down at this level you are in trouble. Bear that in mind.</p>
 </li>
 <li>
-<p class="binderItem"><strong>Error Messages to Fear</strong><br/># Error Messages to Fear<br/>
-<br/>
-# OS/JVM Layer<br/>
-Some of these are covered in Oracle's Troubleshooting Kerberos docs. This section just highlights some of the common causes, other causes that Oracle don't mention —and messages they haven't covered.<br/>
-<br/>
-## Server not found in Kerberos database (7) <br/>
-* DNS is a mess and your machine does not know its own name.<br/>
-* Your machine has a hostname, but it's not one there's an entry in the keytab for<br/>
-<br/>
-## No valid credentials provided (Mechanism level: Illegal key size...</p>
+<p class="itemTitle">Error Messages to Fear</p>
+<p class="itemText"># Error Messages to Fear</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1"># OS/JVM Layer</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Some of these are covered in Oracle's Troubleshooting Kerberos docs. This section just highlights some of the common causes, other causes that Oracle don't mention —and messages they haven't covered.</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">## Server not found in Kerberos database (7)<span class="Apple-converted-space"> </span></span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">* DNS is a mess and your machine does not know its own name.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">* Your machine has a hostname, but it's not one there's an entry in the keytab for</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">## No valid credentials provided (Mechanism level: Illegal key size...</p>
 </li>
 <li>
-<p class="binderItem"><strong>Kerberos Tests with MiniKDC</strong><br/># Writing Kerberos Tests with MiniKDC<br/>
-<br/>
-The Hadoop project has an in-VM Kerberos Controller for tests, MiniKDC, which is packaged as its own JAR for downstream use. The core of this code actually comes from the Apache Directory Services project.</p>
+<p class="itemTitle">Kerberos Tests with MiniKDC</p>
+<p class="itemText"># Writing Kerberos Tests with MiniKDC</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">The Hadoop project has an in-VM Kerberos Controller for tests, MiniKDC, which is packaged as its own JAR for downstream use. The core of this code actually comes from the Apache Directory Services project.</p>
 </li>
 <li>
-<p class="binderItem"><strong>Testing against Kerberized Hadoop clusters</strong><br/>Testing against Kerberized Hadoop clusters<br/>
-This is not actually the hardest form of testing; getting the MiniKDC working holds that honour.<br/>
-It does have some pre-requisites<br/>
-1. Everyone running the tests has set up a Hadoop cluster/single VM with Kerberos enabled.<br/>
-2. The software project has a test runner capable of deploying applications into a remote Hadoop cluster/VM and assessing the outcome.<br/>
-It's primarily the test runner which matters. Without that you cannot do functional tests against any...</p>
+<p class="itemTitle">Testing against Kerberized Hadoop clusters</p>
+<p class="itemText">Testing against Kerberized Hadoop clusters</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">This is not actually the hardest form of testing; getting the MiniKDC working holds that honour.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">It does have some pre-requisites</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">1. Everyone running the tests has set up a Hadoop cluster/single VM with Kerberos enabled.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">2. The software project has a test runner capable of deploying applications into a remote Hadoop cluster/VM and assessing the outcome.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">It's primarily the test runner which matters. Without that you cannot do functional tests against any...</p>
 </li>
 <li>
-<p class="binderItem"><strong>Low-level secrets</strong><br/># Low-level secrets<br/>
-KRB5CCNAME<br/>
-The environment variable `KRB5CCNAME` (cite: http://web.mit.edu/kerberos/krb5-1.4/krb5-1.4/doc/klist.html)<br/>
-As the docs say:<br/>
-If the KRB5CCNAME environment variable is set, its value is used to name the default ticket cache.<br/>
-IP addresses vs. Hostnames<br/>
-Kerberos principals are traditionally defined with hostnames of the form hbase@worker3/EXAMPLE.COM, not hbase/10.10.15.1/EXAMPLE.COM<br/>
-The issue of whether Hadoop should support IP addresses has been raised [HADOOP-9019](...</p>
+<p class="itemTitle">Low-level secrets</p>
+<p class="itemText"># Low-level secrets</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">KRB5CCNAME</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">The environment variable `KRB5CCNAME` (cite: http://web.mit.edu/kerberos/krb5-1.4/krb5-1.4/doc/klist.html)</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">As the docs say:</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">If the KRB5CCNAME environment variable is set, its value is used to name the default ticket cache.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">IP addresses vs. Hostnames</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Kerberos principals are traditionally defined with hostnames of the form hbase@worker3/EXAMPLE.COM, not hbase/10.10.15.1/EXAMPLE.COM</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">The issue of whether Hadoop should support IP addresses has been raised [HADOOP-9019](...</p>
 </li>
 <li>
-<p class="binderItem"><strong>Checklists</strong><br/># Checklists<br/>
-<br/>
-## All programs<br/>
-[ ] Sets up security before accessing any Hadoop services, including FileSystem APIs<br/>
-[ ] Sets up security after loading local configuration files, such as `core-site.xml`. Creating instances of HdfsConfiguration and YarnConfiguration will do this automatically.<br/>
-[ ] Are tested against a secure cluster<br/>
-## Hadoop RPC Service<br/>
-<br/>
-[ ] Principal for Service defined. This is generally a configuration property.<br/>
-[ ] `SecurityInfo` subclass written.<br/>
-[ ] `META-INF/services/org.ap...</p>
+<p class="itemTitle">Checklists</p>
+<p class="itemText"># Checklists</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">## All programs</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">[ ] Sets up security before accessing any Hadoop services, including FileSystem APIs</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">[ ] Sets up security after loading local configuration files, such as `core-site.xml`. Creating instances of HdfsConfiguration and YarnConfiguration will do this automatically.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">[ ] Are tested against a secure cluster</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">## Hadoop RPC Service</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">[ ] Principal for Service defined. This is generally a configuration property.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">[ ] `SecurityInfo` subclass written.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">[ ] `META-INF/services/org.ap...</p>
 </li>
 </ul>
-<hr/>
+<hr class="afterText"/>
+
 <li>
-<p class="binderItem"><strong>Acknowledgements</strong><br/>Acknowledgements<br/>
-<br/>
-Everyone who has struggled to secure Hadoop deserves to be recognised, their sacrifice acknowledged.<br/>
-Everyone who has got their application to work within a secure Hadoop cluster will have suffered without any appreciation; without anyone appreciating their effort. Indeed, all that they are likely to have received is complaints about how their software is late.<br/>
-<br/>
-However, our best praise, our greatest appreciation, has to go to everyone who added logging statements in the Hadoop...</p>
+<p class="topLevelItemTitle">Acknowledgements</p>
+<p class="itemText">Acknowledgements</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Everyone who has struggled to secure Hadoop deserves to be recognised, their sacrifice acknowledged.</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Everyone who has got their application to work within a secure Hadoop cluster will have suffered without any appreciation; without anyone appreciating their effort. Indeed, all that they are likely to have received is complaints about how their software is late.</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">However, our best praise, our greatest appreciation, has to go to everyone who added logging statements in the Hadoop...</p>
 </li>
 <li>
-<p class="binderItem"><strong>References</strong><br/>References<br/>
-<br/>
-<br/>
-[Leave this empty to use a reference manager like Zotero. Once you create a bibliography in LibreOffice/Word, paste the generated references into this part of the document]<br/>
-1. IETF [RFC 4120](https://www.ietf.org/rfc/rfc4120.txt)<br/>
-1. [Adding Security to Apache Hadoop](http://hortonworks.com/wp-content/uploads/2011/10/security-design_withCover-1.pdf)<br/>
-1. [The Role of Delegation Tokens in Apache Hadoop Security](http://hortonworks.com/blog/the-role-of-delegation-tokens-in-apache-hadoop-...</p>
+<p class="topLevelItemTitle">References</p>
+<p class="itemText">References</span></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p2"><span class="s1"></span><br></p></p>
+<p class="itemText"><p class="p1"><span class="s1">[Leave this empty to use a reference manager like Zotero. Once you create a bibliography in LibreOffice/Word, paste the generated references into this part of the document]</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">1. IETF [RFC 4120](https://www.ietf.org/rfc/rfc4120.txt)</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">1. [Adding Security to Apache Hadoop](http://hortonworks.com/wp-content/uploads/2011/10/security-design_withCover-1.pdf)</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">1. [The Role of Delegation Tokens in Apache Hadoop Security](http://hortonworks.com/blog/the-role-of-delegation-tokens-in-apache-hadoop-...</p>
 </li>
 <li>
-<p class="binderItem"><strong>Figure legends</strong><br/>Figure Legends<br/>
-Figure 1: [insert text here]<br/>
-Figure 2: [insert text here]</p>
+<p class="topLevelItemTitle">Figure legends</p>
+<p class="itemText">Figure Legends</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Figure 1: [insert text here]</span></p></p>
+<p class="itemText"><p class="p1"><span class="s1">Figure 2: [insert text here]</p>
 </li>
 <li>
-<p class="binderItem"><strong>Tables</strong></p>
+<p class="topLevelItemTitle">Tables</p>
 </li>
-<hr/>
+<hr class="afterTitle"/>
 <ul>
 <li>
-<p class="binderItem"><strong>Table 1</strong><br/>After you insert Table caption, you may either make the table in Scrivener, or you may insert it in text-processor (Word etc) after compiling.</p>
+<p class="itemTitle">Table 1</p>
+<p class="itemText">After you insert Table caption, you may either make the table in Scrivener, or you may insert it in text-processor (Word etc) after compiling.</p>
 </li>
 </ul>
-<hr/>
+<hr class="afterText"/>
+
 <li>
-<p class="binderItem"><strong>Figures</strong></p>
+<p class="topLevelItemTitle">Figures</p>
 </li>
-<hr/>
+<hr class="afterTitle"/>
 <ul>
 <li>
-<p class="binderItem"><strong>Configuring Firefox for SPNEGO</strong></p>
+<p class="itemTitle">Configuring Firefox for SPNEGO</p>
 </li>
 </ul>
 </ul>
 
 </td>
-<td width="8">
+<td width="55px">
 </td>
 </tr>
+
+<!-- Bottom margin -->
+<tr><td height="15px"></td></tr>
+
 </table>
 
 </td>

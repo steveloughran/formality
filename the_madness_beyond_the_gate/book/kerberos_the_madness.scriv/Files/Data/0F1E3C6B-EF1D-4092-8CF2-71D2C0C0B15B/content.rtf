@@ -1,0 +1,28 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 P22Typewriter;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\deftab720
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardeftab720\sa160\pardirnatural\partightenfactor0
+
+\f0\fs22 \cf0 Hadoop and Kerberos: the Madness Beyond the Gate\
+When HP Lovecraft wrote of forbidden knowledge about non-human deities, knowledge which would reduce the reader to insanity, most people assumed that he was making up a fantasy world.\
+In fact he was documenting Kerberos and its Hadoop integration.\
+There are some things humanity was not meant to know. Most people are better off living lives of naive innocence, never having to see an error message about SASL or GSS, to never stare in terror at classes only whose initials, UGI, are ever  spoken aloud -or more accurately, whispered.\
+This talk goes into the depths, to the knowledge which you need to write applications in a secure Hadoop cluster, knowledge that may drive you insane. Forever more, you shall fear voices calling out in the night, voices saying things like "we have an urgent Kerberos-related support call -can you help?"\
+\
+\ul audience\ulnone \
+This talk is for people who are planning to write code within the Hadoop stack itself, want to understand what is actually going on in a secure Hadoop cluster, or need to integrate their application with Hadoop. Anyone writing YARN applications or planning to contribute to the core Hadoop codebase needs to attend this talk if they wish to learn from the suffering of others, rather than repeat it.\
+If you look after a secure Hadoop cluster, this talk will explain some of the underpinnings: why things work the way you do, even though it's at a layer you shouldn't have to live in yourself.\
+However, it is a developer talk, not an operations one: it will not cover how to set up and run a secure cluster, running kerberos controllers and the day-to-day operational aspects.\
+\ul Benefits to the ecosystem\ulnone \
+Kerberos is standard in new Hadoop clusters, yet the details of code which works within it is a dark art. Most people writing Hadoop applications ignore Kerberos integration or put it off until it is too late, suffering as they try to ship something that wont work. Certainly this is the state I've been in recent projects -and I have the advantage of knowing fellow Hadoop committers who are able to help.\
+\
+I hope to get the basic concepts across, for developers to realise Kerberos matters and they need to start on it early. As if they don't, they'll be reduced to gibbering wrecks who will be too scared to go near a keyboard ever again.\
+\
+As for the Lovecraftian theme? Well, who'd attend a talk titled "implementing SPNEGO-authenticated Jersey REST APIs in YARN applications"?\
+\
+Steve Loughran works at Hortonworks, where he works on leading-edge Hadoop applications, most recently on Apache Slider and on Spark's integration with Hadoop and YARN.\
+He's the author of Ant in Action, a member of the Apache Software Foundation, an active committer on the Hadoop core; a lapsed committer on Ant and other projects.\
+He lives and works in Bristol, England. For fun he falls of bicycles in the local woodland.\
+He's spoken at many ApacheCon EU conferences, Hadoop Summit, Berlin Buzzwords, OSCon and others.}
